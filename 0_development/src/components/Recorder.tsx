@@ -322,7 +322,7 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center w-full h-full p-4 sm:p-6 animate-in fade-in zoom-in duration-300">
+        <div className="flex flex-col items-center justify-center w-full h-full p-4 sm:p-6 animate-in fade-in zoom-in duration-300 text-sm">
 
             {/* Main Preview / Control Area */}
             <div className="relative w-full max-w-5xl aspect-video bg-slate-950/50 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 backdrop-blur-sm group">
@@ -336,53 +336,53 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                             <Monitor size={64} className="text-indigo-300 drop-shadow-[0_0_20px_rgba(99,102,241,0.6)]" />
                         </div>
 
-                        <h2 className="text-3xl font-bold text-white mb-2">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1">
                             Ready to Capture
                         </h2>
-                        <p className="text-slate-400 mb-8 text-center px-4">Configure your sources and quality, then start recording.</p>
+                        <p className="text-slate-400 mb-6 text-center px-4 text-sm sm:text-base">Configure your sources and quality, then start recording.</p>
 
                         {/* Control panel */}
-                        <div className="w-full max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-6 backdrop-blur-lg shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="w-full max-w-4xl bg-slate-900/70 border border-slate-800 rounded-xl p-3 sm:p-5 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                                 {/* Toggles */}
                                 <div className="flex flex-col gap-4">
-                                    <span className="text-sm text-slate-400 font-semibold uppercase tracking-wide">Sources</span>
+                                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Sources</span>
                                     <div className="flex flex-wrap gap-3">
                                         <button
                                             onClick={() => setEnableMic(!enableMic)}
-                                            className={`flex-1 min-w-[140px] flex flex-col gap-2 items-start p-4 rounded-xl border transition-all duration-300 ${enableMic
+                                            className={`flex-1 min-w-[140px] flex flex-col gap-1.5 items-start p-3 rounded-lg border transition-all duration-300 ${enableMic
                                                     ? 'bg-indigo-600/15 border-indigo-500/60 text-indigo-100 shadow-[0_0_25px_rgba(79,70,229,0.25)]'
                                                     : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
                                                 }`}
                                         >
-                                            <div className="flex items-center gap-2 text-base font-semibold">
-                                                {enableMic ? <Mic size={18} /> : <MicOff size={18} />}
+                                            <div className="flex items-center gap-2 text-sm font-semibold">
+                                                {enableMic ? <Mic size={16} /> : <MicOff size={16} />}
                                                 Microphone
                                             </div>
-                                            <span className="text-xs text-slate-500">{enableMic ? 'Included in mix' : 'Muted'}</span>
+                                            <span className="text-[11px] text-slate-500">{enableMic ? 'Included in mix' : 'Muted'}</span>
                                         </button>
 
                                         <button
                                             onClick={() => setEnableCam(!enableCam)}
-                                            className={`flex-1 min-w-[140px] flex flex-col gap-2 items-start p-4 rounded-xl border transition-all duration-300 ${enableCam
+                                            className={`flex-1 min-w-[140px] flex flex-col gap-1.5 items-start p-3 rounded-lg border transition-all duration-300 ${enableCam
                                                     ? 'bg-purple-600/15 border-purple-500/60 text-purple-100 shadow-[0_0_25px_rgba(147,51,234,0.25)]'
                                                     : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
                                                 }`}
                                         >
-                                            <div className="flex items-center gap-2 text-base font-semibold">
-                                                {enableCam ? <Camera size={18} /> : <CameraOff size={18} />}
+                                            <div className="flex items-center gap-2 text-sm font-semibold">
+                                                {enableCam ? <Camera size={16} /> : <CameraOff size={16} />}
                                                 Camera PIP
                                             </div>
-                                            <span className="text-xs text-slate-500">{enableCam ? 'Picture-in-picture on' : 'Disabled'}</span>
+                                            <span className="text-[11px] text-slate-500">{enableCam ? 'Picture-in-picture on' : 'Disabled'}</span>
                                         </button>
                                     </div>
 
                                     {enableCam && (
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-slate-400 text-sm">Camera Position:</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-400 text-xs">Camera Position:</span>
                                             <button
                                                 onClick={cyclePIPPosition}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 hover:bg-slate-700 transition-colors text-xs"
                                             >
                                                 <GripVertical size={14} />
                                                 <span className="text-sm capitalize">{pipPosition.replace('-', ' ')}</span>
@@ -393,8 +393,8 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
 
                                 {/* Quality */}
                                 <div className="flex flex-col gap-4">
-                                    <span className="text-sm text-slate-400 font-semibold uppercase tracking-wide">Quality (FPS / Bitrate)</span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Quality (FPS / Bitrate)</span>
+                                    <div className="flex flex-wrap gap-3">
                                         {([
                                             { key: 'standard', label: 'Standard', detail: '30fps • ~5Mbps' },
                                             { key: 'high', label: 'High', detail: '30fps • ~10Mbps' },
@@ -404,12 +404,12 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                                             <button
                                                 key={q.key}
                                                 onClick={() => setRecordingQuality(q.key)}
-                                                className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-300 ${recordingQuality === q.key
+                                                className={`w-full sm:w-auto min-w-[140px] flex-1 text-left px-3 py-2.5 rounded-lg border transition-all duration-300 ${recordingQuality === q.key
                                                         ? 'bg-emerald-600/15 border-emerald-500/70 text-emerald-100 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
                                                         : 'bg-slate-800/60 border-slate-700 text-slate-200 hover:border-slate-600'
                                                     }`}
                                             >
-                                                <div className="font-semibold text-base">{q.label}</div>
+                                                <div className="font-semibold text-sm">{q.label}</div>
                                                 <div className="text-[11px] text-slate-400">{q.detail}</div>
                                             </button>
                                         ))}
@@ -418,40 +418,40 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <label className="flex flex-col gap-1 text-sm text-slate-300">
                                                 Frame Rate (fps)
-                                                <input
-                                                    type="number"
-                                                    min={15}
-                                                    max={120}
-                                                    value={customFps}
-                                                    onChange={(e) => setCustomFps(Math.min(120, Math.max(15, Number(e.target.value) || 0)))}
-                                                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                />
-                                            </label>
-                                            <label className="flex flex-col gap-1 text-sm text-slate-300">
-                                                Video Bitrate (Mbps)
-                                                <input
+                                            <input
+                                                type="number"
+                                                min={15}
+                                                max={120}
+                                                value={customFps}
+                                                onChange={(e) => setCustomFps(Math.min(120, Math.max(15, Number(e.target.value) || 0)))}
+                                                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            />
+                                        </label>
+                                        <label className="flex flex-col gap-1 text-sm text-slate-300">
+                                            Video Bitrate (Mbps)
+                                            <input
                                                     type="number"
                                                     min={1}
-                                                    max={50}
-                                                    step={0.5}
-                                                    value={customBitrateMbps}
-                                                    onChange={(e) => setCustomBitrateMbps(Math.min(50, Math.max(1, Number(e.target.value) || 0)))}
-                                                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                />
-                                            </label>
-                                        </div>
-                                    )}
-                                </div>
+                                                max={50}
+                                                step={0.5}
+                                                value={customBitrateMbps}
+                                                onChange={(e) => setCustomBitrateMbps(Math.min(50, Math.max(1, Number(e.target.value) || 0)))}
+                                                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            />
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
                             </div>
                         </div>
 
                         {/* Start Button */}
-                        <div className="mt-10 w-full max-w-md px-2">
+                        <div className="mt-8 w-full max-w-md px-2">
                             <Button
                                 onClick={startRecording}
                                 disabled={isPreparing}
                                 size="lg"
-                                className="w-full sm:w-64 h-16 text-xl shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] transition-all transform hover:scale-105"
+                                className="w-full sm:w-56 h-12 text-lg shadow-[0_0_25px_rgba(79,70,229,0.35)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transition-all transform hover:scale-[1.02]"
                             >
                                 {isPreparing ? (
                                     <span className="flex items-center gap-2">
