@@ -35,6 +35,14 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const [selectedResolution, setSelectedResolution] = useState<Resolution>('original');
     const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('mp4');
     const [selectedFps, setSelectedFps] = useState<FrameRate>(30);
+    const [customCrf, setCustomCrf] = useState<number>(VIDEO_QUALITY_PRESETS['medium'].crf);
+    const applyHighQualityPreset = () => {
+        setSelectedQuality('high');
+        setSelectedResolution('original');
+        setSelectedFormat('mp4');
+        setSelectedFps(60);
+        setCustomCrf(20);
+    };
 
     // Subscribe to FFmpeg progress
     useEffect(() => {
@@ -78,6 +86,11 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             setPlaybackError('Recording duration could not be determined. Please record again.');
         }
     }, [videoMetadata]);
+
+    // Reset CRF when quality preset changes
+    useEffect(() => {
+        setCustomCrf(VIDEO_QUALITY_PRESETS[selectedQuality].crf);
+    }, [selectedQuality]);
 
     // Sync Video Time
     const handleTimeUpdate = () => {
@@ -162,6 +175,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                 resolution: selectedResolution,
                 format: selectedFormat,
                 fps: selectedFps,
+                crf: customCrf,
                 ...(mode === 'trimmed' && {
                     trimStart: range.start,
                     trimEnd: range.end
@@ -352,6 +366,18 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
 
                         {showAdvanced && (
                             <div className="space-y-4 bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 animate-fade-in">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm text-slate-400">快速高质推荐：CRF 20 / 60fps / 原始分辨率</p>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={applyHighQualityPreset}
+                                        className="text-xs px-3"
+                                    >
+                                        一键高质量
+                                    </Button>
+                                </div>
+
                                 {/* Quality Preset */}
                                 <div className="space-y-2">
                                     <label className="text-xs text-slate-400 uppercase tracking-wide">Quality</label>
@@ -376,6 +402,30 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                                         })}
                                     </div>
                                     <p className="text-xs text-slate-500">{VIDEO_QUALITY_PRESETS[selectedQuality].description}</p>
+                                </div>
+
+                                {/* CRF Override */}
+                                <div className="space-y-2">
+                                    <label className="text-xs text-slate-400 uppercase tracking-wide">CRF (18-23 recommended)</label>
+                                    <div className="flex gap-2 items-center">
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={30}
+                                            step={1}
+                                            value={customCrf}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                if (!Number.isFinite(val)) return;
+                                                setCustomCrf(Math.min(Math.max(val, 0), 30));
+                                            }}
+                                            className="w-24 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            disabled={selectedQuality === 'lossless'}
+                                        />
+                                        <span className="text-xs text-slate-500">
+                                            数字越低越清晰，文件越大。19-23 通常是平衡档。
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Resolution */}

@@ -56,7 +56,7 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         preset: 'medium',
         label: 'Medium (Balanced)',
         description: 'Good balance of quality and size',
-        crf: 23,
+        crf: 20, // default export CRF closer to visually lossless
         ffmpegPreset: 'fast',
         audioBitrate: '128k',
         videoBitsPerSecond: 3_000_000, // 3 Mbps
@@ -89,10 +89,11 @@ export interface ExportOptions {
     resolution?: 'original' | '720p' | '1080p' | '4k';
     format?: 'mp4' | 'webm';
     fps?: number; // Target frame rate for export
+    crf?: number; // Optional override for Constant Rate Factor (lower = higher quality)
 }
 
 // Recording Quality
-export type RecordingQuality = 'standard' | 'high' | 'ultra';
+export type RecordingQuality = 'standard' | 'high' | 'ultra' | 'custom';
 
 export interface RecordingConfig {
     quality: RecordingQuality;
@@ -104,16 +105,21 @@ export const RECORDING_PRESETS: Record<RecordingQuality, RecordingConfig> = {
     standard: {
         quality: 'standard',
         frameRate: 30,
-        videoBitsPerSecond: 4_000_000, // 4 Mbps
+        videoBitsPerSecond: 5_000_000, // 5 Mbps
     },
     high: {
         quality: 'high',
         frameRate: 30,
-        videoBitsPerSecond: 8_000_000, // 8 Mbps
+        videoBitsPerSecond: 10_000_000, // 10 Mbps
     },
     ultra: {
         quality: 'ultra',
         frameRate: 60,
-        videoBitsPerSecond: 15_000_000, // 15 Mbps
+        videoBitsPerSecond: 20_000_000, // 20 Mbps
+    },
+    custom: {
+        quality: 'custom',
+        frameRate: 60,
+        videoBitsPerSecond: 12_000_000, // default 12 Mbps (overridable)
     }
 };

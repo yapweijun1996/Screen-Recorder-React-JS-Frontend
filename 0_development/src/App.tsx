@@ -163,7 +163,7 @@ const App: React.FC = () => {
 
             {/* Footer */}
             <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-800">
-                <p>Built with React, Tailwind & FFmpeg.wasm</p>
+                <p>Built with React, Tailwind & FFmpeg.wasm • by yapweijun1996</p>
                 <p className="mt-1 text-slate-700">Version 2.0 - Now with Pause, Draggable Camera & Preloaded Export</p>
             </footer>
         </div>

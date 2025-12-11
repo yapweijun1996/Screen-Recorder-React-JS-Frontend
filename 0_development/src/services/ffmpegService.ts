@@ -146,6 +146,8 @@ class FFmpegService {
         const ffmpeg = this.ffmpeg!;
 
         const qualityConfig = VIDEO_QUALITY_PRESETS[options.quality];
+        const crfValueRaw = options.crf ?? qualityConfig.crf;
+        const crfValue = Math.min(Math.max(crfValueRaw, 0), 51); // clamp to ffmpeg CRF range
         const format = options.format || 'mp4';
         const inputName = 'input.webm';
         const outputName = `output.${format}`;
@@ -185,8 +187,8 @@ class FFmpegService {
             args.push('-c:v', 'libx264');
 
             // CRF for quality (only if not lossless)
-            if (qualityConfig.crf > 0) {
-                args.push('-crf', qualityConfig.crf.toString());
+            if (crfValue > 0) {
+                args.push('-crf', crfValue.toString());
             } else {
                 // Lossless mode
                 args.push('-crf', '0');
@@ -204,7 +206,7 @@ class FFmpegService {
             args.push('-movflags', '+faststart');
         } else if (format === 'webm') {
             args.push('-c:v', 'libvpx-vp9');
-            args.push('-crf', qualityConfig.crf.toString());
+            args.push('-crf', crfValue.toString());
             args.push('-b:v', '0'); // Use CRF mode
             args.push('-c:a', 'libopus', '-b:a', qualityConfig.audioBitrate);
         }

@@ -103,7 +103,7 @@ const App: React.FC = () => {
 
       {/* Simple Footer */}
       <footer className="py-6 text-center text-slate-600 text-sm">
-        <p>Built with React, Tailwind & FFmpeg.wasm</p>
+        <p>Built with React, Tailwind & FFmpeg.wasm • by yapweijun1996</p>
       </footer>
     </div>
   );

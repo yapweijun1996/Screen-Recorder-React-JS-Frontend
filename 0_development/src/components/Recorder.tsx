@@ -21,6 +21,8 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
     const [enableCam, setEnableCam] = useState(false);
     const [pipPosition, setPipPosition] = useState<PIPPosition>('bottom-right');
     const [recordingQuality, setRecordingQuality] = useState<RecordingQuality>('high');
+    const [customFps, setCustomFps] = useState<number>(60);
+    const [customBitrateMbps, setCustomBitrateMbps] = useState<number>(12); // Mbps
 
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,11 +77,15 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
         setIsPreparing(true);
         try {
             // 1. Get Screen Stream (Base)
+            const chosenPreset = recordingQuality === 'custom'
+                ? { frameRate: customFps, videoBitsPerSecond: Math.max(1_000_000, Math.round(customBitrateMbps * 1_000_000)) }
+                : RECORDING_PRESETS[recordingQuality];
+
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
                     width: { ideal: 2560, max: 3840 },
                     height: { ideal: 1440, max: 2160 },
-                    frameRate: { ideal: 60, max: 60 }
+                    frameRate: { ideal: chosenPreset.frameRate, max: chosenPreset.frameRate }
                 },
                 audio: true // System Audio
             });
@@ -160,7 +166,9 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                 ? 'video/webm; codecs=vp9'
                 : 'video/webm';
 
-            const qualityConfig = RECORDING_PRESETS[recordingQuality];
+            const qualityConfig = recordingQuality === 'custom'
+                ? chosenPreset
+                : RECORDING_PRESETS[recordingQuality];
             const mediaRecorder = new MediaRecorder(finalStream, {
                 mimeType,
                 videoBitsPerSecond: qualityConfig.videoBitsPerSecond
@@ -321,98 +329,143 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
 
                 {/* State: Not Recording (Setup) */}
                 {!isRecording && !activeStream && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
 
                         {/* Hero Icon */}
-                        <div className="mb-8 p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full ring-1 ring-white/10">
-                            <Monitor size={64} className="text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+                        <div className="mb-8 p-6 bg-gradient-to-br from-indigo-500/10 via-slate-900/80 to-purple-500/10 rounded-full ring-1 ring-white/10 shadow-2xl">
+                            <Monitor size={64} className="text-indigo-300 drop-shadow-[0_0_20px_rgba(99,102,241,0.6)]" />
                         </div>
 
-                        <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-2">
+                        <h2 className="text-3xl font-bold text-white mb-2">
                             Ready to Capture
                         </h2>
-                        <p className="text-slate-500 mb-12">Configure your sources below and start recording</p>
+                        <p className="text-slate-400 mb-8">Configure your sources and quality, then start recording.</p>
 
-                        {/* Quick Settings Toggles */}
-                        <div className="flex gap-6 mb-12">
-                            {/* Mic Toggle */}
-                            <button
-                                onClick={() => setEnableMic(!enableMic)}
-                                className={`flex flex-col items-center gap-3 p-4 rounded-xl border transition-all duration-300 w-32 ${enableMic
-                                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-[0_0_20px_rgba(79,70,229,0.2)]'
-                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800 hover:border-slate-600'
-                                    }`}
-                            >
-                                {enableMic ? <Mic size={24} /> : <MicOff size={24} />}
-                                <span className="text-sm font-medium">Microphone</span>
-                            </button>
+                        {/* Control panel */}
+                        <div className="w-full max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-6 backdrop-blur-lg shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Toggles */}
+                                <div className="flex flex-col gap-4">
+                                    <span className="text-sm text-slate-400 font-semibold uppercase tracking-wide">Sources</span>
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            onClick={() => setEnableMic(!enableMic)}
+                                            className={`flex-1 min-w-[140px] flex flex-col gap-2 items-start p-4 rounded-xl border transition-all duration-300 ${enableMic
+                                                    ? 'bg-indigo-600/15 border-indigo-500/60 text-indigo-100 shadow-[0_0_25px_rgba(79,70,229,0.25)]'
+                                                    : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-2 text-base font-semibold">
+                                                {enableMic ? <Mic size={18} /> : <MicOff size={18} />}
+                                                Microphone
+                                            </div>
+                                            <span className="text-xs text-slate-500">{enableMic ? 'Included in mix' : 'Muted'}</span>
+                                        </button>
 
-                            {/* Cam Toggle */}
-                            <button
-                                onClick={() => setEnableCam(!enableCam)}
-                                className={`flex flex-col items-center gap-3 p-4 rounded-xl border transition-all duration-300 w-32 ${enableCam
-                                    ? 'bg-purple-600/20 border-purple-500 text-purple-300 shadow-[0_0_20px_rgba(147,51,234,0.2)]'
-                                    : 'bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-800 hover:border-slate-600'
-                                    }`}
-                            >
-                                {enableCam ? <Camera size={24} /> : <CameraOff size={24} />}
-                                <span className="text-sm font-medium">Camera</span>
-                            </button>
-                        </div>
+                                        <button
+                                            onClick={() => setEnableCam(!enableCam)}
+                                            className={`flex-1 min-w-[140px] flex flex-col gap-2 items-start p-4 rounded-xl border transition-all duration-300 ${enableCam
+                                                    ? 'bg-purple-600/15 border-purple-500/60 text-purple-100 shadow-[0_0_25px_rgba(147,51,234,0.25)]'
+                                                    : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-2 text-base font-semibold">
+                                                {enableCam ? <Camera size={18} /> : <CameraOff size={18} />}
+                                                Camera PIP
+                                            </div>
+                                            <span className="text-xs text-slate-500">{enableCam ? 'Picture-in-picture on' : 'Disabled'}</span>
+                                        </button>
+                                    </div>
 
-                        {/* Recording Quality Selector */}
-                        <div className="mb-6 flex items-center gap-3">
-                            <Gauge size={16} className="text-emerald-400" />
-                            <span className="text-slate-400 text-sm">Quality:</span>
-                            <div className="flex gap-1">
-                                {(['standard', 'high', 'ultra'] as RecordingQuality[]).map((q) => (
-                                    <button
-                                        key={q}
-                                        onClick={() => setRecordingQuality(q)}
-                                        className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-all ${recordingQuality === q
-                                                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
-                                                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
-                                            }`}
-                                    >
-                                        {q}
-                                    </button>
-                                ))}
+                                    {enableCam && (
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-slate-400 text-sm">Camera Position:</span>
+                                            <button
+                                                onClick={cyclePIPPosition}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <GripVertical size={14} />
+                                                <span className="text-sm capitalize">{pipPosition.replace('-', ' ')}</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Quality */}
+                                <div className="flex flex-col gap-4">
+                                    <span className="text-sm text-slate-400 font-semibold uppercase tracking-wide">Quality (FPS / Bitrate)</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                        {([
+                                            { key: 'standard', label: 'Standard', detail: '30fps • ~5Mbps' },
+                                            { key: 'high', label: 'High', detail: '30fps • ~10Mbps' },
+                                            { key: 'ultra', label: 'Ultra', detail: '60fps • ~20Mbps' },
+                                            { key: 'custom', label: 'Custom', detail: `${customFps}fps • ~${customBitrateMbps}Mbps` },
+                                        ] as { key: RecordingQuality; label: string; detail: string }[]).map((q) => (
+                                            <button
+                                                key={q.key}
+                                                onClick={() => setRecordingQuality(q.key)}
+                                                className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-300 ${recordingQuality === q.key
+                                                        ? 'bg-emerald-600/15 border-emerald-500/70 text-emerald-100 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
+                                                        : 'bg-slate-800/60 border-slate-700 text-slate-200 hover:border-slate-600'
+                                                    }`}
+                                            >
+                                                <div className="font-semibold text-base">{q.label}</div>
+                                                <div className="text-[11px] text-slate-400">{q.detail}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {recordingQuality === 'custom' && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <label className="flex flex-col gap-1 text-sm text-slate-300">
+                                                Frame Rate (fps)
+                                                <input
+                                                    type="number"
+                                                    min={15}
+                                                    max={120}
+                                                    value={customFps}
+                                                    onChange={(e) => setCustomFps(Math.min(120, Math.max(15, Number(e.target.value) || 0)))}
+                                                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                />
+                                            </label>
+                                            <label className="flex flex-col gap-1 text-sm text-slate-300">
+                                                Video Bitrate (Mbps)
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={50}
+                                                    step={0.5}
+                                                    value={customBitrateMbps}
+                                                    onChange={(e) => setCustomBitrateMbps(Math.min(50, Math.max(1, Number(e.target.value) || 0)))}
+                                                    className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                />
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-
-                        {/* PIP Position Selector (only show when cam enabled) */}
-                        {enableCam && (
-                            <div className="mb-8 flex items-center gap-3">
-                                <span className="text-slate-400 text-sm">Camera Position:</span>
-                                <button
-                                    onClick={cyclePIPPosition}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors"
-                                >
-                                    <GripVertical size={14} />
-                                    <span className="text-sm capitalize">{pipPosition.replace('-', ' ')}</span>
-                                </button>
-                            </div>
-                        )}
 
                         {/* Start Button */}
-                        <Button
-                            onClick={startRecording}
-                            disabled={isPreparing}
-                            size="lg"
-                            className="w-64 h-16 text-xl shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] transition-all transform hover:scale-105"
-                        >
-                            {isPreparing ? (
-                                <span className="flex items-center gap-2">
-                                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Initializing...
-                                </span>
-                            ) : (
-                                <>
-                                    <Disc className="w-6 h-6 fill-current mr-2" />
-                                    Start Recording
-                                </>
-                            )}
-                        </Button>
+                        <div className="mt-10">
+                            <Button
+                                onClick={startRecording}
+                                disabled={isPreparing}
+                                size="lg"
+                                className="w-64 h-16 text-xl shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] transition-all transform hover:scale-105"
+                            >
+                                {isPreparing ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Initializing...
+                                    </span>
+                                ) : (
+                                    <>
+                                        <Disc className="w-6 h-6 fill-current mr-2" />
+                                        Start Recording
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 )}
 

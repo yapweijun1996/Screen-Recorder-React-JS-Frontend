@@ -2,6 +2,7 @@
   "name": "screenclip-pro",
   "private": true,
   "version": "0.0.0",
+  "author": "yapweijun1996",
   "type": "module",
   "scripts": {
     "dev": "vite",
