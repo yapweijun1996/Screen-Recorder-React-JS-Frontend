@@ -74,9 +74,8 @@ class FFmpegService {
         });
 
         // Resolve asset base relative to the page URL so we don't end up under /assets/ when loaded from a bundled chunk.
-        const basePath = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
-            .pathname
-            .replace(/\/$/, '');
+        // Use relative base so bundles served from subfolders still resolve correctly.
+        const basePath = '.';
         const mtBaseURL = `${basePath}/ffmpeg-mt`;
         const baseURL = `${basePath}/ffmpeg`;
         const bridgeWorkerURL = `${basePath}/ffmpeg/worker.js`; // the ffmpeg control worker shipped with @ffmpeg/ffmpeg
