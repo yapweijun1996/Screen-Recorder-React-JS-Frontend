@@ -65,6 +65,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
 
   const togglePlay = () => {
     if (!videoRef.current) return;
+    if (videoRef.current.readyState < HTMLMediaElement.HAVE_METADATA) return;
+
     if (isPlaying) {
       videoRef.current.pause();
     } else {
@@ -77,11 +79,42 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
+  const safeDuration = () => {
+    const vidDur = videoRef.current?.duration;
+    if (Number.isFinite(vidDur) && vidDur > 0) {
+      return vidDur;
     }
+    if (Number.isFinite(videoMetadata.duration) && videoMetadata.duration > 0) {
+      return videoMetadata.duration;
+    }
+    return 0;
+  };
+
+  const clampTime = (time: number) => {
+    const duration = safeDuration();
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return 0;
+    }
+    const maxSeek = Math.max(duration - 0.01, 0);
+    return Math.min(Math.max(time, 0), maxSeek);
+  };
+
+  const clampRange = (start: number, end: number): TrimRange => {
+    const duration = safeDuration();
+    const maxVal = duration > 0 ? duration : Math.max(end, start, 1);
+    const safeEnd = Math.min(end, maxVal);
+    const safeStart = Math.max(0, Math.min(start, safeEnd));
+    return { start: safeStart, end: Math.max(safeStart, safeEnd) };
+  };
+
+  const handleSeek = (time: number) => {
+    const duration = safeDuration();
+    if (!Number.isFinite(duration) || duration <= 0 || !videoRef.current) {
+      return;
+    }
+    const safeTime = clampTime(time);
+    videoRef.current.currentTime = safeTime;
+    setCurrentTime(safeTime);
   };
 
   const handleExport = async (mode: 'full' | 'trimmed') => {
@@ -107,13 +140,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
 
   // Determine the effective max duration for the slider.
   // We prefer the video element's duration if valid, otherwise fallback to the metadata passed from Recorder
-  const getSafeDuration = () => {
-      const vidDur = videoRef.current?.duration;
-      if (vidDur && Number.isFinite(vidDur)) return vidDur;
-      return videoMetadata.duration;
-  };
-
-  const maxDuration = getSafeDuration();
+  const maxDuration = Math.max(safeDuration(), range.end, 1);
 
   return (
     <div className="flex flex-col h-full w-full max-w-5xl mx-auto p-4 md:p-6 gap-6 animate-fade-in">
@@ -182,14 +209,14 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             </div>
             
             <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
-              <RangeSlider
-                min={0}
-                max={maxDuration || 100} // Fallback to 100 if duration is 0/null to prevent crash
-                start={range.start}
-                end={range.end}
-                onChange={(s, e) => setRange({ start: s, end: e })}
-                onPreviewRequest={handleSeek}
-              />
+                <RangeSlider
+                  min={0}
+                  max={maxDuration}
+                  start={range.start}
+                  end={range.end}
+                  onChange={(s, e) => setRange(clampRange(s, e))}
+                  onPreviewRequest={handleSeek}
+                />
               <div className="flex justify-between text-xs text-slate-500 mt-2 font-mono">
                 <span>Start: {formatTime(range.start)}</span>
                 <span>End: {formatTime(range.end)}</span>
