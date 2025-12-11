@@ -73,7 +73,10 @@ class FFmpegService {
             this.onProgressCallback?.({ ratio: progress, time });
         });
 
-        const basePath = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+        // Resolve asset base relative to the page URL so we don't end up under /assets/ when loaded from a bundled chunk.
+        const basePath = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+            .pathname
+            .replace(/\/$/, '');
         const mtBaseURL = `${basePath}/ffmpeg-mt`;
         const baseURL = `${basePath}/ffmpeg`;
         const bridgeWorkerURL = `${basePath}/ffmpeg/worker.js`; // the ffmpeg control worker shipped with @ffmpeg/ffmpeg
