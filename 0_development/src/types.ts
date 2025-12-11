@@ -88,6 +88,7 @@ export interface ExportOptions {
     quality: VideoQualityPreset;
     resolution?: 'original' | '720p' | '1080p' | '4k';
     format?: 'mp4' | 'webm';
+    fps?: number; // Target frame rate for export
 }
 
 // Recording Quality
@@ -103,16 +104,16 @@ export const RECORDING_PRESETS: Record<RecordingQuality, RecordingConfig> = {
     standard: {
         quality: 'standard',
         frameRate: 30,
-        videoBitsPerSecond: 2_500_000,
+        videoBitsPerSecond: 4_000_000, // 4 Mbps
     },
     high: {
         quality: 'high',
         frameRate: 30,
-        videoBitsPerSecond: 5_000_000,
+        videoBitsPerSecond: 8_000_000, // 8 Mbps
     },
     ultra: {
         quality: 'ultra',
         frameRate: 60,
-        videoBitsPerSecond: 10_000_000,
+        videoBitsPerSecond: 15_000_000, // 15 Mbps
     }
 };

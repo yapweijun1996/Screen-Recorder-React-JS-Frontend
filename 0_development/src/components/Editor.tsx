@@ -4,7 +4,7 @@ import { formatTime, generateFileName, formatBytes } from '../utils/format';
 import { RangeSlider } from './RangeSlider';
 import { Button } from './Button';
 import { ffmpegService } from '../services/ffmpegService';
-import { Play, Scissors, Download, RotateCcw, FileVideo, Loader2, Settings, ChevronDown, Zap, Sparkles, Crown, Film } from 'lucide-react';
+import { Play, Scissors, Download, RotateCcw, FileVideo, Loader2, Settings, ChevronDown, Zap, Sparkles, Crown, Film, Maximize, Minimize } from 'lucide-react';
 
 interface EditorProps {
     videoMetadata: VideoMetadata;
@@ -13,6 +13,7 @@ interface EditorProps {
 
 type Resolution = 'original' | '720p' | '1080p' | '4k';
 type ExportFormat = 'mp4' | 'webm';
+type FrameRate = 24 | 30 | 60;
 
 export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,12 +27,14 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
     const [playbackError, setPlaybackError] = useState<string | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Export Configuration State
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [selectedQuality, setSelectedQuality] = useState<VideoQualityPreset>('medium');
     const [selectedResolution, setSelectedResolution] = useState<Resolution>('original');
     const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('mp4');
+    const [selectedFps, setSelectedFps] = useState<FrameRate>(30);
 
     // Subscribe to FFmpeg progress
     useEffect(() => {
@@ -48,6 +51,15 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             }
         });
     }, [processingStartTime]);
+
+    // Track fullscreen changes
+    useEffect(() => {
+        const handler = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
 
     // Revoke generated blob URLs when component unmounts or new exports are created
     useEffect(() => {
@@ -117,6 +129,16 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         }
     };
 
+    const toggleFullscreen = () => {
+        const target = videoRef.current;
+        if (!target) return;
+        if (!document.fullscreenElement) {
+            target.requestFullscreen?.().catch((err) => console.warn('Enter fullscreen failed', err));
+        } else {
+            document.exitFullscreen?.().catch((err) => console.warn('Exit fullscreen failed', err));
+        }
+    };
+
     const handleExport = async (mode: 'full' | 'trimmed') => {
         if (playbackError || videoMetadata.duration <= 0) {
             setPlaybackError('Cannot export: recording is empty or corrupted.');
@@ -139,6 +161,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                 quality: selectedQuality,
                 resolution: selectedResolution,
                 format: selectedFormat,
+                fps: selectedFps,
                 ...(mode === 'trimmed' && {
                     trimStart: range.start,
                     trimEnd: range.end
@@ -224,6 +247,16 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                             controls={!!playbackError}
                             aria-disabled={!!playbackError}
                         />
+                        {/* Fullscreen toggle */}
+                        {!playbackError && (
+                            <button
+                                onClick={toggleFullscreen}
+                                className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 border border-white/20 transition"
+                                title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                            >
+                                {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                            </button>
+                        )}
                         {/* Center Play Button Overlay */}
                         {!isPlaying && !playbackError && (
                             <div
@@ -362,6 +395,26 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+
+                                {/* Frame Rate */}
+                                <div className="space-y-2">
+                                    <label className="text-xs text-slate-400 uppercase tracking-wide">Frame Rate</label>
+                                    <div className="flex gap-2">
+                                        {([24, 30, 60] as FrameRate[]).map((fps) => (
+                                            <button
+                                                key={fps}
+                                                onClick={() => setSelectedFps(fps)}
+                                                className={`flex-1 py-2 px-3 rounded-lg border text-sm transition-all ${selectedFps === fps
+                                                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
+                                                        : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600'
+                                                    }`}
+                                            >
+                                                {fps} fps
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-slate-500">帧率越高越流畅，但处理更慢、文件更大。</p>
                                 </div>
 
                                 {/* Format */}

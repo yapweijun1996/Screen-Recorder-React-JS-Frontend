@@ -73,14 +73,38 @@ class FFmpegService {
             this.onProgressCallback?.({ ratio: progress, time });
         });
 
-        try {
-            const baseURL = `${(import.meta.env.BASE_URL ?? '/').replace(/\/$/, '')}/ffmpeg`;
-            await this.ffmpeg.load({
-                classWorkerURL: `${baseURL}/worker.js`,
-                coreURL: `${baseURL}/ffmpeg-core.js`,
-                wasmURL: `${baseURL}/ffmpeg-core.wasm`,
-                workerURL: `${baseURL}/worker.js`,
+        const basePath = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+        const mtBaseURL = `${basePath}/ffmpeg-mt`;
+        const baseURL = `${basePath}/ffmpeg`;
+        const bridgeWorkerURL = `${basePath}/ffmpeg/worker.js`; // the ffmpeg control worker shipped with @ffmpeg/ffmpeg
+
+        // Prefer multi-threaded core; fall back to the single-thread build if it fails.
+        const loadWithConfig = async (cfgBase: string, threaded: boolean) => {
+            console.info(`[FFmpeg] Loading ${threaded ? 'multi' : 'single'}-thread core from ${cfgBase}`);
+            await this.ffmpeg!.load({
+                // Use the upstream worker bridge and swap core binaries
+                classWorkerURL: bridgeWorkerURL,
+                coreURL: `${cfgBase}/ffmpeg-core.js`,
+                wasmURL: `${cfgBase}/ffmpeg-core.wasm`,
+                workerURL: `${cfgBase}/${threaded ? 'ffmpeg-core.worker.js' : 'worker.js'}`,
             });
+        };
+
+        try {
+            console.time('[FFmpeg] multi-thread load');
+            await loadWithConfig(mtBaseURL, true);
+            console.timeEnd('[FFmpeg] multi-thread load');
+            console.info('[FFmpeg] Loaded multi-threaded core');
+            this.setStatus('loaded');
+            return;
+        } catch (mtError) {
+            console.warn('[FFmpeg] Multi-thread load failed, falling back to single-threaded core', mtError);
+        }
+
+        try {
+            console.time('[FFmpeg] single-thread load');
+            await loadWithConfig(baseURL, false);
+            console.timeEnd('[FFmpeg] single-thread load');
             this.setStatus('loaded');
         } catch (error) {
             console.error('Failed to load FFmpeg:', error);
@@ -144,9 +168,16 @@ class FFmpegService {
         // Resolution scaling
         const resolution = options.resolution || 'original';
         const resConfig = RESOLUTION_MAP[resolution];
+        const targetFps = Number.isFinite(options.fps) && options.fps! > 0 ? Math.round(options.fps!) : 30;
+        const filters: string[] = [];
         if (resConfig) {
             // Scale while maintaining aspect ratio, pad if necessary
-            args.push('-vf', `scale=${resConfig.width}:${resConfig.height}:force_original_aspect_ratio=decrease,pad=${resConfig.width}:${resConfig.height}:(ow-iw)/2:(oh-ih)/2`);
+            filters.push(`scale=${resConfig.width}:${resConfig.height}:force_original_aspect_ratio=decrease,pad=${resConfig.width}:${resConfig.height}:(ow-iw)/2:(oh-ih)/2`);
+        }
+        // Normalize frame cadence to avoid inflated duration from odd timebases
+        filters.push(`fps=${targetFps}`);
+        if (filters.length > 0) {
+            args.push('-vf', filters.join(','));
         }
 
         // Video codec and quality settings

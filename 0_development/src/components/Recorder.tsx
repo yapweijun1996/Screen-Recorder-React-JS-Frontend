@@ -77,9 +77,9 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
             // 1. Get Screen Stream (Base)
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                    frameRate: { ideal: 60 }
+                    width: { ideal: 2560, max: 3840 },
+                    height: { ideal: 1440, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 }
                 },
                 audio: true // System Audio
             });
