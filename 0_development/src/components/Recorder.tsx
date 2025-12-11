@@ -322,7 +322,7 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center w-full h-full p-6 animate-in fade-in zoom-in duration-300">
+        <div className="flex flex-col items-center justify-center w-full h-full p-4 sm:p-6 animate-in fade-in zoom-in duration-300">
 
             {/* Main Preview / Control Area */}
             <div className="relative w-full max-w-5xl aspect-video bg-slate-950/50 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 backdrop-blur-sm group">
@@ -339,10 +339,10 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                         <h2 className="text-3xl font-bold text-white mb-2">
                             Ready to Capture
                         </h2>
-                        <p className="text-slate-400 mb-8">Configure your sources and quality, then start recording.</p>
+                        <p className="text-slate-400 mb-8 text-center px-4">Configure your sources and quality, then start recording.</p>
 
                         {/* Control panel */}
-                        <div className="w-full max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-6 backdrop-blur-lg shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
+                        <div className="w-full max-w-4xl bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-6 backdrop-blur-lg shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Toggles */}
                                 <div className="flex flex-col gap-4">
@@ -394,7 +394,7 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                                 {/* Quality */}
                                 <div className="flex flex-col gap-4">
                                     <span className="text-sm text-slate-400 font-semibold uppercase tracking-wide">Quality (FPS / Bitrate)</span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                                         {([
                                             { key: 'standard', label: 'Standard', detail: '30fps • ~5Mbps' },
                                             { key: 'high', label: 'High', detail: '30fps • ~10Mbps' },
@@ -446,12 +446,12 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                         </div>
 
                         {/* Start Button */}
-                        <div className="mt-10">
+                        <div className="mt-10 w-full max-w-md px-2">
                             <Button
                                 onClick={startRecording}
                                 disabled={isPreparing}
                                 size="lg"
-                                className="w-64 h-16 text-xl shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] transition-all transform hover:scale-105"
+                                className="w-full sm:w-64 h-16 text-xl shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] transition-all transform hover:scale-105"
                             >
                                 {isPreparing ? (
                                     <span className="flex items-center gap-2">
