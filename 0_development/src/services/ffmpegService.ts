@@ -9,12 +9,22 @@ interface FFmpegProgress {
     time?: number;
 }
 
-// Resolution mappings
-const RESOLUTION_MAP = {
-    'original': null, // No scaling
+/** Resolution mappings */
+const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> = {
+    original: null, // No scaling
     '720p': { width: 1280, height: 720 },
     '1080p': { width: 1920, height: 1080 },
     '4k': { width: 3840, height: 2160 },
+};
+
+/**
+ * Convert @ffmpeg/ffmpeg FileData (may be backed by SharedArrayBuffer) into an ArrayBuffer-backed Uint8Array,
+ * so it can be safely used as a BlobPart without TS type issues.
+ */
+const toArrayBufferUint8 = (data: Uint8Array): Uint8Array<ArrayBuffer> => {
+    const ab = new ArrayBuffer(data.byteLength);
+    new Uint8Array(ab).set(data);
+    return new Uint8Array(ab);
 };
 
 class FFmpegService {
@@ -73,12 +83,18 @@ class FFmpegService {
             this.onProgressCallback?.({ ratio: progress, time });
         });
 
-        // Resolve asset base relative to the page URL so we don't end up under /assets/ when loaded from a bundled chunk.
-        // Use relative base so bundles served from subfolders still resolve correctly.
-        const basePath = '.';
-        const mtBaseURL = `${basePath}/ffmpeg-mt`;
-        const baseURL = `${basePath}/ffmpeg`;
-        const bridgeWorkerURL = `${basePath}/ffmpeg/worker.js`; // the ffmpeg control worker shipped with @ffmpeg/ffmpeg
+        // IMPORTANT: use BASE_URL so worker/core files resolve from site root, not from /assets/ (bundled chunks).
+        // Example: in production, chunks are served from /assets/*.js; using "./ffmpeg/worker.js" would incorrectly
+        // resolve to /assets/ffmpeg/worker.js and return index.html (text/html) -> MIME error.
+        const basePath = import.meta.env.BASE_URL || '/';
+        const baseURLObject = new URL(basePath, window.location.origin);
+        // Force a root-anchored path ("/" or "/app/") so worker URLs don't resolve relative to chunk URLs like /assets/*
+        const normalizedBase = baseURLObject.pathname.endsWith('/')
+            ? baseURLObject.pathname
+            : `${baseURLObject.pathname}/`;
+        const mtBaseURL = `${normalizedBase}ffmpeg-mt`;
+        const baseURL = `${normalizedBase}ffmpeg`;
+        const bridgeWorkerURL = `${normalizedBase}ffmpeg/worker.js`; // control worker shipped with @ffmpeg/ffmpeg
 
         // Prefer multi-threaded core; fall back to the single-thread build if it fails.
         const loadWithConfig = async (cfgBase: string, threaded: boolean) => {
@@ -221,13 +237,17 @@ class FFmpegService {
 
         // 4. Read result
         const data = await ffmpeg.readFile(outputName);
+        if (typeof data === 'string') {
+            throw new Error('FFmpeg output is a string; expected binary data.');
+        }
 
         // Cleanup
         await ffmpeg.deleteFile(inputName);
         await ffmpeg.deleteFile(outputName);
 
         const mimeType = format === 'mp4' ? 'video/mp4' : 'video/webm';
-        return new Blob([data], { type: mimeType });
+        const u8 = toArrayBufferUint8(data);
+        return new Blob([u8], { type: mimeType });
     }
 
     /**
@@ -257,11 +277,15 @@ class FFmpegService {
         await ffmpeg.exec(args);
 
         const data = await ffmpeg.readFile(outputName);
+        if (typeof data === 'string') {
+            throw new Error('FFmpeg output is a string; expected binary data.');
+        }
 
         await ffmpeg.deleteFile(inputName);
         await ffmpeg.deleteFile(outputName);
 
-        return new Blob([data], { type: 'video/webm' });
+        const u8 = toArrayBufferUint8(data);
+        return new Blob([u8], { type: 'video/webm' });
     }
 
     getStatus(): FFmpegLoadStatus {
