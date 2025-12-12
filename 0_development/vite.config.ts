@@ -4,9 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  // Use repo-relative base path for production (GitHub Pages) so assets resolve under /Screen-Recorder-React-JS-Frontend/
+  const base = mode === 'production' ? '/Screen-Recorder-React-JS-Frontend/' : '/';
   return {
     root: '.',
-    base: './',
+    base,
     server: {
       port: 3000,
       host: '0.0.0.0',
