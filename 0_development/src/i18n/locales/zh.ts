@@ -152,6 +152,17 @@ const zh: TranslationTable = {
     'editor.timeline.zoomIn': '放大',
     'editor.timeline.zoomOut': '缩小',
     'editor.timeline.zoomReset': '重置缩放',
+
+    // 素材库面板（Final Cut Pro 风格）
+    'editor.library.title': '素材库',
+    'editor.library.videos': '视频',
+    'editor.library.audio': '音频',
+    'editor.library.images': '图片',
+    'editor.library.currentMedia': '当前素材',
+    'editor.library.editStats': '编辑统计',
+    'editor.library.segments': '片段数',
+    'editor.library.selectedDuration': '已选时长',
+    'editor.library.hint': '拖拽素材到时间轴 (即将推出)',
 };
 
 export default zh;

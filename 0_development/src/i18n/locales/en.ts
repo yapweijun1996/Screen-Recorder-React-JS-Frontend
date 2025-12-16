@@ -152,6 +152,17 @@ const en: TranslationTable = {
     'editor.timeline.zoomIn': 'Zoom In',
     'editor.timeline.zoomOut': 'Zoom Out',
     'editor.timeline.zoomReset': 'Reset Zoom',
+
+    // Library Panel (Final Cut Pro style)
+    'editor.library.title': 'Media Library',
+    'editor.library.videos': 'Videos',
+    'editor.library.audio': 'Audio',
+    'editor.library.images': 'Images',
+    'editor.library.currentMedia': 'Current Media',
+    'editor.library.editStats': 'Edit Stats',
+    'editor.library.segments': 'Segments',
+    'editor.library.selectedDuration': 'Selected',
+    'editor.library.hint': 'Drag media to timeline (coming soon)',
 };
 
 export default en;
