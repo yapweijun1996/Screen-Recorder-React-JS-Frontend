@@ -49,14 +49,14 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
     const { t } = useI18n();
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2">
             {playbackError && (
-                <div className="p-4 bg-red-900/30 border border-red-500/40 rounded-xl text-red-100 text-sm">
+                <div className="p-3 bg-red-900/30 border border-red-500/40 rounded-lg text-red-100 text-sm">
                     {playbackError}
                 </div>
             )}
 
-            <div className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
                 <div className="relative aspect-video bg-black group">
                     <video
                         ref={videoRef as React.RefObject<HTMLVideoElement>}
@@ -113,7 +113,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                     </div>
                 </div>
 
-                <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-slate-400 text-sm">
+                <div className="px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-slate-400 text-xs border-t border-slate-800">
                     <div className="flex items-center gap-2 font-mono">
                         <span className="text-indigo-400">{currentTimeLabel}</span>
                         <span>/</span>

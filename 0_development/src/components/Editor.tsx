@@ -193,13 +193,14 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     })();
 
     return (
-        <div className="w-full flex-1 flex flex-col px-4 sm:px-6 py-4 sm:py-6 animate-fade-in min-h-0">
-            <div className="mx-auto w-full max-w-7xl flex-1 flex flex-col gap-5 min-h-0">
+        <div className="w-full flex-1 flex flex-col px-2 sm:px-4 py-3 animate-fade-in min-h-0">
+            <div className="mx-auto w-full max-w-7xl flex-1 flex flex-col gap-3 min-h-0">
                 <EditorHeader onReset={onReset} />
 
-                {/* 上：预览（左）+ 设置/导出（右） */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start flex-1 min-h-0">
-                    <section className="lg:col-span-8 xl:col-span-9 min-h-0">
+                {/* 上：预览（左）+ 工具/导出（右） */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start flex-1 min-h-0">
+                    {/* 播放器 - 占据更大空间 */}
+                    <section className="lg:col-span-9 min-h-0">
                         <EditorPlayer
                             videoRef={videoRef}
                             src={videoMetadata.url}
@@ -229,7 +230,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         />
                     </section>
 
-                    <aside className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-20">
+                    {/* 右侧工具栏 - 更紧凑 */}
+                    <aside className="lg:col-span-3 lg:sticky lg:top-20">
                         <EditorExportPanel
                             showAdvanced={showAdvanced}
                             onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
@@ -260,7 +262,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                     </aside>
                 </div>
 
-                {/* 下：时间轴/剪辑（更接近视频编辑器布局） */}
+                {/* 下：专业时间轴（类似 Premiere 底部布局） */}
                 <section className="min-h-0">
                     <EditorTrimPanel
                         playbackError={playbackError}

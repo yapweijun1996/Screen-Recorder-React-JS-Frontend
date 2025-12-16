@@ -79,40 +79,40 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
     const { t } = useI18n();
 
     return (
-        <aside className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-20">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur">
-                <div className="p-4 border-b border-slate-800">
-                    <div className="flex items-center justify-between gap-3">
+        <aside className="lg:col-span-3 lg:sticky lg:top-20">
+            <div className="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-2xl backdrop-blur">
+                {/* 顶部标题栏 */}
+                <div className="px-3 py-2 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-900/80">
+                    <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                            <div className="text-sm font-semibold text-white">{t('editor.export.title')}</div>
-                            <div className="text-xs text-slate-400">
+                            <div className="text-xs font-semibold text-white">{t('editor.export.title')}</div>
+                            <div className="text-[10px] text-slate-400">
                                 {t(`quality.${selectedQuality}.label`)} • {selectedFormat.toUpperCase()}
                             </div>
                         </div>
 
                         <button
-                            className="flex items-center gap-2 text-xs text-slate-300 hover:text-white transition-colors"
+                            className="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white transition-colors"
                             onClick={onToggleAdvanced}
                             type="button"
                         >
-                            <Settings size={16} className="text-purple-300" />
-                            {t('editor.export.settings')}
-                            <ChevronDown size={16} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                            <Settings size={14} className="text-purple-300" />
+                            <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
                 </div>
 
-                <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="p-3 space-y-3 max-h-[50vh] overflow-y-auto">
                     {/* Quick preset helper */}
-                    <div className="flex items-center justify-between gap-2 bg-slate-950/40 border border-slate-800 rounded-xl px-3 py-2">
-                        <div className="text-xs text-slate-400">
+                    <div className="flex items-center justify-between gap-2 bg-slate-950/50 border border-slate-800 rounded-lg px-2 py-1.5">
+                        <div className="text-[10px] text-slate-400">
                             {t('editor.export.quickHint')}
                         </div>
                         <Button
                             variant="secondary"
                             size="sm"
                             onClick={onApplyHighQualityPreset}
-                            className="text-xs px-3"
+                            className="text-[10px] px-2 py-0.5"
                             disabled={isProcessing}
                         >
                             {t('editor.export.quickButton')}
@@ -120,7 +120,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                     </div>
 
                     {/* Estimated size */}
-                    <div className="flex items-center justify-between text-sm text-slate-400">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
                         <span>{t('editor.export.estimated')}</span>
                         <span className="text-indigo-300 font-medium">{estimatedSize}</span>
                     </div>
@@ -154,7 +154,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                     />
                 </div>
 
-                <div className="p-4 border-t border-slate-800 bg-slate-900/70">
+                <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/40">
                     <EditorExportFooterActions
                         exportUrl={exportUrl}
                         playbackError={playbackError}

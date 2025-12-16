@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { RangeSlider } from '../RangeSlider';
 import { Button } from '../Button';
-import { Play, Scissors, Trash2, Undo2 } from 'lucide-react';
+import { Play, Scissors, Trash2, Undo2, Hand, MousePointer2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { formatTime } from '../../utils/format';
-import { SegmentsTimeline } from './SegmentsTimeline';
+import { TimelineRuler } from './TimelineRuler';
+import { TimelineTrack } from './TimelineTrack';
+import { Playhead } from './Playhead';
 
 interface EditorTrimPanelProps {
     playbackError: string | null;
@@ -95,101 +97,149 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
     const canRemoveRange = !playbackError && removeSelectedDuration >= 0.1 && removeIntersectsKept;
 
     return (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-            <div className="flex items-center justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                    <Scissors size={18} className="text-indigo-400" />
-                    <h3 className="font-semibold text-slate-200">{t('editor.trim.title')}</h3>
-                </div>
-                <div className="text-xs text-slate-500 font-mono">
-                    {t('editor.trim.totalSelected')}: <span className="text-indigo-300">{totalSelectedLabel}</span>
-                </div>
-            </div>
+        <div className="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+            {/* 顶部工具栏 - 紧凑布局 */}
+            <div className="px-3 py-2 bg-gradient-to-b from-slate-900 to-slate-900/80 border-b border-slate-800">
+                <div className="flex items-center justify-between gap-2">
+                    {/* 左侧：标题 + 统计 */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                            <Scissors size={16} className="text-indigo-400" />
+                            <h3 className="font-semibold text-sm text-slate-200">{t('editor.trim.title')}</h3>
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
+                            {t('editor.trim.totalSelected')}: <span className="text-indigo-300 font-semibold">{totalSelectedLabel}</span>
+                        </div>
+                    </div>
 
-            {/* Mode toggle */}
-            <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="inline-flex rounded-xl border border-slate-800 bg-slate-950/40 p-1">
-                    <button
-                        type="button"
-                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${mode === 'keep'
-                            ? 'bg-slate-800 text-white'
-                            : 'text-slate-300 hover:text-white'
-                            }`}
-                        onClick={() => setMode('keep')}
-                        disabled={!!playbackError}
-                    >
-                        {t('editor.trim.mode.keep')}
-                    </button>
-                    <button
-                        type="button"
-                        className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${mode === 'remove'
-                            ? 'bg-slate-800 text-white'
-                            : 'text-slate-300 hover:text-white'
-                            }`}
-                        onClick={() => setMode('remove')}
-                        disabled={!!playbackError}
-                    >
-                        {t('editor.trim.mode.remove')}
-                    </button>
-                </div>
+                    {/* 右侧：模式切换 + 撤销 */}
+                    <div className="flex items-center gap-2">
+                        {/* 模式切换 */}
+                        <div className="inline-flex rounded-lg border border-slate-800 bg-slate-950/60 p-0.5">
+                            <button
+                                type="button"
+                                className={`px-2.5 py-1 text-xs rounded-md transition-all ${mode === 'keep'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-400 hover:text-white'
+                                    }`}
+                                onClick={() => setMode('keep')}
+                                disabled={!!playbackError}
+                            >
+                                <MousePointer2 size={12} className="inline mr-1" />
+                                {t('editor.trim.mode.keep')}
+                            </button>
+                            <button
+                                type="button"
+                                className={`px-2.5 py-1 text-xs rounded-md transition-all ${mode === 'remove'
+                                    ? 'bg-red-600 text-white shadow-sm'
+                                    : 'text-slate-400 hover:text-white'
+                                    }`}
+                                onClick={() => setMode('remove')}
+                                disabled={!!playbackError}
+                            >
+                                <Scissors size={12} className="inline mr-1" />
+                                {t('editor.trim.mode.remove')}
+                            </button>
+                        </div>
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs"
-                    disabled={!canUndo}
-                    onClick={onUndo}
-                    title={t('editor.trim.undo')}
-                >
-                    <Undo2 size={14} /> {t('editor.trim.undo')}
-                </Button>
-            </div>
-
-            <div
-                className={`mb-3 text-[11px] ${mode === 'remove' && !removeIntersectsKept
-                    ? 'text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2'
-                    : 'text-slate-500'
-                    }`}
-            >
-                {mode === 'remove'
-                    ? (removeIntersectsKept ? t('editor.trim.removeHint') : t('editor.trim.removeNoOverlap'))
-                    : t('editor.trim.keepHint')}
-            </div>
-
-            {/* Segments list */}
-            <div className="mb-3 flex flex-wrap gap-2">
-                {segments.map((seg, idx) => {
-                    const isActive = idx === selectedIndex;
-                    const label = `${formatTime(seg.start)} - ${formatTime(seg.end)}`;
-                    return (
-                        <button
-                            key={`${seg.start}-${seg.end}-${idx}`}
-                            type="button"
-                            onClick={() => onSelectIndex(idx)}
-                            disabled={!!playbackError}
-                            className={`px-3 py-1.5 rounded-full border text-xs font-mono transition-colors ${isActive
-                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
-                                : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
-                                }`}
-                            title={label}
+                        {/* 撤销按钮 */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs px-2 py-1"
+                            disabled={!canUndo}
+                            onClick={onUndo}
+                            title={t('editor.trim.undo')}
                         >
-                            #{idx + 1} {label}
-                        </button>
-                    );
-                })}
+                            <Undo2 size={14} />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* 提示文本 */}
+                <div className={`mt-2 text-[11px] px-2 py-1.5 rounded-md ${mode === 'remove' && !removeIntersectsKept
+                    ? 'text-amber-200 bg-amber-500/10 border border-amber-500/20'
+                    : 'text-slate-500 bg-slate-950/30'
+                    }`}>
+                    {mode === 'remove'
+                        ? (removeIntersectsKept ? t('editor.trim.removeHint') : t('editor.trim.removeNoOverlap'))
+                        : t('editor.trim.keepHint')}
+                </div>
             </div>
 
-            <SegmentsTimeline
-                maxDuration={maxDuration}
-                segments={segments}
-                selectedIndex={selectedIndex}
-                currentTime={currentTime}
-                mode={mode}
-                removeRange={mode === 'remove' ? removeRange : undefined}
-                onSeek={(time) => onPreviewRequest(time)}
-            />
+            {/* 片段列表（可选 - 可折叠或隐藏以节省空间） */}
+            {segments.length > 1 && (
+                <div className="px-3 py-2 flex flex-wrap gap-1.5 bg-slate-950/30 border-b border-slate-800">
+                    {segments.map((seg, idx) => {
+                        const isActive = idx === selectedIndex;
+                        const label = `${formatTime(seg.start)}-${formatTime(seg.end)}`;
+                        return (
+                            <button
+                                key={`${seg.start}-${seg.end}-${idx}`}
+                                type="button"
+                                onClick={() => onSelectIndex(idx)}
+                                disabled={!!playbackError}
+                                className={`px-2 py-1 rounded-md border text-[10px] font-mono transition-all ${isActive
+                                    ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 ring-1 ring-indigo-400/50'
+                                    : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                                    }`}
+                                title={label}
+                            >
+                                #{idx + 1}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
-            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800">
+            {/* 专业时间轴引擎 (Timeline Engine) */}
+            <div className="relative bg-slate-950 rounded-lg border border-slate-800 overflow-hidden shadow-inner">
+                {/* 时间刻度尺 */}
+                <TimelineRuler maxDuration={maxDuration} viewportWidth={800} />
+
+                {/* 轨道容器 */}
+                <div className="relative">
+                    <TimelineTrack
+                        maxDuration={maxDuration}
+                        segments={segments}
+                        selectedIndex={selectedIndex}
+                        onSelectSegment={onSelectIndex}
+                    />
+
+                    {/* 播放头 */}
+                    <Playhead
+                        currentTime={currentTime}
+                        maxDuration={maxDuration}
+                        trackHeight={48}
+                    />
+
+                    {/* 点击时间轴跳转 */}
+                    <div
+                        className="absolute inset-0 cursor-pointer"
+                        onPointerDown={(e) => {
+                            if (playbackError) return;
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const p01 = (e.clientX - rect.left) / rect.width;
+                            const time = Math.max(0, Math.min(maxDuration, p01 * maxDuration));
+                            onPreviewRequest(time);
+                        }}
+                    />
+
+                    {/* Remove 模式：红色叠加层 */}
+                    {mode === 'remove' && removeRange && (
+                        <div
+                            className="absolute top-0 bottom-0 bg-red-500/20 border-x-2 border-red-400 pointer-events-none"
+                            style={{
+                                left: `${(Math.min(removeRange.start, removeRange.end) / Math.max(maxDuration, 0.0001)) * 100}%`,
+                                width: `${(Math.abs(removeRange.end - removeRange.start) / Math.max(maxDuration, 0.0001)) * 100}%`,
+                            }}
+                        />
+                    )}
+                </div>
+            </div>
+
+            {/* 底部控制区 */}
+            <div className="px-3 py-2 bg-slate-900/50">
                 <RangeSlider
                     min={0}
                     max={maxDuration || 100}
@@ -206,7 +256,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                     onPreviewRequest={playbackError ? undefined : onPreviewRequest}
                     variant={mode === 'remove' ? 'remove' : 'keep'}
                 />
-                <div className="flex justify-between text-[11px] text-slate-500 mt-2 font-mono">
+                <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 font-mono">
                     <span>
                         {mode === 'remove'
                             ? `${t('editor.trim.deleteRange')}: ${formatTime(removeRange.start)} - ${formatTime(removeRange.end)}`
@@ -220,64 +270,65 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                 </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                    disabled={!!playbackError}
-                    onClick={onPreviewEdited}
-                >
-                    <Play size={14} /> {t('editor.trim.preview')}
-                </Button>
-
-                {mode === 'remove' ? (
+            {/* 动作按钮区 */}
+            <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/40">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
                     <Button
-                        variant="danger"
+                        variant="secondary"
                         size="sm"
-                        className="w-full"
-                        disabled={!canRemoveRange}
-                        onClick={() => onRemoveRange(removeRange.start, removeRange.end)}
-                        title={t('editor.trim.deleteSelection')}
+                        className="w-full text-xs"
+                        disabled={!!playbackError}
+                        onClick={onPreviewEdited}
                     >
-                        <Trash2 size={14} /> {t('editor.trim.deleteSelection')}
+                        <Play size={14} /> {t('editor.trim.preview')}
                     </Button>
-                ) : (
-                    <Button
-                        variant="warning"
-                        size="sm"
-                        className="w-full"
-                        disabled={!canSplit}
-                        onClick={onSplitAtPlayhead}
-                        title={t('editor.trim.splitAtPlayhead')}
-                    >
-                        <Scissors size={14} /> {t('editor.trim.splitAtPlayhead')}
-                    </Button>
-                )}
 
-                {mode === 'keep' ? (
-                    <Button
-                        variant="danger"
-                        size="sm"
-                        className="w-full"
-                        disabled={!canDelete}
-                        onClick={onDeleteSelected}
-                    >
-                        <Trash2 size={14} /> {t('editor.trim.deleteSegment')}
-                    </Button>
-                ) : (
-                    <div className="hidden lg:block" />
-                )}
+                    {mode === 'remove' ? (
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            className="w-full text-xs"
+                            disabled={!canRemoveRange}
+                            onClick={() => onRemoveRange(removeRange.start, removeRange.end)}
+                            title={t('editor.trim.deleteSelection')}
+                        >
+                            <Trash2 size={14} /> {t('editor.trim.deleteSelection')}
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="warning"
+                            size="sm"
+                            className="w-full text-xs"
+                            disabled={!canSplit}
+                            onClick={onSplitAtPlayhead}
+                            title={t('editor.trim.splitAtPlayhead')}
+                        >
+                            <Scissors size={14} /> {t('editor.trim.splitAtPlayhead')}
+                        </Button>
+                    )}
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-slate-300"
-                    disabled={!!playbackError}
-                    onClick={onResetTrim}
-                >
-                    {t('editor.trim.reset')}
-                </Button>
+                    {mode === 'keep' && (
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            className="w-full text-xs"
+                            disabled={!canDelete}
+                            onClick={onDeleteSelected}
+                        >
+                            <Trash2 size={14} /> {t('editor.trim.deleteSegment')}
+                        </Button>
+                    )}
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-slate-400"
+                        disabled={!!playbackError}
+                        onClick={onResetTrim}
+                    >
+                        {t('editor.trim.reset')}
+                    </Button>
+                </div>
             </div>
         </div>
     );
