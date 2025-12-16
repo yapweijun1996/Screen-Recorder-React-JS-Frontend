@@ -144,6 +144,14 @@ const zh: TranslationTable = {
     'quality.high.description': '更高质量，更大文件',
     'quality.lossless.label': '无损（最大）',
     'quality.lossless.description': '最高质量，体积很大',
+
+    // 时间轴工具（Final Cut Pro 风格）
+    'editor.tools.select': '选择',
+    'editor.tools.blade': '剪刀',
+    'editor.tools.hand': '抓手',
+    'editor.timeline.zoomIn': '放大',
+    'editor.timeline.zoomOut': '缩小',
+    'editor.timeline.zoomReset': '重置缩放',
 };
 
 export default zh;

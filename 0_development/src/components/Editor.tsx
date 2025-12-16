@@ -5,10 +5,12 @@ import { EditorHeader } from './editor/EditorHeader';
 import { EditorPlayer } from './editor/EditorPlayer';
 import { EditorTrimPanel } from './editor/EditorTrimPanel';
 import { EditorExportPanel } from './editor/EditorExportPanel';
+import { ProTimeline } from './editor/ProTimeline';
 import { ffmpegService } from '../services/ffmpegService';
 import { useI18n } from '../i18n';
 import { useEditorExportController } from './editor/useEditorExportController';
 import { useSegmentsEditor } from './editor/useSegmentsEditor';
+import { useKeyboardShortcuts } from './editor/useKeyboardShortcuts';
 interface EditorProps {
     videoMetadata: VideoMetadata;
     onReset: () => void;
@@ -97,6 +99,34 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         t,
     });
     const estimatedSize = ffmpegService.estimateFileSize(totalSelectedDuration, selectedQuality);
+
+    // Final Cut Pro 风格键盘快捷键
+    useKeyboardShortcuts({
+        videoRef,
+        isPlaying,
+        onTogglePlay: () => {
+            if (!videoRef.current || playbackError) return;
+            if (isPlaying) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        },
+        onSeek: (time: number) => {
+            if (videoRef.current) {
+                videoRef.current.currentTime = time;
+                setCurrentTime(time);
+            }
+        },
+        onSplitAtPlayhead: () => splitSelectedAt(currentTime),
+        onUndo: undo,
+        onDeleteSelected: deleteSelectedSegment,
+        maxDuration,
+        segmentStart: selectedSegment.start,
+        segmentEnd: selectedSegment.end,
+    });
+
     // Sync Video Time
     const handleTimeUpdate = () => {
         if (videoRef.current) {
@@ -262,37 +292,32 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                     </aside>
                 </div>
 
-                {/* 下：专业时间轴（类似 Premiere 底部布局） */}
-                <section className="min-h-0">
-                    <EditorTrimPanel
-                        playbackError={playbackError}
+                {/* 下：Final Cut Pro 风格专业时间轴 - 紧凑型 */}
+                <section className="flex-shrink-0">
+                    <ProTimeline
                         maxDuration={maxDuration}
                         segments={safeSegments}
                         selectedIndex={selectedIndex}
                         currentTime={currentTime}
-                        start={selectedSegment.start}
-                        end={selectedSegment.end}
-                        startLabel={formatTime(selectedSegment.start)}
-                        endLabel={formatTime(selectedSegment.end)}
-                        totalSelectedLabel={formatTime(totalSelectedDuration)}
+                        totalSelectedDuration={totalSelectedDuration}
                         canUndo={canUndo}
-                        onSelectIndex={(idx) => {
+                        canDelete={safeSegments.length > 1}
+                        onSelectSegment={(idx) => {
                             selectIndex(idx);
                             if (videoRef.current) {
                                 videoRef.current.currentTime = safeSegments[Math.min(idx, safeSegments.length - 1)].start;
                             }
                         }}
-                        onChange={updateSelectedSegment}
-                        onPreviewRequest={handleSeek}
-                        onPreviewEdited={previewEditedResult}
-                        onSplitAtPlayhead={() => splitSelectedAt(currentTime)}
+                        onSeek={handleSeek}
+                        onSplitAt={(time) => splitSelectedAt(time)}
                         onDeleteSelected={deleteSelectedSegment}
-                        onRemoveRange={(s, e) => { setPreviewIndex(null); removeInterval(s, e); }}
                         onUndo={undo}
+                        onPreviewEdited={previewEditedResult}
                         onResetTrim={() => {
                             resetSegments();
                             if (videoRef.current) videoRef.current.currentTime = 0;
                         }}
+                        skimmingEnabled={!isPlaying}
                     />
                 </section>
             </div>

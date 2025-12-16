@@ -144,6 +144,14 @@ const en: TranslationTable = {
     'quality.high.description': 'High quality, larger file size',
     'quality.lossless.label': 'Lossless (Max)',
     'quality.lossless.description': 'Best quality, very large file',
+
+    // Timeline Tools (Final Cut Pro style)
+    'editor.tools.select': 'Select',
+    'editor.tools.blade': 'Blade',
+    'editor.tools.hand': 'Hand',
+    'editor.timeline.zoomIn': 'Zoom In',
+    'editor.timeline.zoomOut': 'Zoom Out',
+    'editor.timeline.zoomReset': 'Reset Zoom',
 };
 
 export default en;
