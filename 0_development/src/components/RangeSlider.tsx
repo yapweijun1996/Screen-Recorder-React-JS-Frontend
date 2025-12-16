@@ -8,6 +8,12 @@ interface RangeSliderProps {
     end: number;
     onChange: (start: number, end: number) => void;
     onPreviewRequest?: (time: number) => void;
+    /**
+     * 用於區分「保留片段」與「刪除區間」的視覺語意
+     * - keep: 紫色（保留）
+     * - remove: 紅色（刪除）
+     */
+    variant?: 'keep' | 'remove';
 }
 
 export const RangeSlider: React.FC<RangeSliderProps> = ({
@@ -16,7 +22,8 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     start,
     end,
     onChange,
-    onPreviewRequest
+    onPreviewRequest,
+    variant = 'keep',
 }) => {
     const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -28,8 +35,15 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
         return Math.min(100, Math.max(0, p));
     };
 
-    const handleMouseDown = (type: 'start' | 'end') => (e: React.MouseEvent) => {
+    /**
+     * Use Pointer Events so desktop (mouse) + mobile (touch) share the same logic,
+     * and TypeScript doesn't need separate onMouseDown/onTouchStart handlers.
+     */
+    const handlePointerDown = (type: 'start' | 'end') => (e: React.PointerEvent<HTMLDivElement>) => {
+        // Prevent container click-to-seek from triggering while dragging handles.
+        e.stopPropagation();
         setIsDragging(type);
+        // Prevent page scrolling while dragging on mobile.
         e.preventDefault();
     };
 
@@ -58,31 +72,45 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => handleInteraction(e.clientX);
-        const handleTouchMove = (e: TouchEvent) => handleInteraction(e.touches[0].clientX);
-        const handleEnd = () => setIsDragging(null);
+        const handlePointerMove = (e: PointerEvent) => handleInteraction(e.clientX);
+        const handlePointerUp = () => setIsDragging(null);
 
         if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleEnd);
-            window.addEventListener('touchmove', handleTouchMove);
-            window.addEventListener('touchend', handleEnd);
+            window.addEventListener('pointermove', handlePointerMove);
+            window.addEventListener('pointerup', handlePointerUp);
+            window.addEventListener('pointercancel', handlePointerUp);
         }
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleEnd);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleEnd);
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerUp);
         };
     }, [isDragging, start, end, max, min]);
 
     return (
-        <div className="relative h-12 w-full flex items-center select-none touch-none" ref={containerRef}>
+        <div
+            className="relative h-12 w-full flex items-center select-none touch-none cursor-pointer"
+            ref={containerRef}
+            onPointerDown={(e) => {
+                // Click on the track to seek (makes split workflow much easier).
+                if (!containerRef.current) return;
+                if (!onPreviewRequest) return;
+                if (!Number.isFinite(max) || max === min) return;
+
+                const rect = containerRef.current.getBoundingClientRect();
+                const percent = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+                const value = (percent / 100) * (max - min) + min;
+                onPreviewRequest(value);
+            }}
+        >
             {/* Background Track */}
             <div className="absolute w-full h-2 bg-slate-700 rounded-full overflow-hidden">
                 {/* Active Range Highlight */}
                 <div
-                    className="absolute h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                    className={`absolute h-full ${variant === 'remove'
+                        ? 'bg-gradient-to-r from-red-500 to-amber-500'
+                        : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                        }`}
                     style={{
                         left: `${getPercent(start)}%`,
                         width: `${getPercent(end) - getPercent(start)}%`
@@ -94,8 +122,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
             <div
                 className={`absolute h-7 w-4 bg-indigo-400 border-2 border-white rounded-sm cursor-ew-resize hover:scale-110 transition-transform shadow-lg z-10 flex items-center justify-center group ${isDragging === 'start' ? 'scale-110 ring-2 ring-indigo-300' : ''}`}
                 style={{ left: `calc(${getPercent(start)}% - 8px)` }}
-                onMouseDown={handleMouseDown('start')}
-                onTouchStart={handleMouseDown('start')}
+                onPointerDown={handlePointerDown('start')}
             >
                 <div className="w-0.5 h-3 bg-indigo-800 opacity-50"></div>
                 {/* Tooltip */}
@@ -108,8 +135,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
             <div
                 className={`absolute h-7 w-4 bg-purple-400 border-2 border-white rounded-sm cursor-ew-resize hover:scale-110 transition-transform shadow-lg z-10 flex items-center justify-center group ${isDragging === 'end' ? 'scale-110 ring-2 ring-purple-300' : ''}`}
                 style={{ left: `calc(${getPercent(end)}% - 8px)` }}
-                onMouseDown={handleMouseDown('end')}
-                onTouchStart={handleMouseDown('end')}
+                onPointerDown={handlePointerDown('end')}
             >
                 <div className="w-0.5 h-3 bg-purple-800 opacity-50"></div>
                 {/* Tooltip */}

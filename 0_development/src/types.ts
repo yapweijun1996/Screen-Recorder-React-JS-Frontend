@@ -90,7 +90,18 @@ export interface ExportOptions {
     format?: 'mp4' | 'webm';
     fps?: number; // Target frame rate for export
     crf?: number; // Optional override for Constant Rate Factor (lower = higher quality)
+    /**
+     * Multi-segment export (used for split/delete-middle editing).
+     * - When provided, exporter will keep these segments in order and concatenate them.
+     * - If set, `trimStart/trimEnd` are ignored.
+     */
+    segments?: Array<{ start: number; end: number }>;
 }
+
+// Editor UI uses a small, safe set of FPS options (avoid arbitrary values that may be slow/unstable)
+export type ExportFrameRateOption = 24 | 30 | 60;
+export type ExportResolution = NonNullable<ExportOptions['resolution']>;
+export type ExportFormat = NonNullable<ExportOptions['format']>;
 
 // Recording Quality
 export type RecordingQuality = 'standard' | 'high' | 'ultra' | 'custom';

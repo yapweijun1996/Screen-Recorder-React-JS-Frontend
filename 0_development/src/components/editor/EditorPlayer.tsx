@@ -24,6 +24,7 @@ interface EditorPlayerProps {
     onPause: () => void;
     onTogglePlay: () => void;
     onToggleFullscreen: () => void;
+    onSeekPercent: (percent01: number) => void;
 }
 
 export const EditorPlayer: React.FC<EditorPlayerProps> = ({
@@ -43,6 +44,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
     onPause,
     onTogglePlay,
     onToggleFullscreen,
+    onSeekPercent,
 }) => {
     const { t } = useI18n();
 
@@ -93,9 +95,21 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
 
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-800">
                         <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-100"
-                            style={{ width: `${progressPercent}%` }}
-                        />
+                            className="relative h-full"
+                            onPointerDown={(e) => {
+                                if (playbackError) return;
+                                const el = e.currentTarget;
+                                const rect = el.getBoundingClientRect();
+                                const p = (e.clientX - rect.left) / rect.width;
+                                onSeekPercent(Math.min(1, Math.max(0, p)));
+                            }}
+                            title={t('editor.player.seekHint')}
+                        >
+                            <div
+                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-100"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
                     </div>
                 </div>
 

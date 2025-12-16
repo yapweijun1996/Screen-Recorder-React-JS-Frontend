@@ -1,6 +1,8 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import { ExportOptions, VIDEO_QUALITY_PRESETS, VideoQualityPreset } from '../types';
+import { buildVideoFilterString, toArrayBufferUint8 } from './ffmpeg/ffmpegUtils';
+import { buildConcatFilterGraph, detectHasAudio, normalizeSegments } from './ffmpeg/segmentConcat';
 
 export type FFmpegLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -8,24 +10,6 @@ interface FFmpegProgress {
     ratio: number; // 0-1
     time?: number;
 }
-
-/** Resolution mappings */
-const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> = {
-    original: null, // No scaling
-    '720p': { width: 1280, height: 720 },
-    '1080p': { width: 1920, height: 1080 },
-    '4k': { width: 3840, height: 2160 },
-};
-
-/**
- * Convert @ffmpeg/ffmpeg FileData (may be backed by SharedArrayBuffer) into an ArrayBuffer-backed Uint8Array,
- * so it can be safely used as a BlobPart without TS type issues.
- */
-const toArrayBufferUint8 = (data: Uint8Array): Uint8Array<ArrayBuffer> => {
-    const ab = new ArrayBuffer(data.byteLength);
-    new Uint8Array(ab).set(data);
-    return new Uint8Array(ab);
-};
 
 class FFmpegService {
     private ffmpeg: FFmpeg | null = null;
@@ -176,28 +160,42 @@ class FFmpegService {
         // 2. Build command
         const args: string[] = ['-i', inputName];
 
-        // Trimming
-        if (options.trimStart !== undefined && options.trimEnd !== undefined) {
-            if (options.trimEnd <= options.trimStart) {
-                throw new Error('Invalid trim range. End must be greater than start.');
-            }
-            args.push('-ss', options.trimStart.toFixed(3));
-            args.push('-to', options.trimEnd.toFixed(3));
-        }
+        const videoFilter = buildVideoFilterString(options);
+        let hasMappedAudio = true;
 
-        // Resolution scaling
-        const resolution = options.resolution || 'original';
-        const resConfig = RESOLUTION_MAP[resolution];
-        const targetFps = Number.isFinite(options.fps) && options.fps! > 0 ? Math.round(options.fps!) : 30;
-        const filters: string[] = [];
-        if (resConfig) {
-            // Scale while maintaining aspect ratio, pad if necessary
-            filters.push(`scale=${resConfig.width}:${resConfig.height}:force_original_aspect_ratio=decrease,pad=${resConfig.width}:${resConfig.height}:(ow-iw)/2:(oh-ih)/2`);
-        }
-        // Normalize frame cadence to avoid inflated duration from odd timebases
-        filters.push(`fps=${targetFps}`);
-        if (filters.length > 0) {
-            args.push('-vf', filters.join(','));
+        // Multi-segment export (split/delete-middle editing)
+        const segments = options.segments?.length
+            ? normalizeSegments(options.segments)
+            : (options.trimStart !== undefined && options.trimEnd !== undefined)
+                ? normalizeSegments([{ start: options.trimStart, end: options.trimEnd }])
+                : null;
+
+        if (segments && segments.length > 1) {
+            const hasAudio = await detectHasAudio(ffmpeg, inputName);
+            const { filterGraph, videoOut, audioOut } = buildConcatFilterGraph({
+                segments,
+                hasAudio,
+                videoFilter,
+            });
+
+            args.push('-filter_complex', filterGraph);
+            args.push('-map', `[${videoOut}]`);
+            if (audioOut) {
+                args.push('-map', `[${audioOut}]`);
+            } else {
+                hasMappedAudio = false;
+                args.push('-an');
+            }
+        } else {
+            // Single trim (fast path)
+            if (segments && segments.length === 1) {
+                const s = segments[0];
+                args.push('-ss', s.start.toFixed(3));
+                args.push('-to', s.end.toFixed(3));
+            }
+
+            // Resolution scaling + fps normalize
+            args.push('-vf', videoFilter);
         }
 
         // Video codec and quality settings
@@ -217,8 +215,10 @@ class FFmpegService {
             // Pixel format for compatibility
             args.push('-pix_fmt', 'yuv420p');
 
-            // Audio
-            args.push('-c:a', 'aac', '-b:a', qualityConfig.audioBitrate);
+            // Audio (skip when we explicitly map no-audio in multi-segment mode)
+            if (hasMappedAudio) {
+                args.push('-c:a', 'aac', '-b:a', qualityConfig.audioBitrate);
+            }
 
             // Faststart for web playback (moov atom at beginning)
             args.push('-movflags', '+faststart');
@@ -226,14 +226,16 @@ class FFmpegService {
             args.push('-c:v', 'libvpx-vp9');
             args.push('-crf', crfValue.toString());
             args.push('-b:v', '0'); // Use CRF mode
-            args.push('-c:a', 'libopus', '-b:a', qualityConfig.audioBitrate);
+            if (hasMappedAudio) {
+                args.push('-c:a', 'libopus', '-b:a', qualityConfig.audioBitrate);
+            }
         }
 
         args.push(outputName);
 
         // 3. Run command
         console.log('Running FFmpeg command:', args.join(' '));
-        await ffmpeg.exec(args);
+        if ((await ffmpeg.exec(args)) !== 0) throw new Error('FFmpeg exec failed (processVideo).');
 
         // 4. Read result
         const data = await ffmpeg.readFile(outputName);
@@ -272,9 +274,8 @@ class FFmpegService {
             '-fflags', '+genpts', // Generate presentation timestamps
             outputName
         ];
-
         console.log('Fixing WebM duration metadata...');
-        await ffmpeg.exec(args);
+        if ((await ffmpeg.exec(args)) !== 0) throw new Error('FFmpeg exec failed (fixWebmDuration).');
 
         const data = await ffmpeg.readFile(outputName);
         if (typeof data === 'string') {
@@ -296,5 +297,4 @@ class FFmpegService {
         return this.loadStatus === 'loaded';
     }
 }
-
 export const ffmpegService = new FFmpegService();

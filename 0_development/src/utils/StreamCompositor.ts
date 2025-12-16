@@ -18,6 +18,7 @@ export class StreamCompositor {
 
     private width: number;
     private height: number;
+    private frameRate: number;
     private isActive: boolean = false;
     private isPaused: boolean = false;
     private animationFrameId: number | null = null;
@@ -31,6 +32,7 @@ export class StreamCompositor {
     constructor(options: CompositionOptions) {
         this.width = options.width;
         this.height = options.height;
+        this.frameRate = options.frameRate;
 
         if (options.pipConfig) {
             this.pipConfig = options.pipConfig;
@@ -119,7 +121,8 @@ export class StreamCompositor {
         this.draw();
 
         // 4. Capture Canvas Stream
-        const canvasStream = this.canvas.captureStream(30); // 30 FPS
+        // Use caller-provided FPS to avoid hardcoding (keeps capture/export settings consistent)
+        const canvasStream = this.canvas.captureStream(this.frameRate);
 
         // 5. Combine Canvas Video + Mixed Audio
         const finalStream = new MediaStream([

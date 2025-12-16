@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StreamCompositor } from '../../utils/StreamCompositor';
-import { PIPPosition, RecordingQuality, RECORDING_PRESETS } from '../../types';
+import type { StreamCompositor } from '../../utils/StreamCompositor';
+import { PIPPosition, RecordingQuality } from '../../types';
 import { useI18n } from '../../i18n';
+import { closeAudioMix, createFinalStream, formatRecordingTimeLabel, getChosenRecordingPreset, stopTracks, type AudioMix } from './recorderControllerUtils';
 
 interface UseRecorderControllerArgs {
     onRecordingComplete: (blob: Blob, duration: number) => void;
@@ -27,13 +28,15 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     const videoRef = useRef<HTMLVideoElement>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const compositorRef = useRef<StreamCompositor | null>(null);
-    const audioMixRef = useRef<{ context: AudioContext; destination: MediaStreamAudioDestinationNode } | null>(null);
+    const audioMixRef = useRef<AudioMix | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const hasFinalizedRef = useRef(false);
     const startTimeRef = useRef<number>(0);
     const pausedTimeRef = useRef<number>(0);
     const pauseStartedRef = useRef<number | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // 用 ref 記住「真正正在跑的 stream」，避免 closure 讀到舊 state 導致 stop 不完整
+    const activeStreamRef = useRef<MediaStream | null>(null);
 
     // Streams
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
@@ -56,20 +59,9 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         };
     }, [isRecording, isPaused]);
 
-    const formatRecordingTime = (seconds: number): string => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const cleanupAudioMix = () => {
-        if (audioMixRef.current) {
-            const { context } = audioMixRef.current;
-            if (context.state !== 'closed') {
-                context.close().catch(() => undefined);
-            }
-            audioMixRef.current = null;
-        }
+    const cleanupAudioMix = async () => {
+        await closeAudioMix(audioMixRef.current);
+        audioMixRef.current = null;
     };
 
     const stopAction = useCallback(() => {
@@ -87,9 +79,7 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     const startRecording = async () => {
         setIsPreparing(true);
         try {
-            const chosenPreset = recordingQuality === 'custom'
-                ? { frameRate: customFps, videoBitsPerSecond: Math.max(1_000_000, Math.round(customBitrateMbps * 1_000_000)) }
-                : RECORDING_PRESETS[recordingQuality];
+            const chosenPreset = getChosenRecordingPreset(recordingQuality, customFps, customBitrateMbps);
 
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
@@ -112,55 +102,19 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 180 } });
             }
 
-            let finalStream: MediaStream;
-
-            if (enableCam) {
-                const { width, height } = screenStream.getVideoTracks()[0].getSettings();
-                const compositor = new StreamCompositor({
-                    width: width || 1920,
-                    height: height || 1080,
-                    frameRate: 30,
-                    pipConfig: {
-                        position: pipPosition,
-                        size: 0.2
-                    }
-                });
-
-                finalStream = await compositor.start(screenStream, camStream, micStreamLocal);
-                compositorRef.current = compositor;
-            } else {
-                const screenAudioTracks = screenStream.getAudioTracks();
-                const hasScreenAudio = screenAudioTracks.length > 0;
-                const hasMicAudio = !!(micStreamLocal && micStreamLocal.getAudioTracks().length);
-                const hasAnyAudio = hasScreenAudio || hasMicAudio;
-
-                let audioTracks: MediaStreamTrack[] = [];
-
-                if (hasAnyAudio) {
-                    const audioContext = new AudioContext();
-                    const destination = audioContext.createMediaStreamDestination();
-
-                    if (hasScreenAudio) {
-                        const screenSource = audioContext.createMediaStreamSource(screenStream);
-                        screenSource.connect(destination);
-                    }
-
-                    if (hasMicAudio && micStreamLocal) {
-                        const micSource = audioContext.createMediaStreamSource(micStreamLocal);
-                        micSource.connect(destination);
-                    }
-
-                    audioMixRef.current = { context: audioContext, destination };
-                    audioTracks = destination.stream.getAudioTracks();
-                }
-
-                finalStream = new MediaStream([
-                    ...screenStream.getVideoTracks(),
-                    ...audioTracks
-                ]);
-            }
+            const { finalStream, compositor, audioMix } = await createFinalStream({
+                screenStream,
+                camStream,
+                micStream: micStreamLocal,
+                enableCam,
+                pipPosition,
+                frameRate: chosenPreset.frameRate,
+            });
 
             setActiveStream(finalStream);
+            activeStreamRef.current = finalStream;
+            compositorRef.current = compositor;
+            audioMixRef.current = audioMix;
 
             screenStream.getVideoTracks()[0].onended = () => {
                 stopAction();
@@ -170,13 +124,9 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 ? 'video/webm; codecs=vp9'
                 : 'video/webm';
 
-            const qualityConfig = recordingQuality === 'custom'
-                ? chosenPreset
-                : RECORDING_PRESETS[recordingQuality];
-
             const mediaRecorder = new MediaRecorder(finalStream, {
                 mimeType,
-                videoBitsPerSecond: qualityConfig.videoBitsPerSecond
+                videoBitsPerSecond: chosenPreset.videoBitsPerSecond
             });
 
             mediaRecorderRef.current = mediaRecorder;
@@ -219,15 +169,13 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 if (compositorRef.current) {
                     compositorRef.current.stop();
                 } else {
-                    cleanupAudioMix();
+                    cleanupAudioMix().catch(() => undefined);
                 }
 
-                if (activeStream) {
-                    activeStream.getTracks().forEach(t => t.stop());
-                }
-                screenStream.getTracks().forEach(t => t.stop());
-                if (micStreamLocal) micStreamLocal.getTracks().forEach(t => t.stop());
-                if (camStream) camStream.getTracks().forEach(t => t.stop());
+                stopTracks(activeStreamRef.current);
+                stopTracks(screenStream);
+                stopTracks(micStreamLocal);
+                stopTracks(camStream);
 
                 setIsRecording(false);
                 setIsPaused(false);
@@ -305,8 +253,8 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     useEffect(() => {
         return () => {
             if (compositorRef.current) compositorRef.current.stop();
-            cleanupAudioMix();
-            if (activeStream) activeStream.getTracks().forEach(t => t.stop());
+            cleanupAudioMix().catch(() => undefined);
+            stopTracks(activeStreamRef.current);
             if (timerRef.current) clearInterval(timerRef.current);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,7 +266,7 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         isPaused,
         isPreparing,
         recordingTime,
-        recordingTimeLabel: formatRecordingTime(recordingTime),
+        recordingTimeLabel: formatRecordingTimeLabel(recordingTime),
 
         // Settings state + setters
         enableMic,
