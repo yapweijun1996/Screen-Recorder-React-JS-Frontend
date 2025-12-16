@@ -18,6 +18,7 @@ const en: TranslationTable = {
     'app.error.invalidDuration': 'Invalid recording duration detected.',
     'app.error.invalid': 'Recording looks invalid. Please try capturing again.',
     'app.error.finalize': 'Failed to finish processing the recording. Please try again.',
+    'app.loading': 'Loading...',
 
     'ffmpeg.idle': 'Engine Idle',
     'ffmpeg.loading': 'Loading Engine...',

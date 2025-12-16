@@ -5,6 +5,7 @@ import { Editor } from './components/Editor';
 import { FFmpegStatus } from './components/FFmpegStatus';
 import { Layers, Loader2 } from 'lucide-react';
 import { ffmpegService } from './services/ffmpegService';
+import { videoStorageService } from './services/videoStorageService';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
 
@@ -12,7 +13,33 @@ const App: React.FC = () => {
     const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
     const [videoData, setVideoData] = useState<VideoMetadata | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [isLoadingStored, setIsLoadingStored] = useState(true);
     const { t } = useI18n();
+
+    // 页面加载时尝试从 IndexedDB 恢复视频
+    useEffect(() => {
+        const loadStoredVideo = async () => {
+            try {
+                const stored = await videoStorageService.loadVideo();
+                if (stored && stored.blob && stored.blob.size > 0) {
+                    const url = URL.createObjectURL(stored.blob);
+                    setVideoData({
+                        blob: stored.blob,
+                        url,
+                        duration: stored.duration,
+                    });
+                    setStatus(AppStatus.REVIEWING);
+                    console.log('Restored video from IndexedDB:', stored.blob.size, 'bytes');
+                }
+            } catch (error) {
+                console.error('Failed to load stored video:', error);
+            } finally {
+                setIsLoadingStored(false);
+            }
+        };
+
+        loadStoredVideo();
+    }, []);
 
     const handleRecordingComplete = async (blob: Blob, recordedDuration: number) => {
         if (!blob || blob.size === 0) {
@@ -43,10 +70,19 @@ const App: React.FC = () => {
             tempVideo.preload = 'metadata';
             tempVideo.src = url;
 
-            const finalize = (duration: number) => {
+            const finalize = async (duration: number) => {
                 if (!Number.isFinite(duration) || duration <= 0) {
                     throw new Error(t('app.error.invalidDuration'));
                 }
+
+                // 保存到 IndexedDB
+                try {
+                    await videoStorageService.saveVideo(workingBlob, duration);
+                    console.log('Video saved to IndexedDB');
+                } catch (saveError) {
+                    console.warn('Failed to save video to IndexedDB:', saveError);
+                }
+
                 setVideoData({
                     blob: workingBlob,
                     url,
@@ -84,10 +120,19 @@ const App: React.FC = () => {
         }
     };
 
-    const handleReset = () => {
+    const handleReset = async () => {
         if (videoData) {
             URL.revokeObjectURL(videoData.url);
         }
+
+        // 删除 IndexedDB 中的存储
+        try {
+            await videoStorageService.deleteVideo();
+            console.log('Video deleted from IndexedDB');
+        } catch (error) {
+            console.warn('Failed to delete video from IndexedDB:', error);
+        }
+
         setVideoData(null);
         setStatus(AppStatus.IDLE);
         setErrorMsg(null);
@@ -107,6 +152,18 @@ const App: React.FC = () => {
 
     // 编辑模式使用全屏布局
     const isEditorMode = status === AppStatus.REVIEWING && videoData;
+
+    // 加载中状态
+    if (isLoadingStored) {
+        return (
+            <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 size={32} className="animate-spin text-indigo-400" />
+                    <p className="text-sm text-slate-400">{t('app.loading') || 'Loading...'}</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white flex flex-col">
@@ -184,3 +241,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

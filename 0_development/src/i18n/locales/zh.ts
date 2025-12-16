@@ -18,6 +18,7 @@ const zh: TranslationTable = {
     'app.error.invalidDuration': '检测到无效的录制时长。',
     'app.error.invalid': '录制看起来异常，请重试。',
     'app.error.finalize': '录制处理失败，请重试。',
+    'app.loading': '加载中...',
 
     'ffmpeg.idle': '引擎空闲',
     'ffmpeg.loading': '正在加载引擎...',

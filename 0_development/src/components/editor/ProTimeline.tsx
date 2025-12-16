@@ -3,6 +3,7 @@ import type { TrimRange } from '../../types';
 import { formatTime } from '../../utils/format';
 import { TimelineToolbar, TimelineToolMode } from './TimelineToolbar';
 import { DraggablePlayhead } from './DraggablePlayhead';
+import { TimelineClip } from './TimelineClip';
 import { Play, Scissors, Trash2, Undo2, RotateCcw } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
@@ -178,57 +179,102 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         onZoomReset={handleZoomReset}
                     />
 
-                    {/* 中间：时间统计 */}
-                    <div className="hidden md:flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                    {/* 中间：时间统计 - 隐藏在小屏 */}
+                    <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-slate-500">
                         <span>
                             {t('editor.trim.totalSelected')}:
                             <span className="text-indigo-400 ml-1 font-semibold">{formatTime(totalSelectedDuration)}</span>
                         </span>
                     </div>
 
-                    {/* 右侧：操作按钮 */}
-                    <div className="flex items-center gap-1">
+                    {/* 右侧：操作按钮 - 响应式布局 */}
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                         {/* 预览按钮 */}
                         <button
                             type="button"
                             onClick={onPreviewEdited}
-                            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
+                            className="
+                                group relative flex items-center gap-1 
+                                px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
+                                bg-slate-800/50 text-slate-300 
+                                hover:bg-slate-700 hover:text-white 
+                                transition-all border border-slate-700
+                            "
                             title={t('editor.trim.preview')}
                         >
                             <Play size={12} />
-                            <span className="hidden sm:inline">{t('editor.trim.preview')}</span>
+                            <span className="hidden md:inline">{t('editor.trim.preview')}</span>
                         </button>
 
-                        {/* 分割按钮 */}
-                        <button
-                            type="button"
-                            onClick={() => onSplitAt?.(currentTime)}
-                            disabled={!canSplit}
-                            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md bg-amber-600/20 text-amber-300 hover:bg-amber-600/40 transition-all border border-amber-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={`${t('editor.trim.splitAtPlayhead')} (B)`}
-                        >
-                            <Scissors size={12} />
-                            <span className="hidden sm:inline">Split</span>
-                        </button>
+                        {/* 分割按钮 - 增加提示 */}
+                        <div className="relative group">
+                            <button
+                                type="button"
+                                onClick={() => onSplitAt?.(currentTime)}
+                                disabled={!canSplit}
+                                className="
+                                    flex items-center gap-1 
+                                    px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
+                                    bg-amber-600/20 text-amber-300 
+                                    hover:bg-amber-600/40 
+                                    transition-all border border-amber-600/30 
+                                    disabled:opacity-40 disabled:cursor-not-allowed
+                                "
+                                title={`${t('editor.trim.splitAtPlayhead')} (B)`}
+                            >
+                                <Scissors size={12} />
+                                <span className="hidden md:inline">Split</span>
+                            </button>
+                            {/* 最小分割提示 */}
+                            {!canSplit && (
+                                <div className="
+                                    hidden group-hover:block
+                                    absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50
+                                    bg-slate-900/95 backdrop-blur-md
+                                    text-[9px] text-amber-300
+                                    px-2 py-1 rounded
+                                    border border-amber-600/30
+                                    whitespace-nowrap
+                                    shadow-lg
+                                ">
+                                    需要距离片段两端至少 0.5s
+                                </div>
+                            )}
+                        </div>
 
                         {/* 删除按钮 */}
                         <button
                             type="button"
                             onClick={onDeleteSelected}
                             disabled={!canDelete}
-                            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md bg-red-600/20 text-red-300 hover:bg-red-600/40 transition-all border border-red-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="
+                                flex items-center gap-1 
+                                px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
+                                bg-red-600/20 text-red-300 
+                                hover:bg-red-600/40 
+                                transition-all border border-red-600/30 
+                                disabled:opacity-40 disabled:cursor-not-allowed
+                            "
                             title={`${t('editor.trim.deleteSegment')} (Del)`}
                         >
                             <Trash2 size={12} />
-                            <span className="hidden sm:inline">Delete</span>
+                            <span className="hidden md:inline">Delete</span>
                         </button>
+
+                        {/* 分隔线 - 大屏显示 */}
+                        <div className="hidden sm:block w-px h-4 bg-slate-700/50 mx-0.5" />
 
                         {/* 撤销按钮 */}
                         <button
                             type="button"
                             onClick={onUndo}
                             disabled={!canUndo}
-                            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md bg-slate-800/50 text-slate-300 hover:bg-slate-700 transition-all border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="
+                                p-1.5 rounded-md 
+                                text-slate-400 hover:text-white hover:bg-slate-700 
+                                transition-all border border-slate-700/50
+                                disabled:opacity-40 disabled:cursor-not-allowed
+                            "
                             title={`${t('editor.trim.undo')} (⌘Z)`}
                         >
                             <Undo2 size={12} />
@@ -238,7 +284,11 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         <button
                             type="button"
                             onClick={onResetTrim}
-                            className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-md bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
+                            className="
+                                p-1.5 rounded-md 
+                                text-slate-400 hover:text-white hover:bg-slate-700 
+                                transition-all border border-slate-700/50
+                            "
                             title={t('editor.trim.reset')}
                         >
                             <RotateCcw size={12} />
@@ -280,70 +330,40 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         })}
                     </div>
 
-                    {/* 轨道区域 - 紧凑 */}
-                    <div className="relative h-10 bg-slate-950">
+                    {/* 轨道区域 - 增加高度以展示更精细的波形 */}
+                    <div className="relative h-14 bg-gradient-to-b from-slate-950 to-slate-900/50">
+                        {/* 轨道背景网格 */}
+                        <div
+                            className="absolute inset-0 opacity-10"
+                            style={{
+                                backgroundImage: `
+                                    linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+                                    linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px)
+                                `,
+                                backgroundSize: '20px 10px',
+                            }}
+                        />
+
                         {/* 空隙（Gaps）*/}
                         {renderGaps(segments, safeMax, toPct)}
 
-                        {/* 片段（Clips）*/}
+                        {/* 片段（Clips）- 使用新的 TimelineClip 组件 */}
                         {segments.map((seg, idx) => {
                             const leftPct = toPct(seg.start);
                             const widthPct = Math.max(0.5, toPct(seg.end) - leftPct);
                             const isSelected = idx === selectedIndex;
 
                             return (
-                                <button
+                                <TimelineClip
                                     key={`segment-${idx}`}
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSelectSegment(idx);
-                                    }}
-                                    className={`
-                                        absolute top-1 bottom-1 rounded
-                                        transition-all duration-100
-                                        ${isSelected
-                                            ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-950 z-10'
-                                            : 'hover:ring-1 hover:ring-purple-400/50'
-                                        }
-                                    `}
-                                    style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                                    title={`#${idx + 1}: ${formatTime(seg.start)} - ${formatTime(seg.end)}`}
-                                >
-                                    <div className={`
-                                        h-full rounded
-                                        ${isSelected
-                                            ? 'bg-gradient-to-b from-blue-500 to-blue-700'
-                                            : 'bg-gradient-to-b from-purple-600/90 to-purple-800/90'
-                                        }
-                                    `}>
-                                        {/* 波形模拟（纯装饰） */}
-                                        <div className="h-full flex items-center justify-center gap-[2px] px-1 overflow-hidden">
-                                            {Array.from({ length: Math.max(3, Math.floor(widthPct * 2)) }).map((_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-[2px] bg-white/30 rounded-full"
-                                                    style={{ height: `${20 + Math.random() * 60}%` }}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* 片段标签 */}
-                                        {widthPct > 5 && (
-                                            <div className="absolute bottom-1 left-1.5 text-[9px] font-mono text-white/80 font-medium">
-                                                #{idx + 1}
-                                            </div>
-                                        )}
-
-                                        {/* Trim Handles */}
-                                        {isSelected && (
-                                            <>
-                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400/80 rounded-l cursor-ew-resize hover:bg-yellow-300" />
-                                                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-yellow-400/80 rounded-r cursor-ew-resize hover:bg-yellow-300" />
-                                            </>
-                                        )}
-                                    </div>
-                                </button>
+                                    segment={seg}
+                                    index={idx}
+                                    isSelected={isSelected}
+                                    leftPct={leftPct}
+                                    widthPct={widthPct}
+                                    onSelect={() => onSelectSegment(idx)}
+                                    maxDuration={safeMax}
+                                />
                             );
                         })}
 
@@ -353,16 +373,26 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             maxDuration={safeMax}
                             containerRef={containerRef as React.RefObject<HTMLElement>}
                             onSeek={onSeek}
-                            trackHeight={55}
+                            trackHeight={70}
                         />
 
-                        {/* Skimming 指示器 */}
+                        {/* Skimming 指示器 - 增强效果 */}
                         {skimTime !== null && skimTime !== currentTime && (
                             <div
-                                className="absolute top-0 bottom-0 w-[1px] bg-white/50 pointer-events-none z-20"
+                                className="absolute top-0 bottom-0 pointer-events-none z-20"
                                 style={{ left: `${toPct(skimTime)}%` }}
                             >
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-slate-800 text-[9px] font-mono text-white px-1 py-0.5 rounded border border-slate-700">
+                                {/* 垂直线 + 光晕 */}
+                                <div className="w-[1px] h-full bg-cyan-400/70 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                                {/* 时间标签 */}
+                                <div className="
+                                    absolute -top-6 left-1/2 -translate-x-1/2 
+                                    bg-cyan-900/90 text-cyan-200 text-[9px] font-mono font-medium
+                                    px-1.5 py-0.5 rounded-sm
+                                    border border-cyan-500/50
+                                    shadow-lg shadow-cyan-500/20
+                                    backdrop-blur-sm
+                                ">
                                     {formatTime(skimTime)}
                                 </div>
                             </div>
@@ -371,24 +401,42 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                 </div>
             </div>
 
-            {/* 底部信息栏 */}
-            <div className="px-3 py-1.5 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                <div className="flex items-center gap-3">
-                    <span>
-                        <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400 mr-1">Space</kbd>
-                        Play/Pause
+            {/* 底部信息栏 - 键盘快捷键提示 */}
+            <div className="
+                px-3 py-2 
+                border-t border-slate-700/50 
+                bg-gradient-to-r from-slate-900/80 via-slate-800/50 to-slate-900/80
+                backdrop-blur-sm
+                flex items-center justify-between 
+                text-[10px] font-mono text-slate-400
+            ">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">Space</kbd>
+                        <span className="text-slate-500">Play</span>
                     </span>
-                    <span>
-                        <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400 mr-1">J K L</kbd>
-                        Shuttle
+                    <span className="flex items-center gap-1">
+                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">J</kbd>
+                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">K</kbd>
+                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">L</kbd>
+                        <span className="text-slate-500">Shuttle</span>
                     </span>
-                    <span>
-                        <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400 mr-1">B</kbd>
-                        Blade
+                    <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-amber-700/60 rounded text-amber-200 border border-amber-500/50 shadow-sm">B</kbd>
+                        <span className="text-slate-500">Blade</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <kbd className="px-1.5 py-0.5 bg-red-700/60 rounded text-red-200 border border-red-500/50 shadow-sm">Del</kbd>
+                        <span className="text-slate-500">Delete</span>
                     </span>
                 </div>
-                <div>
-                    Total: <span className="text-indigo-400">{formatTime(safeMax)}</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-slate-500">
+                        Segments: <span className="text-purple-400 font-semibold">{segments.length}</span>
+                    </span>
+                    <span className="text-slate-500">
+                        Total: <span className="text-indigo-400 font-semibold">{formatTime(safeMax)}</span>
+                    </span>
                 </div>
             </div>
         </div>
