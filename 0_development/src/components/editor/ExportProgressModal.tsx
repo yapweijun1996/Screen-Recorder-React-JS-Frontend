@@ -35,12 +35,14 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
                         <circle
                             cx="60" cy="60" r="54"
                             fill="none"
-                            stroke="currentColor"
+                            stroke="#6366f1"
                             strokeWidth="8"
                             strokeLinecap="round"
-                            className="text-indigo-500 transition-all duration-300 ease-out"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeOffset}
+                            className="transition-all duration-300 ease-out"
+                            style={{
+                                strokeDasharray: circumference,
+                                strokeDashoffset: strokeOffset,
+                            }}
                         />
                     </svg>
                     {/* Percentage text */}
