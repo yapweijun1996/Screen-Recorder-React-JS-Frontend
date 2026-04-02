@@ -213,7 +213,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     return (
         <div ref={containerRef} className={`bg-th-deep h-full flex flex-col overflow-hidden ${className}`}>
             {/* 工具栏 - 包含工具选择和操作按钮 */}
-            <div className="flex-shrink-0 px-3 py-1.5 border-b border-th-edge bg-gradient-to-b from-th-base to-th-deep">
+            <div className="flex-shrink-0 px-3 py-1.5 border-b border-th-edge bg-th-surface">
                 <div className="flex items-center justify-between gap-2">
                     {/* 左侧：工具选择 + 缩放 */}
                     <TimelineToolbar
@@ -229,7 +229,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                     <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-th-tertiary">
                         <span>
                             {t('editor.trim.totalSelected')}:
-                            <span className="text-indigo-400 ml-1 font-semibold">{formatTime(totalSelectedDuration)}</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 ml-1 font-semibold">{formatTime(totalSelectedDuration)}</span>
                         </span>
                     </div>
 
@@ -243,7 +243,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                 group relative flex items-center gap-1 
                                 px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
                                 bg-th-card/50 text-th-secondary
-                                hover:bg-th-input hover:text-white
+                                hover:bg-th-input hover:text-th-primary
                                 transition-all border border-th-divider
                             "
                             title={t('editor.trim.preview')}
@@ -261,9 +261,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                 className="
                                     flex items-center gap-1 
                                     px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
-                                    bg-amber-600/20 text-amber-300 
-                                    hover:bg-amber-600/40 
-                                    transition-all border border-amber-600/30 
+                                    bg-amber-100 dark:bg-amber-600/20 text-amber-700 dark:text-amber-300
+                                    hover:bg-amber-200 dark:hover:bg-amber-600/40
+                                    transition-all border border-amber-300 dark:border-amber-600/30 
                                     disabled:opacity-40 disabled:cursor-not-allowed
                                 "
                                 title={`${t('editor.trim.splitAtPlayhead')} (B)`}
@@ -277,7 +277,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                     hidden group-hover:block
                                     absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50
                                     bg-th-surface/95 backdrop-blur-md
-                                    text-[9px] text-amber-300
+                                    text-[9px] text-amber-700 dark:text-amber-300
                                     px-2 py-1 rounded
                                     border border-amber-600/30
                                     whitespace-nowrap
@@ -296,9 +296,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             className="
                                 flex items-center gap-1 
                                 px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
-                                bg-red-600/20 text-red-300 
-                                hover:bg-red-600/40 
-                                transition-all border border-red-600/30 
+                                bg-red-100 dark:bg-red-600/20 text-red-700 dark:text-red-300
+                                hover:bg-red-200 dark:hover:bg-red-600/40
+                                transition-all border border-red-300 dark:border-red-600/30 
                                 disabled:opacity-40 disabled:cursor-not-allowed
                             "
                             title={`${t('editor.trim.deleteSegment')} (Del)`}
@@ -317,7 +317,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             disabled={!canUndo}
                             className="
                                 p-1.5 rounded-md 
-                                text-th-secondary hover:text-white hover:bg-th-input
+                                text-th-secondary hover:text-th-primary hover:bg-th-input
                                 transition-all border border-th-divider/50
                                 disabled:opacity-40 disabled:cursor-not-allowed
                             "
@@ -332,7 +332,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             onClick={onResetTrim}
                             className="
                                 p-1.5 rounded-md 
-                                text-th-secondary hover:text-white hover:bg-th-input
+                                text-th-secondary hover:text-th-primary hover:bg-th-input
                                 transition-all border border-th-divider/50
                             "
                             title={t('editor.trim.reset')}
@@ -377,7 +377,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                     </div>
 
                     {/* 轨道区域 - 填满剩余高度 */}
-                    <div className="relative flex-1 min-h-[48px] bg-gradient-to-b from-th-deep to-th-base/50">
+                    <div className="relative flex-1 min-h-[48px] bg-th-deep">
                         {/* 轨道背景网格 */}
                         <div
                             className="absolute inset-0 opacity-10"
@@ -448,8 +448,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
             <div className="
                 flex-shrink-0 px-3 py-2
                 border-t border-th-divider/50
-                bg-gradient-to-r from-th-base/80 via-th-card/50 to-th-base/80
-                backdrop-blur-sm
+                bg-th-surface
                 flex items-center justify-between
                 text-[10px] font-mono text-th-secondary
             ">
@@ -465,20 +464,20 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         <span className="text-th-tertiary">Shuttle</span>
                     </span>
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-amber-700/60 rounded text-amber-200 border border-amber-500/50 shadow-sm">B</kbd>
+                        <kbd className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-700/60 rounded text-amber-700 dark:text-amber-200 border border-amber-300 dark:border-amber-500/50 shadow-sm">B</kbd>
                         <span className="text-th-tertiary">Blade</span>
                     </span>
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-red-700/60 rounded text-red-200 border border-red-500/50 shadow-sm">Del</kbd>
+                        <kbd className="px-1.5 py-0.5 bg-red-100 dark:bg-red-700/60 rounded text-red-700 dark:text-red-200 border border-red-300 dark:border-red-500/50 shadow-sm">Del</kbd>
                         <span className="text-th-tertiary">Delete</span>
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-th-tertiary">
-                        Segments: <span className="text-purple-400 font-semibold">{segments.length}</span>
+                        Segments: <span className="text-purple-600 dark:text-purple-400 font-semibold">{segments.length}</span>
                     </span>
                     <span className="text-th-tertiary">
-                        Total: <span className="text-indigo-400 font-semibold">{formatTime(displayDuration)}</span>
+                        Total: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{formatTime(displayDuration)}</span>
                     </span>
                 </div>
             </div>

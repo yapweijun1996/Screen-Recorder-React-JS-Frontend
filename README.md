@@ -25,7 +25,7 @@ A professional, browser-based screen recording and video editing application. Al
 | Framework | React 19 + TypeScript (strict) |
 | Build | Vite 6 |
 | Styling | Tailwind CSS 3 + CSS Variables (theme system) |
-| Video Processing | FFmpeg.wasm (client-side WebAssembly) |
+| Video Export | WebCodecs API + mp4-muxer (H.264 MP4) / webm-muxer (VP8 WebM) |
 | Icons | Lucide React |
 | Storage | IndexedDB (browser-native) |
 | PWA | vite-plugin-pwa + Workbox |
@@ -54,25 +54,12 @@ npm run build
 npm run preview
 ```
 
-### Important: SharedArrayBuffer
-
-FFmpeg.wasm requires `SharedArrayBuffer`, which needs these HTTP headers:
-
-```
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: require-corp
-```
-
-These are pre-configured in `vite.config.ts` for both dev and preview servers. For production deployment (e.g., GitHub Pages), ensure your hosting platform supports these headers.
-
 ## Project Structure
 
 ```
 0_development/
 ├── public/
-│   ├── favicon.svg              # SVG app icon
-│   ├── ffmpeg/                  # FFmpeg.wasm single-threaded
-│   └── ffmpeg-mt/               # FFmpeg.wasm multi-threaded
+│   └── favicon.svg              # SVG app icon
 ├── src/
 │   ├── components/
 │   │   ├── editor/              # Editor UI (timeline, trim, export)
@@ -84,7 +71,8 @@ These are pre-configured in `vite.config.ts` for both dev and preview servers. F
 │   ├── context/
 │   │   └── ThemeContext.tsx      # Theme state management & persistence
 │   ├── services/
-│   │   ├── ffmpegService.ts     # FFmpeg.wasm wrapper
+│   │   ├── exportService.ts     # Export facade (WebCodecs engine)
+│   │   ├── webcodecs/           # WebCodecs capability detection + encoder
 │   │   └── videoStorageService.ts  # IndexedDB persistence
 │   ├── utils/
 │   │   ├── StreamCompositor.ts  # Canvas-based PIP composition
@@ -124,12 +112,12 @@ See [docs/THEMING.md](docs/THEMING.md) for the full color token reference.
 
 ## Browser Support
 
-| Browser | Support |
-|---------|---------|
-| Chrome 89+ | Full |
-| Edge 89+ | Full |
-| Firefox 79+ | Full (SharedArrayBuffer required) |
-| Safari 15.2+ | Partial (no SharedArrayBuffer without flags) |
+| Browser | Export Format | Notes |
+|---------|--------------|-------|
+| Chrome 94+ | H.264 MP4 | Full support, hardware-accelerated |
+| Edge 94+ | H.264 MP4 | Full support, hardware-accelerated |
+| Firefox 130+ | VP8 WebM | WebCodecs VP8 (H.264 encoding not yet supported in Firefox) |
+| Safari 16.4+ | Partial | Video only, AudioEncoder support varies |
 
 ## License
 

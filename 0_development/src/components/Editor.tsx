@@ -12,6 +12,7 @@ import { useI18n } from '../i18n';
 import { useEditorExportController } from './editor/useEditorExportController';
 import { useSegmentsEditor } from './editor/useSegmentsEditor';
 import { useKeyboardShortcuts } from './editor/useKeyboardShortcuts';
+import { ExportProgressModal } from './editor/ExportProgressModal';
 
 interface EditorProps {
     videoMetadata: VideoMetadata;
@@ -264,6 +265,15 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
 
     return (
         <div className="w-full flex-1 flex flex-col animate-fade-in min-h-0">
+            {/* Export progress modal */}
+            {isProcessing && (
+                <ExportProgressModal
+                    progress={processingProgress}
+                    eta={processingEta}
+                    format={selectedFormat}
+                />
+            )}
+
             {/* 顶部标题栏 - 全宽 */}
             <div className="px-4 py-2 border-b border-th-edge bg-th-surface flex-shrink-0">
                 <EditorHeader onReset={onReset} />

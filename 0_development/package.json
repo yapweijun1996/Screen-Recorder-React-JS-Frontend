@@ -13,7 +13,8 @@
     "lucide-react": "^0.560.0",
     "mp4-muxer": "^5.2.2",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "webm-muxer": "^5.1.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -120,6 +120,8 @@ const es: TranslationTable = {
     'editor.export.exportFull': 'Exportar video completo (sin recorte)',
     'editor.export.playbackIssue': 'Vuelve a grabar para corregir la reproducción.',
     'editor.export.failed': 'Error al exportar. Revisa la consola.',
+    'editor.export.modalExporting': 'Exportando a {{format}}...',
+    'editor.export.modalStayHint': 'Permanezca en esta pestaña para un mejor rendimiento. Cambiar de pestaña puede ralentizar el procesamiento.',
 
     'quality.low.label': 'Baja (Rápida)',
     'quality.low.description': 'Archivo pequeño, procesamiento rápido',

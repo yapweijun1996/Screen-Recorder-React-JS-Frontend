@@ -14,8 +14,8 @@ ScreenClip Pro is a client-side video recording and editing application. All pro
 │  └────┬─────┘   └──────────────┘   └───────┬─────────┘ │
 │       │                                      │           │
 │  ┌────▼─────┐                          ┌────▼─────┐    │
-│  │ Media    │                          │ FFmpeg   │    │
-│  │ Recorder │                          │  .wasm   │    │
+│  │ Media    │                          │WebCodecs │    │
+│  │ Recorder │                          │+ mp4-mux │    │
 │  │  API     │                          │ (encode) │    │
 │  └──────────┘                          └──────────┘    │
 │                                                          │
@@ -65,14 +65,25 @@ App
 
 ## Key Services
 
-### FFmpegService (`src/services/ffmpegService.ts`)
+### ExportService (`src/services/exportService.ts`)
 
-Singleton that manages FFmpeg.wasm lifecycle:
+Facade that manages the video export engine:
 
-- **Preload** — Downloads and initializes the WASM binary on app mount
-- **Fix WebM duration** — Remuxes raw MediaRecorder output to fix missing duration metadata
-- **Export** — Encodes trimmed/concatenated segments to MP4 or WebM with quality presets
-- **Status callbacks** — Notifies UI of loading state (idle → loading → loaded → error)
+- **Init** — Detects WebCodecs capabilities via trial encode (avoids Firefox H.264 false positives)
+- **Export** — Routes to the best available codec path:
+  - **Chrome/Edge**: H.264 + AAC → MP4 via `mp4-muxer` (MIT)
+  - **Firefox**: VP8 + Opus → WebM via `webm-muxer` (MIT)
+- **Status callbacks** — Notifies UI of engine state (idle → loading → ready → error)
+
+### WebCodecs Pipeline (`src/services/webcodecs/`)
+
+- **capability.ts** — Trial-encodes a tiny frame to verify real H.264/VP8 support
+- **webcodecExportService.ts** — Full export pipeline:
+  1. Demux input WebM via `<video>` + `OffscreenCanvas` → `ImageBitmap` frames
+  2. Decode audio via `OfflineAudioContext`
+  3. Re-encode video with `VideoEncoder` (H.264 or VP8)
+  4. Re-encode audio with `AudioEncoder` (AAC or Opus)
+  5. Mux into MP4 or WebM container
 
 ### VideoStorageService (`src/services/videoStorageService.ts`)
 
@@ -114,7 +125,6 @@ User clicks "Start Recording"
   → StreamCompositor (canvas overlay + audio mix)
   → MediaRecorder (WebM chunks)
   → Blob assembled on stop
-  → FFmpegService.fixWebmDuration()
   → IndexedDB save
   → Transition to Editor
 ```
@@ -125,8 +135,10 @@ User clicks "Start Recording"
 User trims/splits segments in ProTimeline
   → useSegmentsEditor maintains segment array
   → User clicks "Export Trimmed"
-  → FFmpegService.processVideo(blob, segments, quality)
-  → FFmpeg extracts each segment → concatenates → encodes
+  → exportService.processVideo(blob, segments, quality)
+  → Demux WebM via <video> + OffscreenCanvas
+  → VideoEncoder (H.264 or VP8) + AudioEncoder (AAC or Opus)
+  → mp4-muxer or webm-muxer packages output
   → Progress callbacks update UI
   → Download link created from output blob
 ```
@@ -142,5 +154,19 @@ User trims/splits segments in ProTimeline
 
 - `vite-plugin-pwa` generates service worker and manifest
 - Static assets (JS/CSS/HTML/SVG) precached by Workbox
-- FFmpeg WASM files excluded from precache (too large, loaded on demand)
+- No large WASM files to download — WebCodecs uses browser-native encoders
 - `registerType: 'autoUpdate'` — new versions apply automatically
+
+## Licensing
+
+All dependencies are MIT or permissive:
+
+| Package | License | Purpose |
+|---------|---------|---------|
+| react, vite, tailwindcss | MIT | Framework, build, styling |
+| mp4-muxer | MIT | MP4 container packaging |
+| webm-muxer | MIT | WebM container packaging (Firefox) |
+| lucide-react | ISC | Icons |
+| vite-plugin-pwa | MIT | PWA support |
+
+**No GPL dependencies.** The project is fully commercial-use compatible.

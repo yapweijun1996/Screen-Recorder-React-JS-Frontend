@@ -145,6 +145,8 @@ const zh: TranslationTable = {
     'editor.export.exportFull': '导出完整视频（不裁剪）',
     'editor.export.playbackIssue': '请重新录制以修复播放问题。',
     'editor.export.failed': '导出失败，请查看控制台。',
+    'editor.export.modalExporting': '正在导出为 {{format}}...',
+    'editor.export.modalStayHint': '请留在此标签页以获得最佳性能。切换标签页可能会减慢处理速度。',
 
     'quality.low.label': '低（快速）',
     'quality.low.description': '文件更小，处理更快',

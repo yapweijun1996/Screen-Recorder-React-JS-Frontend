@@ -120,6 +120,8 @@ const id: TranslationTable = {
     'editor.export.exportFull': 'Ekspor video penuh (tanpa potong)',
     'editor.export.playbackIssue': 'Rekam lagi untuk memperbaiki pemutaran.',
     'editor.export.failed': 'Gagal mengekspor. Cek konsol.',
+    'editor.export.modalExporting': 'Mengekspor ke {{format}}...',
+    'editor.export.modalStayHint': 'Tetap di tab ini untuk performa terbaik. Beralih tab dapat memperlambat pemrosesan.',
 
     'quality.low.label': 'Rendah (Cepat)',
     'quality.low.description': 'File kecil, proses cepat',

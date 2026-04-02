@@ -91,7 +91,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                     className={`
                         flex items-center gap-1.5 px-2 py-1.5 rounded-md
                         bg-th-card/80 border border-th-divider/50
-                        text-white text-xs font-medium
+                        text-th-primary text-xs font-medium
                         hover:bg-th-input/80 transition-all
                     `}
                 >
@@ -152,7 +152,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                                     : tool.id === 'hand'
                                         ? 'bg-cyan-600/80 text-white shadow-lg shadow-cyan-500/20'
                                         : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                                : 'text-th-secondary hover:text-white hover:bg-th-card/50'
+                                : 'text-th-secondary hover:text-th-primary hover:bg-th-card/50'
                             }
                         `}
                         title={`${tool.label} (${tool.shortcut})`}
@@ -165,7 +165,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                         <span className="
                             hidden group-hover:block lg:group-hover:hidden
                             absolute -bottom-8 left-1/2 -translate-x-1/2 
-                            bg-th-surface/95 text-[10px] text-white
+                            bg-th-surface/95 text-[10px] text-th-primary
                             px-2 py-1 rounded shadow-lg
                             border border-th-divider 
                             whitespace-nowrap z-50
@@ -187,7 +187,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                     type="button"
                     onClick={onZoomOut}
                     disabled={zoomLevel <= 0.5}
-                    className="p-1.5 rounded-md text-th-secondary hover:text-white hover:bg-th-card/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-md text-th-secondary hover:text-th-primary hover:bg-th-card/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                     title={t('editor.timeline.zoomOut') || 'Zoom Out (-)'}
                 >
                     <ZoomOut size={13} />
@@ -197,7 +197,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                 <button
                     type="button"
                     onClick={onZoomReset}
-                    className="hidden xs:flex px-1.5 py-1 rounded-md text-[10px] font-mono text-th-secondary hover:text-white hover:bg-th-card/50 transition-all min-w-[40px] justify-center items-center gap-0.5"
+                    className="hidden xs:flex px-1.5 py-1 rounded-md text-[10px] font-mono text-th-secondary hover:text-th-primary hover:bg-th-card/50 transition-all min-w-[40px] justify-center items-center gap-0.5"
                     title={t('editor.timeline.zoomReset') || 'Reset Zoom'}
                 >
                     <Maximize2 size={10} className="opacity-50" />
@@ -208,7 +208,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                     type="button"
                     onClick={onZoomIn}
                     disabled={zoomLevel >= 10}
-                    className="p-1.5 rounded-md text-th-secondary hover:text-white hover:bg-th-card/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-md text-th-secondary hover:text-th-primary hover:bg-th-card/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                     title={t('editor.timeline.zoomIn') || 'Zoom In (+)'}
                 >
                     <ZoomIn size={13} />

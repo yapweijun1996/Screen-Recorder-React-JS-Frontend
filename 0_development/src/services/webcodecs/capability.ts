@@ -1,101 +1,126 @@
 /**
  * WebCodecs capability detection.
- * Checks if the browser supports VideoEncoder/AudioEncoder with H.264/AAC.
+ * Probes actual encoder support (not just isConfigSupported, which lies on Firefox).
  */
 
 export interface WebCodecsSupport {
     supported: boolean;
-    videoEncoder: boolean;
-    audioEncoder: boolean;
-    videoDecoder: boolean;
-    audioDecoder: boolean;
+    h264: boolean;      // Can encode H.264 (Chrome/Edge)
+    vp8: boolean;       // Can encode VP8 (Firefox fallback)
+    aac: boolean;       // Can encode AAC audio
+    opus: boolean;      // Can encode Opus audio
 }
 
 let cachedSupport: WebCodecsSupport | null = null;
 
 /**
- * Detect WebCodecs support for H.264 encoding + AAC audio.
- * Result is cached after first call.
+ * Detect WebCodecs support with trial encode to avoid Firefox H.264 false positives.
  */
 export async function detectWebCodecsSupport(): Promise<WebCodecsSupport> {
     if (cachedSupport) return cachedSupport;
 
     const result: WebCodecsSupport = {
         supported: false,
-        videoEncoder: false,
-        audioEncoder: false,
-        videoDecoder: false,
-        audioDecoder: false,
+        h264: false,
+        vp8: false,
+        aac: false,
+        opus: false,
     };
 
-    // Check basic API availability
-    if (typeof VideoEncoder === 'undefined' || typeof VideoDecoder === 'undefined') {
+    if (typeof VideoEncoder === 'undefined') {
         cachedSupport = result;
         return result;
     }
 
-    // Check H.264 video encoder support
-    try {
-        const videoConfig: VideoEncoderConfig = {
-            codec: 'avc1.42001f', // H.264 Baseline Level 3.1
-            width: 1280,
-            height: 720,
-            bitrate: 3_000_000,
-        };
-        const videoSupport = await VideoEncoder.isConfigSupported(videoConfig);
-        result.videoEncoder = !!videoSupport.supported;
-    } catch {
-        result.videoEncoder = false;
-    }
+    // Trial-encode a tiny frame to verify real support (Firefox reports H.264 supported but throws)
+    result.h264 = await trialVideoEncode('avc1.42001f');
+    result.vp8 = await trialVideoEncode('vp8');
 
-    // Check H.264 video decoder support
-    try {
-        const decoderConfig: VideoDecoderConfig = {
-            codec: 'vp8', // WebM VP8 (input format from MediaRecorder)
-        };
-        const decoderSupport = await VideoDecoder.isConfigSupported(decoderConfig);
-        result.videoDecoder = !!decoderSupport.supported;
-    } catch {
-        result.videoDecoder = false;
-    }
+    // Check audio encoders
+    result.aac = await probeAudioEncoder('mp4a.40.2');
+    result.opus = await probeAudioEncoder('opus');
 
-    // Check AAC audio encoder support
-    try {
-        if (typeof AudioEncoder !== 'undefined') {
-            const audioConfig: AudioEncoderConfig = {
-                codec: 'mp4a.40.2', // AAC-LC
-                numberOfChannels: 2,
-                sampleRate: 48000,
-                bitrate: 128000,
-            };
-            const audioSupport = await AudioEncoder.isConfigSupported(audioConfig);
-            result.audioEncoder = !!audioSupport.supported;
-        }
-    } catch {
-        result.audioEncoder = false;
-    }
-
-    // Check audio decoder support
-    try {
-        if (typeof AudioDecoder !== 'undefined') {
-            const audioDecoderConfig: AudioDecoderConfig = {
-                codec: 'opus', // WebM typically uses Opus
-                numberOfChannels: 2,
-                sampleRate: 48000,
-            };
-            const audioDecoderSupport = await AudioDecoder.isConfigSupported(audioDecoderConfig);
-            result.audioDecoder = !!audioDecoderSupport.supported;
-        }
-    } catch {
-        result.audioDecoder = false;
-    }
-
-    result.supported = result.videoEncoder && result.videoDecoder;
+    result.supported = result.h264 || result.vp8;
     cachedSupport = result;
     return result;
 }
 
-/** Quick synchronous check (returns false if not yet probed) */
-export function isWebCodecsAvailable(): boolean {
-    return cachedSupport?.supported ?? false;
+/** Trial-encode a single frame to verify the codec actually works */
+async function trialVideoEncode(codec: string): Promise<boolean> {
+    try {
+        const config = await VideoEncoder.isConfigSupported({
+            codec,
+            width: 64,
+            height: 64,
+            bitrate: 100_000,
+        });
+        if (!config.supported) return false;
+
+        // Actually try encoding a frame
+        return new Promise<boolean>((resolve) => {
+            let resolved = false;
+            const encoder = new VideoEncoder({
+                output: () => {
+                    if (!resolved) { resolved = true; resolve(true); }
+                },
+                error: () => {
+                    if (!resolved) { resolved = true; resolve(false); }
+                },
+            });
+
+            try {
+                encoder.configure({
+                    codec,
+                    width: 64,
+                    height: 64,
+                    bitrate: 100_000,
+                });
+
+                // Create a tiny canvas frame
+                const canvas = new OffscreenCanvas(64, 64);
+                const ctx = canvas.getContext('2d')!;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, 64, 64);
+
+                const frame = new VideoFrame(canvas, { timestamp: 0 });
+                encoder.encode(frame, { keyFrame: true });
+                frame.close();
+
+                encoder.flush().then(() => {
+                    encoder.close();
+                    if (!resolved) { resolved = true; resolve(true); }
+                }).catch(() => {
+                    if (!resolved) { resolved = true; resolve(false); }
+                });
+            } catch {
+                if (!resolved) { resolved = true; resolve(false); }
+            }
+
+            // Timeout after 3s
+            setTimeout(() => {
+                if (!resolved) { resolved = true; resolve(false); }
+            }, 3000);
+        });
+    } catch {
+        return false;
+    }
+}
+
+async function probeAudioEncoder(codec: string): Promise<boolean> {
+    try {
+        if (typeof AudioEncoder === 'undefined') return false;
+        const config = await AudioEncoder.isConfigSupported({
+            codec,
+            numberOfChannels: 2,
+            sampleRate: 48000,
+            bitrate: 128000,
+        });
+        return !!config.supported;
+    } catch {
+        return false;
+    }
+}
+
+export function getCachedSupport(): WebCodecsSupport | null {
+    return cachedSupport;
 }

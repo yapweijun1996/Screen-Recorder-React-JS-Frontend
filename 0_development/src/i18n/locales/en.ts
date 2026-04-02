@@ -147,6 +147,8 @@ const en: TranslationTable = {
     'editor.export.exportFull': 'Export Full Video (No Trim)',
     'editor.export.playbackIssue': 'Fix playback issue by recording again.',
     'editor.export.failed': 'Failed to export video. Please check console.',
+    'editor.export.modalExporting': 'Exporting to {{format}}...',
+    'editor.export.modalStayHint': 'Stay on this tab for best performance. Switching tabs may slow down processing.',
 
     'quality.low.label': 'Low (Fast)',
     'quality.low.description': 'Smaller file size, faster processing',

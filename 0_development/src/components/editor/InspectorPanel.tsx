@@ -109,7 +109,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <div className="flex-1 overflow-y-auto">
                 <div className="p-3 space-y-3">
                     {/* 快速预设 */}
-                    <div className="bg-purple-50 dark:bg-gradient-to-r dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-500/20 rounded-lg p-2.5">
+                    <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-500/30 rounded-lg p-2.5">
                         <div className="flex items-center gap-2 mb-2">
                             <Sparkles size={12} className="text-purple-500 dark:text-purple-400" />
                             <span className="text-[11px] font-medium text-th-primary">{t('editor.export.quickHint')}</span>
@@ -118,7 +118,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             variant="secondary"
                             size="sm"
                             onClick={onApplyHighQualityPreset}
-                            className="w-full text-[10px] py-1.5 bg-purple-600/30 hover:bg-purple-600/50 border-purple-500/30"
+                            className="w-full text-[10px] py-1.5 !bg-purple-100 dark:!bg-purple-600/40 hover:!bg-purple-200 dark:hover:!bg-purple-600/60 !text-purple-700 dark:!text-purple-200 !border-purple-300 dark:!border-purple-500/40"
                             disabled={isProcessing}
                         >
                             <Sparkles size={10} className="mr-1" />

@@ -120,6 +120,8 @@ const de: TranslationTable = {
     'editor.export.exportFull': 'Gesamtes Video exportieren (ohne Trim)',
     'editor.export.playbackIssue': 'Neu aufnehmen, um Wiedergabe zu reparieren.',
     'editor.export.failed': 'Export fehlgeschlagen. Konsole prüfen.',
+    'editor.export.modalExporting': 'Exportiert nach {{format}}...',
+    'editor.export.modalStayHint': 'Bleiben Sie auf dieser Registerkarte für die beste Leistung. Ein Wechsel kann die Verarbeitung verlangsamen.',
 
     'quality.low.label': 'Niedrig (Schnell)',
     'quality.low.description': 'Kleiner, schnell verarbeitet',

@@ -10,7 +10,7 @@
 
 import type { ExportOptions, VideoQualityPreset } from '../types';
 import { VIDEO_QUALITY_PRESETS } from '../types';
-import { detectWebCodecsSupport } from './webcodecs/capability';
+import { detectWebCodecsSupport, getCachedSupport } from './webcodecs/capability';
 import { exportWithWebCodecs } from './webcodecs/webcodecExportService';
 
 export type ExportEngineType = 'webcodecs' | 'none';
@@ -76,7 +76,8 @@ class ExportService {
             if (support.supported) {
                 this.engine = 'webcodecs';
                 this.setStatus('ready');
-                console.info('[ExportService] WebCodecs engine ready (MIT, hardware-accelerated)');
+                const codec = support.h264 ? 'H.264/MP4' : 'VP8/WebM';
+                console.info(`[ExportService] WebCodecs ready — ${codec} (MIT, hardware-accelerated)`);
                 return;
             }
             console.warn('[ExportService] WebCodecs not supported in this browser');

@@ -1,21 +1,24 @@
 /**
  * WebCodecs-based video export service.
- * Decodes input WebM, trims/concatenates segments, re-encodes to H.264 MP4.
- * Uses mp4-muxer for container packaging.
+ * Decodes input WebM via <video> + canvas, re-encodes and muxes to MP4 or WebM.
+ *
+ * Chrome/Edge: H.264 + AAC → MP4 (via mp4-muxer)
+ * Firefox:     VP8 + Opus → WebM (via webm-muxer)
  *
  * License: MIT (no GPL dependencies)
  */
 
-import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
+import { Muxer as Mp4Muxer, ArrayBufferTarget as Mp4Target } from 'mp4-muxer';
+import { Muxer as WebmMuxer, ArrayBufferTarget as WebmTarget } from 'webm-muxer';
 import type { ExportOptions, VideoQualityPreset } from '../../types';
 import { VIDEO_QUALITY_PRESETS } from '../../types';
+import { getCachedSupport, type WebCodecsSupport } from './capability';
 
 export interface ExportProgress {
-    ratio: number; // 0-1
+    ratio: number;
     phase: 'decoding' | 'encoding' | 'muxing';
 }
 
-/** Resolution mappings */
 const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> = {
     original: null,
     '720p': { width: 1280, height: 720 },
@@ -23,21 +26,16 @@ const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> =
     '4k': { width: 3840, height: 2160 },
 };
 
-/** Map quality preset to H.264 bitrate */
 function getVideoBitrate(quality: VideoQualityPreset, width: number, height: number): number {
     const preset = VIDEO_QUALITY_PRESETS[quality];
-    // Scale bitrate based on resolution relative to 1080p
     const pixelRatio = (width * height) / (1920 * 1080);
-    const scaledBitrate = preset.videoBitsPerSecond * Math.max(0.5, Math.min(3, pixelRatio));
-    return Math.round(scaledBitrate);
+    return Math.round(preset.videoBitsPerSecond * Math.max(0.5, Math.min(3, pixelRatio)));
 }
 
 function getAudioBitrate(quality: VideoQualityPreset): number {
-    const bitrateStr = VIDEO_QUALITY_PRESETS[quality].audioBitrate;
-    return parseInt(bitrateStr) * 1000; // '128k' -> 128000
+    return parseInt(VIDEO_QUALITY_PRESETS[quality].audioBitrate) * 1000;
 }
 
-/** Normalize segments: sort, filter invalid */
 function normalizeSegments(segments: Array<{ start: number; end: number }>) {
     return segments
         .map((s) => ({ start: Number(s.start), end: Number(s.end) }))
@@ -46,191 +44,218 @@ function normalizeSegments(segments: Array<{ start: number; end: number }>) {
 }
 
 /**
- * Export video using WebCodecs API + mp4-muxer.
- *
- * Flow:
- * 1. Decode input WebM using VideoDecoder/AudioDecoder
- * 2. Filter frames by segment time ranges
- * 3. Re-encode to H.264/AAC using VideoEncoder/AudioEncoder
- * 4. Mux into MP4 container using mp4-muxer
+ * Export video using WebCodecs API.
+ * Auto-selects codec based on browser capability:
+ * - H.264/AAC → MP4 (Chrome, Edge)
+ * - VP8/Opus → WebM (Firefox)
  */
 export async function exportWithWebCodecs(
     inputBlob: Blob,
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void,
 ): Promise<Blob> {
+    const support = getCachedSupport();
+    if (!support || !support.supported) {
+        throw new Error('WebCodecs not supported');
+    }
+
+    const useH264 = support.h264;
+    const useAAC = support.aac;
+
     const quality = options.quality || 'medium';
     const targetFps = options.fps || 30;
     const resolution = options.resolution || 'original';
+    const frameDurationUs = Math.round(1_000_000 / targetFps);
 
-    // Determine segments to export
     let segments = options.segments?.length
         ? normalizeSegments(options.segments)
         : (options.trimStart !== undefined && options.trimEnd !== undefined)
             ? normalizeSegments([{ start: options.trimStart, end: options.trimEnd }])
             : null;
 
-    // Demux input video to get raw tracks
-    const { videoTrack, audioTrack, videoInfo, audioInfo } = await demuxBlob(inputBlob);
+    // Demux input
+    onProgress?.({ ratio: 0, phase: 'decoding' });
+    const { videoFrames, audioBuffer, videoInfo } = await demuxBlob(inputBlob, onProgress);
 
-    // Calculate output dimensions
+    // Output dimensions
     const resConfig = RESOLUTION_MAP[resolution];
-    const outputWidth = resConfig?.width ?? videoInfo.width;
-    const outputHeight = resConfig?.height ?? videoInfo.height;
-    // Ensure even dimensions (H.264 requires)
-    const width = outputWidth % 2 === 0 ? outputWidth : outputWidth + 1;
-    const height = outputHeight % 2 === 0 ? outputHeight : outputHeight + 1;
+    const rawW = resConfig?.width ?? videoInfo.width;
+    const rawH = resConfig?.height ?? videoInfo.height;
+    const width = rawW + (rawW % 2);   // ensure even
+    const height = rawH + (rawH % 2);
 
     const videoBitrate = getVideoBitrate(quality, width, height);
     const audioBitrate = getAudioBitrate(quality);
-    const hasAudio = audioTrack.length > 0 && audioInfo !== null;
+    const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
 
-    // Total duration for progress calculation
-    const totalDuration = segments
-        ? segments.reduce((sum, s) => sum + (s.end - s.start), 0)
-        : videoInfo.duration;
+    if (!segments) {
+        segments = [{ start: 0, end: videoInfo.duration }];
+    }
 
-    // Create MP4 muxer
-    const muxerTarget = new ArrayBufferTarget();
-    const muxer = new Muxer({
-        target: muxerTarget,
-        video: {
-            codec: 'avc',
-            width,
-            height,
-        },
-        audio: hasAudio ? {
-            codec: 'aac',
-            numberOfChannels: audioInfo!.numberOfChannels,
-            sampleRate: audioInfo!.sampleRate,
-        } : undefined,
-        fastStart: 'in-memory', // moov atom at beginning for web playback
-    });
-
-    // Encode video frames
-    let encodedFrames = 0;
+    const totalDuration = segments.reduce((sum, s) => sum + (s.end - s.start), 0);
     const expectedFrames = Math.ceil(totalDuration * targetFps);
+
+    // ─── Create muxer ───
+    const videoCodecStr = useH264 ? 'avc' as const : 'V_VP8' as const;
+    const audioCodecStr = useAAC ? 'aac' as const : 'Opus' as const;
+
+    let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
+    let webmMuxer: WebmMuxer<WebmTarget> | null = null;
+    let mp4Target: Mp4Target | null = null;
+    let webmTarget: WebmTarget | null = null;
+
+    if (useH264) {
+        mp4Target = new Mp4Target();
+        mp4Muxer = new Mp4Muxer({
+            target: mp4Target,
+            video: { codec: 'avc', width, height },
+            audio: hasAudio ? {
+                codec: 'aac',
+                numberOfChannels: audioBuffer!.numberOfChannels,
+                sampleRate: audioBuffer!.sampleRate,
+            } : undefined,
+            fastStart: 'in-memory',
+        });
+    } else {
+        webmTarget = new WebmTarget();
+        webmMuxer = new WebmMuxer({
+            target: webmTarget,
+            video: { codec: 'V_VP8', width, height },
+            audio: hasAudio ? {
+                codec: 'Opus',
+                numberOfChannels: audioBuffer!.numberOfChannels,
+                sampleRate: audioBuffer!.sampleRate,
+            } : undefined,
+        });
+    }
+
+    const addVideoChunk = (chunk: EncodedVideoChunk, meta?: EncodedVideoChunkMetadata) => {
+        if (mp4Muxer) mp4Muxer.addVideoChunk(chunk, meta, chunk.timestamp);
+        else if (webmMuxer) webmMuxer.addVideoChunk(chunk, meta, chunk.timestamp);
+    };
+
+    const addAudioChunk = (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
+        if (mp4Muxer) mp4Muxer.addAudioChunk(chunk, meta, chunk.timestamp);
+        else if (webmMuxer) webmMuxer.addAudioChunk(chunk, meta, chunk.timestamp);
+    };
+
+    // ─── Video encoder ───
+    let encodedFrames = 0;
 
     const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => {
-            muxer.addVideoChunk(chunk, meta ?? undefined);
+            addVideoChunk(chunk, meta ?? undefined);
             encodedFrames++;
             onProgress?.({
-                ratio: Math.min(0.95, encodedFrames / Math.max(expectedFrames, 1)),
+                ratio: Math.min(0.9, 0.3 + 0.6 * (encodedFrames / Math.max(expectedFrames, 1))),
                 phase: 'encoding',
             });
         },
-        error: (e) => { throw e; },
+        error: (e) => console.error('[VideoEncoder]', e),
     });
 
+    const videoCodec = useH264 ? 'avc1.42001f' : 'vp8';
     videoEncoder.configure({
-        codec: 'avc1.42001f', // H.264 Baseline L3.1
+        codec: videoCodec,
         width,
         height,
         bitrate: videoBitrate,
         framerate: targetFps,
-        avc: { format: 'avc' }, // mp4-muxer expects 'avc' format
+        ...(useH264 ? { avc: { format: 'avc' } } : {}),
     });
 
-    // Encode audio if present
+    // ─── Audio encoder ───
     let audioEncoder: AudioEncoder | null = null;
     if (hasAudio) {
+        const audioCodec = useAAC ? 'mp4a.40.2' : 'opus';
         audioEncoder = new AudioEncoder({
-            output: (chunk, meta) => {
-                muxer.addAudioChunk(chunk, meta ?? undefined);
-            },
-            error: (e) => { throw e; },
+            output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
+            error: (e) => console.error('[AudioEncoder]', e),
         });
-
         audioEncoder.configure({
-            codec: 'mp4a.40.2', // AAC-LC
-            numberOfChannels: audioInfo!.numberOfChannels,
-            sampleRate: audioInfo!.sampleRate,
+            codec: audioCodec,
+            numberOfChannels: audioBuffer!.numberOfChannels,
+            sampleRate: audioBuffer!.sampleRate,
             bitrate: audioBitrate,
         });
     }
 
-    // Process video frames through segments
-    const frameDuration = 1_000_000 / targetFps; // microseconds
-    let outputTimestamp = 0; // continuous output timestamp in microseconds
-
-    if (!segments) {
-        // Export full video
-        segments = [{ start: 0, end: videoInfo.duration }];
-    }
-
-    onProgress?.({ ratio: 0, phase: 'decoding' });
+    // ─── Encode video frames per segment ───
+    onProgress?.({ ratio: 0.3, phase: 'encoding' });
+    let outputTimestamp = 0;
 
     for (const segment of segments) {
-        // Find video frames within this segment
-        const segmentFrames = videoTrack.filter(
-            (f) => f.timestamp / 1_000_000 >= segment.start - 0.01 &&
-                f.timestamp / 1_000_000 < segment.end + 0.01
+        const segFrames = videoFrames.filter(
+            (f) => f.time >= segment.start - 0.02 && f.time < segment.end + 0.02
         );
 
-        // Re-sample at target FPS
         const segDuration = segment.end - segment.start;
         const frameCount = Math.ceil(segDuration * targetFps);
 
         for (let i = 0; i < frameCount; i++) {
             const targetTime = segment.start + (i / targetFps);
-            const targetTimeUs = targetTime * 1_000_000;
 
-            // Find nearest frame
-            let best = segmentFrames[0];
+            // Find nearest decoded frame
+            let best = segFrames[0];
             let bestDist = Infinity;
-            for (const f of segmentFrames) {
-                const dist = Math.abs(f.timestamp - targetTimeUs);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    best = f;
-                }
+            for (const f of segFrames) {
+                const dist = Math.abs(f.time - targetTime);
+                if (dist < bestDist) { bestDist = dist; best = f; }
             }
 
             if (best) {
-                // VideoFrame from ImageBitmap — use overload 1 (CanvasImageSource)
-                const frame = new VideoFrame(best.data, {
+                const frame = new VideoFrame(best.bitmap, {
                     timestamp: outputTimestamp,
-                    displayWidth: width,
-                    displayHeight: height,
+                    duration: frameDurationUs,
                 });
-
                 videoEncoder.encode(frame, { keyFrame: i % (targetFps * 2) === 0 });
                 frame.close();
             }
 
-            outputTimestamp += frameDuration;
-        }
-
-        // Process audio for this segment
-        if (audioEncoder && audioInfo) {
-            const segmentAudio = audioTrack.filter(
-                (a) => a.timestamp / 1_000_000 >= segment.start - 0.01 &&
-                    a.timestamp / 1_000_000 < segment.end + 0.01
-            );
-
-            const audioOffset = (segment.start * 1_000_000) - (segmentAudio[0]?.timestamp ?? 0);
-
-            for (const chunk of segmentAudio) {
-                const adjustedTimestamp = chunk.timestamp - (segment.start * 1_000_000) +
-                    (outputTimestamp - segDuration * 1_000_000);
-
-                const audioData = new AudioData({
-                    format: chunk.format,
-                    sampleRate: audioInfo.sampleRate,
-                    numberOfFrames: chunk.numberOfFrames,
-                    numberOfChannels: audioInfo.numberOfChannels,
-                    timestamp: Math.max(0, adjustedTimestamp),
-                    data: chunk.data,
-                });
-                audioEncoder.encode(audioData);
-                audioData.close();
-            }
+            outputTimestamp += frameDurationUs;
         }
     }
 
-    // Flush and finalize
-    onProgress?.({ ratio: 0.95, phase: 'muxing' });
+    // ─── Encode audio per segment ───
+    if (audioEncoder && audioBuffer) {
+        let audioOutputTime = 0;
+
+        for (const segment of segments) {
+            const startSample = Math.floor(segment.start * audioBuffer.sampleRate);
+            const endSample = Math.min(
+                Math.ceil(segment.end * audioBuffer.sampleRate),
+                audioBuffer.length
+            );
+            const length = endSample - startSample;
+            if (length <= 0) continue;
+
+            // Extract interleaved audio data
+            const channels = audioBuffer.numberOfChannels;
+            const f32 = new Float32Array(length * channels);
+            for (let ch = 0; ch < channels; ch++) {
+                const channelData = audioBuffer.getChannelData(ch);
+                for (let s = 0; s < length; s++) {
+                    f32[s * channels + ch] = channelData[startSample + s];
+                }
+            }
+
+            const audioData = new AudioData({
+                format: 'f32-interleaved' as AudioSampleFormat,
+                sampleRate: audioBuffer.sampleRate,
+                numberOfFrames: length,
+                numberOfChannels: channels,
+                timestamp: audioOutputTime,
+                data: f32,
+            });
+            audioEncoder.encode(audioData);
+            audioData.close();
+
+            audioOutputTime += Math.round((length / audioBuffer.sampleRate) * 1_000_000);
+        }
+    }
+
+    // ─── Flush and finalize ───
+    onProgress?.({ ratio: 0.92, phase: 'muxing' });
 
     await videoEncoder.flush();
     videoEncoder.close();
@@ -240,49 +265,43 @@ export async function exportWithWebCodecs(
         audioEncoder.close();
     }
 
-    muxer.finalize();
-    onProgress?.({ ratio: 1, phase: 'muxing' });
+    // Clean up bitmaps
+    for (const f of videoFrames) f.bitmap.close();
 
-    return new Blob([muxerTarget.buffer], { type: 'video/mp4' });
+    if (mp4Muxer) {
+        mp4Muxer.finalize();
+        onProgress?.({ ratio: 1, phase: 'muxing' });
+        return new Blob([mp4Target!.buffer], { type: 'video/mp4' });
+    } else {
+        webmMuxer!.finalize();
+        onProgress?.({ ratio: 1, phase: 'muxing' });
+        return new Blob([webmTarget!.buffer], { type: 'video/webm' });
+    }
 }
 
-// ─── Internal: Demux WebM blob into raw frames ───────────────────────────
+// ─── Demux via <video> + canvas ──────────────────────────────────────────
 
-interface DecodedVideoFrame {
-    timestamp: number; // microseconds
-    data: ImageBitmap;
-}
-
-interface DecodedAudioChunk {
-    timestamp: number; // microseconds
-    format: AudioSampleFormat;
-    numberOfFrames: number;
-    data: ArrayBuffer;
+interface DecodedFrame {
+    time: number;       // seconds
+    bitmap: ImageBitmap;
 }
 
 interface VideoInfo {
     width: number;
     height: number;
-    duration: number; // seconds
-}
-
-interface AudioInfo {
-    numberOfChannels: number;
-    sampleRate: number;
+    duration: number;
 }
 
 interface DemuxResult {
-    videoTrack: DecodedVideoFrame[];
-    audioTrack: DecodedAudioChunk[];
+    videoFrames: DecodedFrame[];
+    audioBuffer: AudioBuffer | null;
     videoInfo: VideoInfo;
-    audioInfo: AudioInfo | null;
 }
 
-/**
- * Demux a video blob by playing it through a hidden <video> element
- * and capturing frames via VideoFrame + OffscreenCanvas.
- */
-async function demuxBlob(blob: Blob): Promise<DemuxResult> {
+async function demuxBlob(
+    blob: Blob,
+    onProgress?: (progress: ExportProgress) => void,
+): Promise<DemuxResult> {
     const url = URL.createObjectURL(blob);
     const video = document.createElement('video');
     video.muted = true;
@@ -294,89 +313,55 @@ async function demuxBlob(blob: Blob): Promise<DemuxResult> {
         video.onerror = () => reject(new Error('Failed to load video for demuxing'));
     });
 
+    // Wait for video to be fully loaded
+    if (video.readyState < 2) {
+        await new Promise<void>((resolve) => {
+            video.oncanplay = () => resolve();
+        });
+    }
+
     const width = video.videoWidth;
     const height = video.videoHeight;
     const duration = video.duration;
 
-    // Extract frames by seeking through the video
-    const frames: DecodedVideoFrame[] = [];
+    const frames: DecodedFrame[] = [];
     const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext('2d')!;
 
-    // Seek through at fine granularity to extract frames
-    const seekInterval = 1 / 30; // ~30fps extraction
+    const seekInterval = 1 / 30;
     const totalFrames = Math.ceil(duration / seekInterval);
 
     for (let i = 0; i <= totalFrames; i++) {
-        const time = Math.min(i * seekInterval, duration);
+        const time = Math.min(i * seekInterval, duration - 0.001);
         video.currentTime = time;
-        await new Promise<void>((resolve) => {
-            video.onseeked = () => resolve();
-        });
+        await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
 
         ctx.drawImage(video, 0, 0, width, height);
         const bitmap = await createImageBitmap(canvas);
 
-        frames.push({
-            timestamp: time * 1_000_000,
-            data: bitmap,
-        });
+        frames.push({ time, bitmap });
+
+        if (onProgress && i % 10 === 0) {
+            onProgress({ ratio: 0.3 * (i / totalFrames), phase: 'decoding' });
+        }
     }
 
+    video.src = '';
     URL.revokeObjectURL(url);
 
-    // Audio: extract via AudioContext
-    let audioTrack: DecodedAudioChunk[] = [];
-    let audioInfo: AudioInfo | null = null;
-
+    // Decode audio
+    let audioBuffer: AudioBuffer | null = null;
     try {
+        const arrayBuf = await blob.arrayBuffer();
         const audioCtx = new OfflineAudioContext(2, 1, 48000);
-        const arrayBuffer = await blob.arrayBuffer();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-        if (audioBuffer.numberOfChannels > 0 && audioBuffer.length > 0) {
-            audioInfo = {
-                numberOfChannels: audioBuffer.numberOfChannels,
-                sampleRate: audioBuffer.sampleRate,
-            };
-
-            // Split audio into chunks (~1024 frames each)
-            const chunkSize = 1024;
-            const totalChunks = Math.ceil(audioBuffer.length / chunkSize);
-
-            for (let i = 0; i < totalChunks; i++) {
-                const offset = i * chunkSize;
-                const length = Math.min(chunkSize, audioBuffer.length - offset);
-
-                // Interleave channels into Float32
-                const interleaved = new Float32Array(length * audioBuffer.numberOfChannels);
-                for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
-                    const channelData = audioBuffer.getChannelData(ch);
-                    for (let s = 0; s < length; s++) {
-                        interleaved[s * audioBuffer.numberOfChannels + ch] = channelData[offset + s];
-                    }
-                }
-
-                const timestamp = (offset / audioBuffer.sampleRate) * 1_000_000;
-
-                audioTrack.push({
-                    timestamp,
-                    format: 'f32-planar' as AudioSampleFormat,
-                    numberOfFrames: length,
-                    data: interleaved.buffer,
-                });
-            }
-        }
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
     } catch {
-        // No audio or decode failed — continue without audio
-        audioInfo = null;
-        audioTrack = [];
+        audioBuffer = null;
     }
 
     return {
-        videoTrack: frames,
-        audioTrack,
+        videoFrames: frames,
+        audioBuffer,
         videoInfo: { width, height, duration },
-        audioInfo,
     };
 }

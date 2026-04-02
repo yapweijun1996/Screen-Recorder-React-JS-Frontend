@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { exportService, EngineStatus as EngineStatusType } from '../services/exportService';
+import { getCachedSupport } from '../services/webcodecs/capability';
 import { Loader2, CheckCircle, XCircle, Cpu } from 'lucide-react';
 import { useI18n } from '../i18n';
 
@@ -7,10 +8,6 @@ interface EngineStatusProps {
     className?: string;
 }
 
-/**
- * Shows the export engine status (WebCodecs detection).
- * Triggers engine initialization on mount.
- */
 export const EngineStatus: React.FC<EngineStatusProps> = ({ className = '' }) => {
     const [status, setStatus] = useState<EngineStatusType>('idle');
     const { t } = useI18n();
@@ -35,12 +32,15 @@ export const EngineStatus: React.FC<EngineStatusProps> = ({ className = '' }) =>
                     text: t('engine.loading'),
                     color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-500/30',
                 };
-            case 'ready':
+            case 'ready': {
+                const support = getCachedSupport();
+                const label = support?.h264 ? 'H.264 Ready' : 'VP8 Ready';
                 return {
                     icon: <CheckCircle size={14} className="text-emerald-600 dark:text-emerald-400" />,
-                    text: t('engine.ready.webcodecs'),
+                    text: label,
                     color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-500/30',
                 };
+            }
             case 'error':
                 return {
                     icon: <XCircle size={14} className="text-red-600 dark:text-red-400" />,

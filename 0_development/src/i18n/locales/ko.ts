@@ -120,6 +120,8 @@ const ko: TranslationTable = {
     'editor.export.exportFull': '전체 영상 내보내기 (트림 없음)',
     'editor.export.playbackIssue': '재녹화하여 재생 문제를 해결하세요.',
     'editor.export.failed': '내보내기에 실패했습니다. 콘솔을 확인하세요.',
+    'editor.export.modalExporting': '{{format}}으로 내보내는 중...',
+    'editor.export.modalStayHint': '최상의 성능을 위해 이 탭에 머물러 주세요. 탭을 전환하면 처리 속도가 느려질 수 있습니다.',
 
     'quality.low.label': '낮음 (빠름)',
     'quality.low.description': '파일이 작고 처리 속도가 빠름',
