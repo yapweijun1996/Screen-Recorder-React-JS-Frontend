@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Screen-Recorder-React-JS-Frontend/sw.js', { scope: '/Screen-Recorder-React-JS-Frontend/' })})}
