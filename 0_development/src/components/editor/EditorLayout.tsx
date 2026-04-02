@@ -31,18 +31,6 @@ const TIMELINE_DEFAULT_HEIGHT = 200;
  * Final Cut Pro 风格的编辑器布局
  * 支持可拖拽调整面板大小
  * 增强毛玻璃效果和视觉层次
- * 
- * 布局结构：
- * ┌──────────────────────────────────────────────────┐
- * │                    Top Bar                        │
- * ├────────┬──────────────────────────┬───────────────┤
- * │        │                          │               │
- * │Library ║        Viewer            ║   Inspector   │
- * │   ←→   ║                          ║      ←→       │
- * ├────────╨──────────────────────────╨───────────────┤
- * │ ═══════════════════ ↕ ════════════════════════════│
- * │                    Timeline                        │
- * └──────────────────────────────────────────────────┘
  */
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
     libraryPanel,
@@ -51,42 +39,27 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     timelinePanel,
     topBar,
 }) => {
-    // 面板尺寸状态
     const [libraryWidth, setLibraryWidth] = useState(LIBRARY_DEFAULT_WIDTH);
     const [inspectorWidth, setInspectorWidth] = useState(INSPECTOR_DEFAULT_WIDTH);
     const [timelineHeight, setTimelineHeight] = useState(TIMELINE_DEFAULT_HEIGHT);
 
-    // Library 面板拖拽
     const handleLibraryResize = useCallback((delta: number) => {
-        setLibraryWidth((prev) => {
-            const newWidth = prev + delta;
-            return Math.max(LIBRARY_MIN_WIDTH, Math.min(LIBRARY_MAX_WIDTH, newWidth));
-        });
+        setLibraryWidth((prev) => Math.max(LIBRARY_MIN_WIDTH, Math.min(LIBRARY_MAX_WIDTH, prev + delta)));
     }, []);
 
-    // Inspector 面板拖拽
     const handleInspectorResize = useCallback((delta: number) => {
-        setInspectorWidth((prev) => {
-            // Inspector 在右侧，向左拖拽增大宽度
-            const newWidth = prev - delta;
-            return Math.max(INSPECTOR_MIN_WIDTH, Math.min(INSPECTOR_MAX_WIDTH, newWidth));
-        });
+        setInspectorWidth((prev) => Math.max(INSPECTOR_MIN_WIDTH, Math.min(INSPECTOR_MAX_WIDTH, prev - delta)));
     }, []);
 
-    // Timeline 面板拖拽
     const handleTimelineResize = useCallback((delta: number) => {
-        setTimelineHeight((prev) => {
-            // 向上拖拽增大高度
-            const newHeight = prev - delta;
-            return Math.max(TIMELINE_MIN_HEIGHT, Math.min(TIMELINE_MAX_HEIGHT, newHeight));
-        });
+        setTimelineHeight((prev) => Math.max(TIMELINE_MIN_HEIGHT, Math.min(TIMELINE_MAX_HEIGHT, prev - delta)));
     }, []);
 
     return (
-        <div className="fcp-editor-layout h-[calc(100vh-64px)] flex flex-col bg-gradient-to-b from-th-deep to-th-base overflow-hidden">
+        <div className="fcp-editor-layout h-[calc(100vh-64px)] flex flex-col bg-th-base dark:bg-gradient-to-b dark:from-slate-950 dark:to-slate-900 overflow-hidden">
             {/* Top Bar (optional) */}
             {topBar && (
-                <div className="fcp-topbar flex-shrink-0 border-b border-th-edge/80 bg-th-surface/90 backdrop-blur-sm">
+                <div className="fcp-topbar flex-shrink-0 border-b border-th-edge bg-th-surface backdrop-blur-sm">
                     {topBar}
                 </div>
             )}
@@ -99,10 +72,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                         <aside
                             className="
                                 fcp-library flex-shrink-0 overflow-y-auto
-                                bg-gradient-to-b from-th-base/95 to-th-deep/95
-                                backdrop-blur-md
-                                border-r border-th-edge/50
-                                shadow-[inset_-8px_0_12px_-8px_rgba(0,0,0,0.3)]
+                                bg-th-surface dark:bg-slate-900/95
+                                border-r border-th-edge
                             "
                             style={{ width: libraryWidth }}
                         >
@@ -115,8 +86,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     </>
                 )}
 
-                {/* 中央：监视器 (Viewer) - 主要工作区，稍暗背景突出视频 */}
-                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-th-deep/80">
+                {/* 中央：监视器 (Viewer) - 始终深色背景突出视频 */}
+                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-950/80 dark:bg-slate-950/80">
                     <div className="flex-1 min-h-0 overflow-hidden p-3">
                         {viewerPanel}
                     </div>
@@ -132,10 +103,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 <aside
                     className="
                         fcp-inspector flex-shrink-0 overflow-y-auto
-                        bg-gradient-to-b from-th-base/95 to-th-deep/95
-                        backdrop-blur-md
-                        border-l border-th-edge/50
-                        shadow-[inset_8px_0_12px_-8px_rgba(0,0,0,0.3)]
+                        bg-th-surface dark:bg-slate-900/95
+                        border-l border-th-edge
                     "
                     style={{ width: inspectorWidth }}
                 >
@@ -149,13 +118,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onResize={handleTimelineResize}
             />
 
-            {/* 底部：时间轴 (Timeline) - 核心编辑区 */}
+            {/* 底部：时间轴 (Timeline) - 始终深色 */}
             <div
                 className="
                     fcp-timeline flex-shrink-0
-                    bg-gradient-to-t from-th-deep via-th-deep to-th-base/80
-                    border-t border-th-divider/50
-                    shadow-[inset_0_8px_16px_-8px_rgba(0,0,0,0.4)]
+                    bg-slate-950 dark:bg-gradient-to-t dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/80
+                    border-t border-th-edge
                 "
                 style={{ height: timelineHeight }}
             >

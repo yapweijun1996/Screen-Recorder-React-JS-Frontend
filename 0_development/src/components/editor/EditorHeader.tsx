@@ -13,8 +13,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onReset }) => {
     return (
         <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <FileVideo className="text-indigo-400" />
+                <h2 className="text-2xl font-bold text-th-primary flex items-center gap-2">
+                    <FileVideo className="text-indigo-600 dark:text-indigo-400" />
                     {t('editor.header.title')}
                 </h2>
                 <p className="text-xs text-th-tertiary mt-1">

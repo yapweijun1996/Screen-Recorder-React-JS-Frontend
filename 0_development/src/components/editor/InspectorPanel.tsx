@@ -85,14 +85,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return (
         <div className="h-full flex flex-col text-th-secondary">
             {/* 面板标题 */}
-            <div className="px-3 py-2 border-b border-th-edge bg-th-surface/80">
+            <div className="px-3 py-2 border-b border-th-edge bg-th-card/50">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-semibold text-white flex items-center gap-2">
-                        <Download size={14} className="text-green-400" />
+                    <h2 className="text-xs font-semibold text-th-primary flex items-center gap-2">
+                        <Download size={14} className="text-green-600 dark:text-green-400" />
                         {t('editor.export.title')}
                     </h2>
                     <button
-                        className="flex items-center gap-1 text-[10px] text-th-tertiary hover:text-white transition-colors"
+                        className="flex items-center gap-1 text-[10px] text-th-tertiary hover:text-th-primary transition-colors"
                         onClick={onToggleAdvanced}
                         type="button"
                     >
@@ -109,10 +109,10 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <div className="flex-1 overflow-y-auto">
                 <div className="p-3 space-y-3">
                     {/* 快速预设 */}
-                    <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 rounded-lg p-2.5">
+                    <div className="bg-purple-50 dark:bg-gradient-to-r dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200 dark:border-purple-500/20 rounded-lg p-2.5">
                         <div className="flex items-center gap-2 mb-2">
-                            <Sparkles size={12} className="text-purple-400" />
-                            <span className="text-[11px] font-medium text-white">{t('editor.export.quickHint')}</span>
+                            <Sparkles size={12} className="text-purple-500 dark:text-purple-400" />
+                            <span className="text-[11px] font-medium text-th-primary">{t('editor.export.quickHint')}</span>
                         </div>
                         <Button
                             variant="secondary"
@@ -167,7 +167,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </div>
 
             {/* 底部操作按钮 */}
-            <div className="px-3 py-3 border-t border-th-edge bg-th-surface/50">
+            <div className="px-3 py-3 border-t border-th-edge bg-th-card/50">
                 <EditorExportFooterActions
                     exportUrl={exportUrl}
                     playbackError={playbackError}
