@@ -10,3 +10,9 @@ npm run dev       # http://localhost:3000
 npm run build     # Production build → dist/
 npm run preview   # Preview production build
 ```
+
+## Documentation
+
+- [README.md](../README.md) — Project overview, features, getting started
+- [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) — Component hierarchy, data flow, services
+- [docs/THEMING.md](../docs/THEMING.md) — Theme system, color tokens, usage guidelines

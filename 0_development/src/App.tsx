@@ -170,7 +170,7 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-th-base text-th-primary font-sans selection:bg-indigo-500 selection:text-white flex flex-col">
+        <div className={`bg-th-base text-th-primary font-sans selection:bg-indigo-500 selection:text-white flex flex-col ${isEditorMode ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
             {/* Header */}
             <header className={`border-b border-th-edge bg-th-surface/80 backdrop-blur-md sticky top-0 z-50 flex-shrink-0 ${isEditorMode ? 'h-12' : 'h-16'}`}>
                 <div className={`${isEditorMode ? 'px-4' : 'max-w-7xl mx-auto px-4'} h-full flex items-center justify-between`}>
@@ -185,7 +185,7 @@ const App: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <FFmpegStatus />
                         {!isEditorMode && (
-                            <div className="text-xs font-mono text-th-tertiary bg-th-card px-2 py-1 rounded border border-th-divider">
+                            <div className="text-xs font-mono text-th-tertiary bg-th-card h-8 px-2 rounded border border-th-divider flex items-center">
                                 {t('app.tagline')}
                             </div>
                         )}

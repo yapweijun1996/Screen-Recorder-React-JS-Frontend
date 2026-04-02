@@ -21,7 +21,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = 
                         setLanguage(next as LanguageCode);
                     }
                 }}
-                className="bg-th-base border border-th-divider text-th-primary rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-th-base border border-th-divider text-th-primary rounded-md h-8 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
                 {languages.map((lang) => (
                     <option key={lang.code} value={lang.code}>

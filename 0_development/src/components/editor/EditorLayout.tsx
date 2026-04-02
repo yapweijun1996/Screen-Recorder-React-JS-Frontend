@@ -56,7 +56,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }, []);
 
     return (
-        <div className="fcp-editor-layout h-[calc(100vh-64px)] flex flex-col bg-th-base dark:bg-gradient-to-b dark:from-slate-950 dark:to-slate-900 overflow-hidden">
+        <div className="fcp-editor-layout flex-1 min-h-0 flex flex-col bg-th-base dark:bg-gradient-to-b dark:from-slate-950 dark:to-slate-900 overflow-hidden">
             {/* Top Bar (optional) */}
             {topBar && (
                 <div className="fcp-topbar flex-shrink-0 border-b border-th-edge bg-th-surface backdrop-blur-sm">

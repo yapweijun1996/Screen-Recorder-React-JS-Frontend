@@ -15,6 +15,7 @@ A professional, browser-based screen recording and video editing application. Al
 - **Export to MP4/WebM** — Client-side FFmpeg.wasm encoding with progress and ETA
 - **Auto-Save** — Recordings persist in IndexedDB for session recovery
 - **PWA Support** — Installable as a standalone desktop/mobile app with offline caching
+- **Light / Dark Mode** — Toggle theme with system preference detection and persistence
 - **11 Languages** — English, 中文, Deutsch, Español, Français, हिन्दी, Bahasa Indonesia, 日本語, 한국어, Português
 
 ## Tech Stack
@@ -23,7 +24,7 @@ A professional, browser-based screen recording and video editing application. Al
 |-------|-----------|
 | Framework | React 19 + TypeScript (strict) |
 | Build | Vite 6 |
-| Styling | Tailwind CSS 3 |
+| Styling | Tailwind CSS 3 + CSS Variables (theme system) |
 | Video Processing | FFmpeg.wasm (client-side WebAssembly) |
 | Icons | Lucide React |
 | Storage | IndexedDB (browser-native) |
@@ -69,25 +70,44 @@ These are pre-configured in `vite.config.ts` for both dev and preview servers. F
 ```
 0_development/
 ├── public/
-│   ├── favicon.svg          # SVG app icon
-│   ├── ffmpeg/              # FFmpeg.wasm single-threaded
-│   └── ffmpeg-mt/           # FFmpeg.wasm multi-threaded
+│   ├── favicon.svg              # SVG app icon
+│   ├── ffmpeg/                  # FFmpeg.wasm single-threaded
+│   └── ffmpeg-mt/               # FFmpeg.wasm multi-threaded
 ├── src/
 │   ├── components/
-│   │   ├── editor/          # Editor UI (timeline, trim panel, export)
-│   │   └── recorder/        # Recorder UI (sidebar, preview, controls)
+│   │   ├── editor/              # Editor UI (timeline, trim, export)
+│   │   │   └── exportPanel/     # Export settings & status sub-components
+│   │   ├── recorder/            # Recorder UI (sidebar, preview, controls)
+│   │   ├── ThemeToggle.tsx      # Light/dark mode toggle button
+│   │   ├── Button.tsx           # Shared button component
+│   │   └── ...
+│   ├── context/
+│   │   └── ThemeContext.tsx      # Theme state management & persistence
 │   ├── services/
-│   │   ├── ffmpegService.ts # FFmpeg.wasm wrapper
+│   │   ├── ffmpegService.ts     # FFmpeg.wasm wrapper
 │   │   └── videoStorageService.ts  # IndexedDB persistence
 │   ├── utils/
-│   │   └── StreamCompositor.ts     # Canvas-based PIP composition
-│   ├── i18n/                # Internationalization (10 locales)
-│   ├── types.ts             # Shared TypeScript definitions
-│   └── App.tsx              # Root component
-├── vite.config.ts           # Vite + PWA configuration
-├── tailwind.config.js       # Tailwind theme
-└── tsconfig.json            # TypeScript config
+│   │   ├── StreamCompositor.ts  # Canvas-based PIP composition
+│   │   └── format.ts            # Time/byte formatting helpers
+│   ├── i18n/                    # Internationalization (10 locales)
+│   ├── types.ts                 # Shared TypeScript definitions
+│   ├── index.css                # Theme CSS variables + animations
+│   └── App.tsx                  # Root component
+├── vite.config.ts               # Vite + PWA configuration
+├── tailwind.config.js           # Tailwind theme + semantic colors
+└── tsconfig.json                # TypeScript config
 ```
+
+## Theme System
+
+ScreenClip Pro supports light and dark mode with automatic system preference detection.
+
+- **CSS Variables** in `src/index.css` define color tokens for both themes
+- **Tailwind `th-*` colors** in `tailwind.config.js` map to CSS variables
+- **ThemeContext** persists preference to `localStorage`
+- **No flash** — inline script in `index.html` applies theme before React hydrates
+
+See [docs/THEMING.md](docs/THEMING.md) for the full color token reference.
 
 ## Keyboard Shortcuts (Editor)
 
@@ -101,6 +121,15 @@ These are pre-configured in `vite.config.ts` for both dev and preview servers. F
 | `B` | Split at playhead |
 | `Delete` | Remove selected segment |
 | `Ctrl + Z` | Undo |
+
+## Browser Support
+
+| Browser | Support |
+|---------|---------|
+| Chrome 89+ | Full |
+| Edge 89+ | Full |
+| Firefox 79+ | Full (SharedArrayBuffer required) |
+| Safari 15.2+ | Partial (no SharedArrayBuffer without flags) |
 
 ## License
 
