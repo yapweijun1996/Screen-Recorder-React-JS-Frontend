@@ -1,0 +1,8 @@
+{
+  "name": "ScreenClip Pro",
+  "description": "A powerful, browser-based screen recorder and editor using WebAssembly for client-side MP4 export.",
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture"
+  ]
+}

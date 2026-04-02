@@ -50,6 +50,7 @@ App
 │
 └── Editor (REVIEWING state)
     ├── EditorHeader          # Title + "Record New" button
+    ├── ExportProgressModal   # Fullscreen modal during export (SVG progress ring + ETA)
     └── EditorLayout          # FCP-style resizable panels
         ├── LibraryPanel      # Media browser + edit stats
         ├── EditorPlayer      # Video playback + seek bar
@@ -57,7 +58,7 @@ App
         │   ├── EditorExportAdvancedSettings
         │   ├── EditorExportStatus
         │   └── EditorExportFooterActions
-        └── ProTimeline       # Timeline ruler + clips + tools
+        └── ProTimeline       # Ripple timeline (collapsed segments from 0)
             ├── TimelineToolbar   # Select / Blade / Hand tools
             ├── TimelineClip      # Segment visualization
             └── DraggablePlayhead # Seek control
@@ -132,9 +133,10 @@ User clicks "Start Recording"
 ### Editing & Export
 
 ```
-User trims/splits segments in ProTimeline
-  → useSegmentsEditor maintains segment array
-  → User clicks "Export Trimmed"
+User trims/splits segments in ProTimeline (ripple mode)
+  → useSegmentsEditor maintains segment array (source time references)
+  → ProTimeline displays collapsed: source↔sequence time mapping
+  → User clicks "Export Trimmed" → ExportProgressModal overlay
   → exportService.processVideo(blob, segments, quality)
   → Demux WebM via <video> + OffscreenCanvas
   → VideoEncoder (H.264 or VP8) + AudioEncoder (AAC or Opus)
@@ -145,7 +147,7 @@ User trims/splits segments in ProTimeline
 
 ## Internationalization
 
-- 10 locale files in `src/i18n/locales/`
+- 10 locale files in `src/i18n/locales/` (en, zh, ja, ko, es, fr, de, pt, hi, id)
 - `I18nProvider` context with `t(key, params?)` function
 - Language stored in `localStorage('screenclip.language')`
 - Template interpolation: `{{variable}}` syntax in translation strings
