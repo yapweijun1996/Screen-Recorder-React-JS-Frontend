@@ -5,6 +5,8 @@ import type { TranslationTable } from '../types';
  */
 const en: TranslationTable = {
     'common.language': 'Language',
+    'common.theme.light': 'Light mode',
+    'common.theme.dark': 'Dark mode',
     'common.processing': 'Processing...',
     'common.dismiss': 'Dismiss',
 
