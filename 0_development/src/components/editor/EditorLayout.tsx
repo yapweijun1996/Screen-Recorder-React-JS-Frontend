@@ -86,8 +86,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     </>
                 )}
 
-                {/* 中央：监视器 (Viewer) - 始终深色背景突出视频 */}
-                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-950/80 dark:bg-slate-950/80">
+                {/* 中央：监视器 (Viewer) */}
+                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950/80">
                     <div className="flex-1 min-h-0 overflow-hidden p-3">
                         {viewerPanel}
                     </div>
@@ -118,11 +118,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onResize={handleTimelineResize}
             />
 
-            {/* 底部：时间轴 (Timeline) - 始终深色 */}
+            {/* 底部：时间轴 (Timeline) */}
             <div
                 className="
                     fcp-timeline flex-shrink-0
-                    bg-slate-950 dark:bg-gradient-to-t dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/80
+                    bg-th-surface dark:bg-gradient-to-t dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/80
                     border-t border-th-edge
                 "
                 style={{ height: timelineHeight }}

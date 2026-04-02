@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ExportFormat, ExportOptions, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
-import { ffmpegService } from '../../services/ffmpegService';
+import { exportService } from '../../services/exportService';
 
 interface UseEditorExportControllerArgs {
     videoMetadata: VideoMetadata;
@@ -18,12 +18,6 @@ interface UseEditorExportControllerArgs {
     t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-/**
- * Editor 匯出流程集中管理：
- * - 追蹤 FFmpeg 進度 / ETA
- * - 產生 export blob URL（並在切換/卸載時 revoke）
- * - 將錯誤變成 UI 可顯示的字串（避免用 alert）
- */
 export const useEditorExportController = ({
     videoMetadata,
     segments,
@@ -43,7 +37,7 @@ export const useEditorExportController = ({
     const [exportUrl, setExportUrl] = useState<string | null>(null);
     const [exportError, setExportError] = useState<string | null>(null);
 
-    // Subscribe to FFmpeg progress
+    // Subscribe to export progress
     useEffect(() => {
         const handler = ({ ratio }: { ratio: number }) => {
             const clamped = Math.max(0, Math.min(1, ratio));
@@ -58,10 +52,10 @@ export const useEditorExportController = ({
             }
         };
 
-        ffmpegService.onProgress(handler);
+        exportService.onProgress(handler);
 
         return () => {
-            ffmpegService.offProgress(handler);
+            exportService.offProgress(handler);
         };
     }, [processingStartTime]);
 
@@ -75,7 +69,6 @@ export const useEditorExportController = ({
     const exportVideo = async (mode: 'full' | 'trimmed') => {
         setExportError(null);
 
-        // 使用同一份播放錯誤顯示（避免 UI 出現兩套錯誤訊息）
         if (playbackError || videoMetadata.duration <= 0) {
             setPlaybackError(t('editor.playback.cannotExport'));
             return;
@@ -111,7 +104,7 @@ export const useEditorExportController = ({
                 }
             }
 
-            const outputBlob = await ffmpegService.processVideo(videoMetadata.blob, options);
+            const outputBlob = await exportService.processVideo(videoMetadata.blob, options);
             const url = URL.createObjectURL(outputBlob);
             setExportUrl(url);
         } catch (error) {
@@ -126,14 +119,11 @@ export const useEditorExportController = ({
     };
 
     return {
-        // state
         isProcessing,
         processingProgress,
         processingEta,
         exportUrl,
         exportError,
-
-        // actions
         exportTrimmed: () => exportVideo('trimmed'),
         exportFull: () => exportVideo('full'),
         clearExportUrl: () => setExportUrl(null),

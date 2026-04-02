@@ -37,20 +37,20 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
 
     return (
         <section className="lg:col-span-8 xl:col-span-9">
-            <div className="relative w-full aspect-video bg-slate-900 dark:bg-th-deep/60 rounded-2xl overflow-hidden shadow-2xl border border-slate-700 dark:border-th-edge/70 backdrop-blur-sm">
+            <div className="relative w-full aspect-video bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
                 {/* Setup Placeholder */}
                 {!isRecording && !activeStream && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                        <div className="mb-6 p-6 bg-gradient-to-br from-indigo-500/10 via-slate-900/60 to-purple-500/10 rounded-full ring-1 ring-white/10 shadow-2xl">
-                            <Monitor size={64} className="text-indigo-300 drop-shadow-[0_0_20px_rgba(99,102,241,0.55)]" />
+                        <div className="mb-6 p-6 bg-gradient-to-br from-indigo-500/10 via-slate-100/60 dark:via-slate-900/60 to-purple-500/10 rounded-full ring-1 ring-slate-200 dark:ring-white/10 shadow-2xl">
+                            <Monitor size={64} className="text-indigo-500 dark:text-indigo-300 drop-shadow-[0_0_20px_rgba(99,102,241,0.35)]" />
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('preview.ready.title')}</h2>
-                        <p className="text-slate-400 max-w-xl text-sm sm:text-base">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white mb-2">{t('preview.ready.title')}</h2>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm sm:text-base">
                             {t('preview.ready.desc')}
                         </p>
 
-                        <div className="mt-6 inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/60 border border-slate-700 rounded-full px-3 py-1.5">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                        <div className="mt-6 inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
                             {t('preview.ready.controls')}
                         </div>
                     </div>
@@ -125,13 +125,11 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                 )}
             </div>
 
-            <p className="mt-4 text-th-tertiary text-xs sm:text-sm font-medium">
-                {isRecording
-                    ? isPaused
-                        ? t('preview.footer.paused')
-                        : t('preview.footer.recording')
-                    : t('preview.footer.tip')}
-            </p>
+            {isRecording && (
+                <p className="mt-4 text-th-tertiary text-xs sm:text-sm font-medium">
+                    {isPaused ? t('preview.footer.paused') : t('preview.footer.recording')}
+                </p>
+            )}
         </section>
     );
 };

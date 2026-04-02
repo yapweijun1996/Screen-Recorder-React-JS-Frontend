@@ -10,7 +10,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = 
     const { language, setLanguage, languages, t } = useI18n();
 
     return (
-        <label className={`flex items-center gap-2 text-xs text-th-tertiary ${className}`}>
+        <label className={`flex items-center gap-2 h-8 text-xs text-th-tertiary ${className}`}>
             <span className="hidden sm:inline">{t('common.language')}:</span>
             <select
                 value={language}
@@ -21,7 +21,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = 
                         setLanguage(next as LanguageCode);
                     }
                 }}
-                className="bg-th-base border border-th-divider text-th-primary rounded-md h-8 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-th-base border border-th-divider text-th-primary rounded-lg h-8 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
                 {languages.map((lang) => (
                     <option key={lang.code} value={lang.code}>

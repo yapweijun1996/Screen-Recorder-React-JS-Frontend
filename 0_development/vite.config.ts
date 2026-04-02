@@ -5,7 +5,6 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  // Use repo-relative base path for production (GitHub Pages) so assets resolve under /Screen-Recorder-React-JS-Frontend/
   const base = mode === 'production' ? '/Screen-Recorder-React-JS-Frontend/' : '/';
   return {
     root: '.',
@@ -13,17 +12,6 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
-      // Ensure SharedArrayBuffer is available for FFmpeg multi-threaded wasm
-      headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
-      },
-    },
-    preview: {
-      headers: {
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
-      },
     },
     plugins: [
       react(),
@@ -57,16 +45,10 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-          // Don't cache FFmpeg WASM files (too large, loaded on demand)
-          globIgnores: ['**/ffmpeg/**', '**/ffmpeg-mt/**'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
       }),
     ],
-    optimizeDeps: {
-      // Prevent Vite from trying to pre-bundle FFmpeg worker assets
-      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', '@ffmpeg/core', '@ffmpeg/ffmpeg/dist/esm/worker.js'],
-    },
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

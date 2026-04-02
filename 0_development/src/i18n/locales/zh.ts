@@ -25,6 +25,12 @@ const zh: TranslationTable = {
     'ffmpeg.loaded': '引擎就绪',
     'ffmpeg.error': '引擎错误',
 
+    'engine.idle': '引擎空闲',
+    'engine.loading': '正在检测引擎...',
+    'engine.ready.webcodecs': 'WebCodecs 就绪',
+    'engine.ready.ffmpeg': 'FFmpeg 就绪',
+    'engine.error': '引擎错误',
+
     'recorder.sidebar.title': '录制设置',
     'recorder.sidebar.subtitle': '开始前选择来源与质量',
     'recorder.sources.title': '来源',

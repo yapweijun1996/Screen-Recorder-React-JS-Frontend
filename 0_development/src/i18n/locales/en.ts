@@ -12,7 +12,7 @@ const en: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': 'Client-side MP4 Export',
-    'app.footer.line1': 'Built with React, Tailwind & FFmpeg.wasm • by yapweijun1996',
+    'app.footer.line1': 'Built with React, Tailwind & WebCodecs • by yapweijun1996',
     'app.footer.line2': 'Version 2.0 - Now with Pause, Draggable Camera & Preloaded Export',
     'app.processing.title': 'Finishing your capture...',
     'app.processing.desc': 'We are making sure the recording metadata is sane so playback and trimming behave reliably.',
@@ -26,6 +26,12 @@ const en: TranslationTable = {
     'ffmpeg.loading': 'Loading Engine...',
     'ffmpeg.loaded': 'Engine Ready',
     'ffmpeg.error': 'Engine Error',
+
+    'engine.idle': 'Engine Idle',
+    'engine.loading': 'Detecting Engine...',
+    'engine.ready.webcodecs': 'WebCodecs Ready',
+    'engine.ready.ffmpeg': 'FFmpeg Ready',
+    'engine.error': 'Engine Error',
 
     'recorder.sidebar.title': 'Capture Setup',
     'recorder.sidebar.subtitle': 'Sources + quality before you start',

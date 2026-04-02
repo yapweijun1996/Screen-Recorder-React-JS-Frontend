@@ -1,2 +1,2 @@
-export { ffmpegService } from './ffmpegService';
-export type { FFmpegLoadStatus } from './ffmpegService';
+export { exportService } from './exportService';
+export type { ExportEngineType, EngineStatus } from './exportService';

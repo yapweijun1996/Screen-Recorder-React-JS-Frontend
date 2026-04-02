@@ -211,9 +211,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         && currentTime < (segments[selectedIndex]?.end || maxDuration) - 0.5;
 
     return (
-        <div ref={containerRef} className={`bg-th-deep rounded-lg border border-th-edge overflow-hidden ${className}`}>
+        <div ref={containerRef} className={`bg-th-deep h-full flex flex-col overflow-hidden ${className}`}>
             {/* 工具栏 - 包含工具选择和操作按钮 */}
-            <div className="px-3 py-1.5 border-b border-th-edge bg-gradient-to-b from-th-base to-th-deep">
+            <div className="flex-shrink-0 px-3 py-1.5 border-b border-th-edge bg-gradient-to-b from-th-base to-th-deep">
                 <div className="flex items-center justify-between gap-2">
                     {/* 左侧：工具选择 + 缩放 */}
                     <TimelineToolbar
@@ -345,18 +345,18 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
 
             {/* 可滚动的时间轴区域 */}
             <div
-                className={`timeline-scrollable overflow-x-auto overflow-y-hidden ${cursorClass}`}
+                className={`timeline-scrollable flex-1 min-h-0 overflow-x-auto overflow-y-hidden ${cursorClass}`}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
             >
                 <div
-                    className="relative min-h-[70px]"
+                    className="relative h-full min-h-[70px] flex flex-col"
                     style={{ width: `${timelineWidthPct}%`, minWidth: '100%' }}
                     onClick={handleTimelineClick}
                 >
                     {/* 时间刻度尺 - 紧凑 */}
-                    <div className="h-5 bg-th-base border-b border-th-edge relative">
+                    <div className="flex-shrink-0 h-5 bg-th-base border-b border-th-edge relative">
                         {ticks.map((tick, idx) => {
                             const leftPct = toPct(tick.time);
                             return (
@@ -376,8 +376,8 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         })}
                     </div>
 
-                    {/* 轨道区域 - 增加高度以展示更精细的波形 */}
-                    <div className="relative h-14 bg-gradient-to-b from-th-deep to-th-base/50">
+                    {/* 轨道区域 - 填满剩余高度 */}
+                    <div className="relative flex-1 min-h-[48px] bg-gradient-to-b from-th-deep to-th-base/50">
                         {/* 轨道背景网格 */}
                         <div
                             className="absolute inset-0 opacity-10"
@@ -446,7 +446,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
 
             {/* 底部信息栏 - 键盘快捷键提示 */}
             <div className="
-                px-3 py-2 
+                flex-shrink-0 px-3 py-2
                 border-t border-th-divider/50
                 bg-gradient-to-r from-th-base/80 via-th-card/50 to-th-base/80
                 backdrop-blur-sm

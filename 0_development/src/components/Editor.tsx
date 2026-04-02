@@ -7,7 +7,7 @@ import { EditorLayout } from './editor/EditorLayout';
 import { LibraryPanel } from './editor/LibraryPanel';
 import { InspectorPanel } from './editor/InspectorPanel';
 import { ProTimeline } from './editor/ProTimeline';
-import { ffmpegService } from '../services/ffmpegService';
+import { exportService } from '../services/exportService';
 import { useI18n } from '../i18n';
 import { useEditorExportController } from './editor/useEditorExportController';
 import { useSegmentsEditor } from './editor/useSegmentsEditor';
@@ -116,7 +116,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         t,
     });
 
-    const estimatedSize = ffmpegService.estimateFileSize(totalSelectedDuration, selectedQuality);
+    const estimatedSize = exportService.estimateFileSize(totalSelectedDuration, selectedQuality);
 
     // Final Cut Pro 风格键盘快捷键
     useKeyboardShortcuts({

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { AppStatus, VideoMetadata } from './types';
 import { Recorder } from './components/Recorder';
 import { Editor } from './components/Editor';
-import { FFmpegStatus } from './components/FFmpegStatus';
+import { EngineStatus } from './components/EngineStatus';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Layers, Loader2 } from 'lucide-react';
-import { ffmpegService } from './services/ffmpegService';
+import { exportService } from './services/exportService';
 import { videoStorageService } from './services/videoStorageService';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
@@ -55,9 +55,9 @@ const App: React.FC = () => {
 
         if (blob.size > 0) {
             try {
-                workingBlob = await ffmpegService.fixWebmDuration(blob, recordedDuration);
+                workingBlob = await exportService.fixWebmDuration(blob, recordedDuration);
             } catch (error) {
-                console.warn('FFmpeg failed to fix WebM duration, falling back to raw blob.', error);
+                console.warn('Failed to fix WebM duration, using raw blob.', error);
             }
         }
 
@@ -183,9 +183,9 @@ const App: React.FC = () => {
                         </h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <FFmpegStatus />
+                        <EngineStatus />
                         {!isEditorMode && (
-                            <div className="text-xs font-mono text-th-tertiary bg-th-card h-8 px-2 rounded border border-th-divider flex items-center">
+                            <div className="text-xs font-mono text-th-tertiary bg-th-card h-8 px-2 rounded-lg border border-th-divider flex items-center">
                                 {t('app.tagline')}
                             </div>
                         )}
