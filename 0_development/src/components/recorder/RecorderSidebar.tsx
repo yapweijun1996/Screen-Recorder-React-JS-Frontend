@@ -67,15 +67,15 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
 
     return (
         <aside className="lg:col-span-4 xl:col-span-3">
-            <div className="bg-th-surface/60 border border-th-edge rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur">
+            <div className="bg-th-surface border border-th-edge rounded-2xl overflow-hidden shadow-lg dark:shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur">
                 {/* Header */}
                 <div className="p-4 border-b border-th-edge">
                     <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-lg bg-indigo-600/15 border border-indigo-500/30">
-                            <Gauge size={18} className="text-indigo-300" />
+                        <div className="p-2 rounded-lg accent-indigo-active">
+                            <Gauge size={18} className="accent-indigo-icon" />
                         </div>
                         <div className="min-w-0">
-                            <div className="text-sm font-semibold text-white leading-tight">{t('recorder.sidebar.title')}</div>
+                            <div className="text-sm font-semibold text-th-primary leading-tight">{t('recorder.sidebar.title')}</div>
                             <div className="text-xs text-th-tertiary leading-tight">{t('recorder.sidebar.subtitle')}</div>
                         </div>
                     </div>
@@ -92,11 +92,11 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
                         <button
                             onClick={onToggleMic}
                             className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 ${enableMic
-                                    ? 'bg-indigo-600/15 border-indigo-500/60 text-indigo-100'
-                                    : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
+                                    ? 'accent-indigo-active'
+                                    : 'bg-th-card border-th-edge text-th-secondary hover:border-th-divider'
                                 }`}
                         >
-                            <div className={`mt-0.5 ${enableMic ? 'text-indigo-300' : 'text-th-secondary'}`}>
+                            <div className={`mt-0.5 ${enableMic ? 'accent-indigo-icon' : 'text-th-secondary'}`}>
                                 {enableMic ? <Mic size={16} /> : <MicOff size={16} />}
                             </div>
                             <div className="flex-1 text-left">
@@ -108,11 +108,11 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
                         <button
                             onClick={onToggleCam}
                             className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 ${enableCam
-                                    ? 'bg-purple-600/15 border-purple-500/60 text-purple-100'
-                                    : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
+                                    ? 'accent-purple-active'
+                                    : 'bg-th-card border-th-edge text-th-secondary hover:border-th-divider'
                                 }`}
                         >
-                            <div className={`mt-0.5 ${enableCam ? 'text-purple-300' : 'text-th-secondary'}`}>
+                            <div className={`mt-0.5 ${enableCam ? 'accent-purple-icon' : 'text-th-secondary'}`}>
                                 {enableCam ? <Camera size={16} /> : <CameraOff size={16} />}
                             </div>
                             <div className="flex-1 text-left">
@@ -152,8 +152,8 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
                                 key={q.key}
                                 onClick={() => onSelectQuality(q.key)}
                                 className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all duration-200 ${recordingQuality === q.key
-                                        ? 'bg-emerald-600/15 border-emerald-500/70 text-emerald-100'
-                                        : 'bg-th-card/50 border-th-divider text-th-primary hover:border-th-divider'
+                                        ? 'accent-emerald-active'
+                                        : 'bg-th-card border-th-edge text-th-primary hover:border-th-divider'
                                     }`}
                             >
                                 <div className="font-semibold text-sm leading-tight">{q.label}</div>
@@ -172,7 +172,7 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
                                     max={120}
                                     value={customFps}
                                     onChange={(e) => onChangeCustomFps(Number(e.target.value) || 0)}
-                                    className="rounded-lg border border-th-divider bg-th-card px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    className="rounded-lg border border-th-divider bg-th-card px-3 py-2 text-xs text-th-primary focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </label>
                             <label className="flex flex-col gap-1 text-xs text-th-secondary">
@@ -184,7 +184,7 @@ export const RecorderSidebar: React.FC<RecorderSidebarProps> = ({
                                     step={0.5}
                                     value={customBitrateMbps}
                                     onChange={(e) => onChangeCustomBitrateMbps(Number(e.target.value) || 0)}
-                                    className="rounded-lg border border-th-divider bg-th-card px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                    className="rounded-lg border border-th-divider bg-th-card px-3 py-2 text-xs text-th-primary focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                             </label>
                         </div>

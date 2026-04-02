@@ -56,7 +56,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                             key={preset}
                             onClick={() => onSelectQuality(preset)}
                             className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${selectedQuality === preset
-                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
+                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-700 dark:text-indigo-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
                             disabled={isProcessing}
@@ -103,7 +103,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                             key={res}
                             onClick={() => onSelectResolution(res)}
                             className={`py-2 px-3 rounded-xl border text-sm transition-all ${selectedResolution === res
-                                ? 'bg-purple-600/20 border-purple-500 text-purple-200'
+                                ? 'bg-purple-600/20 border-purple-500 text-purple-700 dark:text-purple-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
                             disabled={isProcessing}
@@ -124,7 +124,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                             key={fps}
                             onClick={() => onSelectFps(fps)}
                             className={`py-2 px-3 rounded-xl border text-sm transition-all ${selectedFps === fps
-                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
+                                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-700 dark:text-indigo-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
                             disabled={isProcessing}
@@ -146,7 +146,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                             key={fmt}
                             onClick={() => onSelectFormat(fmt)}
                             className={`py-2 px-3 rounded-xl border text-sm uppercase transition-all ${selectedFormat === fmt
-                                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-200'
+                                ? 'bg-emerald-600/20 border-emerald-500 text-emerald-700 dark:text-emerald-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
                             disabled={isProcessing}

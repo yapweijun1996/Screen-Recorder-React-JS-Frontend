@@ -108,7 +108,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                             <h3 className="font-semibold text-sm text-th-primary">{t('editor.trim.title')}</h3>
                         </div>
                         <div className="text-xs text-th-tertiary font-mono bg-th-deep/50 px-2 py-0.5 rounded border border-th-edge">
-                            {t('editor.trim.totalSelected')}: <span className="text-indigo-300 font-semibold">{totalSelectedLabel}</span>
+                            {t('editor.trim.totalSelected')}: <span className="text-accent-indigo font-semibold">{totalSelectedLabel}</span>
                         </div>
                     </div>
 
@@ -180,7 +180,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                                 onClick={() => onSelectIndex(idx)}
                                 disabled={!!playbackError}
                                 className={`px-2 py-1 rounded-md border text-[10px] font-mono transition-all ${isActive
-                                    ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 ring-1 ring-indigo-400/50'
+                                    ? 'bg-indigo-600/30 border-indigo-500 text-indigo-700 dark:text-indigo-200 ring-1 ring-indigo-400/50'
                                     : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider hover:text-th-secondary'
                                     }`}
                                 title={label}

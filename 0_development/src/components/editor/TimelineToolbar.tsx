@@ -120,7 +120,7 @@ export const TimelineToolbar: React.FC<TimelineToolbarProps> = ({
                                     w-full flex items-center gap-2 px-3 py-2 text-xs
                                     transition-all
                                     ${activeTool === tool.id
-                                        ? 'bg-indigo-600/30 text-indigo-300'
+                                        ? 'bg-indigo-600/30 text-accent-indigo'
                                         : 'text-th-secondary hover:bg-th-card/50 hover:text-white'
                                     }
                                 `}

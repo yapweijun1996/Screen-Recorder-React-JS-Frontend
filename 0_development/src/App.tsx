@@ -178,7 +178,7 @@ const App: React.FC = () => {
                         <div className={`bg-gradient-to-br from-indigo-500 to-purple-600 ${isEditorMode ? 'p-1.5' : 'p-2'} rounded-lg shadow-lg shadow-indigo-500/20`}>
                             <Layers size={isEditorMode ? 18 : 24} className="text-white" />
                         </div>
-                        <h1 className={`${isEditorMode ? 'text-base' : 'text-xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-th-primary to-th-secondary`}>
+                        <h1 className={`${isEditorMode ? 'text-base' : 'text-xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-white dark:to-slate-400`}>
                             {t('app.title')}
                         </h1>
                     </div>
@@ -197,7 +197,7 @@ const App: React.FC = () => {
 
             {/* Error Message */}
             {errorMsg && (
-                <div className="px-4 py-2 bg-red-900/20 dark:bg-red-900/20 bg-red-50 border-b border-red-500/50 dark:text-red-200 text-red-700 flex items-center justify-between animate-fade-in flex-shrink-0">
+                <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-300 dark:border-red-500/50 text-red-700 dark:text-red-200 flex items-center justify-between animate-fade-in flex-shrink-0">
                     <span className="text-sm">{errorMsg}</span>
                     <button onClick={() => setErrorMsg(null)} className="hover:text-red-500 dark:hover:text-white text-xl">&times;</button>
                 </div>

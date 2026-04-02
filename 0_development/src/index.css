@@ -5,23 +5,23 @@
 /* ===== Theme CSS Variables ===== */
 /* Light mode (default) */
 :root {
-    --c-base: 248 250 252;        /* slate-50  - app background */
+    --c-base: 241 245 249;        /* slate-100 - app background (slightly darker for contrast) */
     --c-surface: 255 255 255;     /* white     - panels, headers */
-    --c-card: 241 245 249;        /* slate-100 - cards, dropdowns */
-    --c-input: 226 232 240;       /* slate-200 - inputs, hover bg */
+    --c-card: 248 250 252;        /* slate-50  - cards, dropdowns */
+    --c-input: 241 245 249;       /* slate-100 - inputs, hover bg */
     --c-deep: 15 23 42;           /* slate-900 - video/timeline (stays dark) */
     --c-text: 15 23 42;           /* slate-900 - primary text */
-    --c-text-secondary: 71 85 105;/* slate-600 */
-    --c-text-tertiary: 100 116 139;/* slate-500 */
-    --c-text-muted: 148 163 184;  /* slate-400 */
-    --c-text-faint: 203 213 225;  /* slate-300 */
-    --c-border: 226 232 240;      /* slate-200 */
-    --c-divider: 203 213 225;     /* slate-300 */
+    --c-text-secondary: 51 65 85; /* slate-700 - stronger secondary for readability */
+    --c-text-tertiary: 71 85 105; /* slate-600 */
+    --c-text-muted: 100 116 139;  /* slate-500 */
+    --c-text-faint: 148 163 184;  /* slate-400 */
+    --c-border: 203 213 225;      /* slate-300 - stronger border for visibility */
+    --c-divider: 226 232 240;     /* slate-200 */
 
     /* Glass effect */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(0, 0, 0, 0.08);
-    --glass-dark-bg: rgba(241, 245, 249, 0.8);
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-dark-bg: rgba(241, 245, 249, 0.9);
 
     /* Scrollbar */
     --scrollbar-track: #f1f5f9;
@@ -30,6 +30,18 @@
 
     /* Focus */
     --focus-ring: #6366f1;
+
+    /* Active state accent text (light-safe) */
+    --accent-indigo-text: 67 56 202;     /* indigo-700 */
+    --accent-purple-text: 107 33 168;    /* purple-700 */
+    --accent-emerald-text: 4 120 87;     /* emerald-700 */
+    --accent-indigo-icon: 99 102 241;    /* indigo-500 */
+    --accent-purple-icon: 168 85 247;    /* purple-500 */
+
+    /* Active state tint backgrounds */
+    --accent-indigo-bg: 238 242 255;     /* ~indigo-50 */
+    --accent-purple-bg: 250 245 255;     /* ~purple-50 */
+    --accent-emerald-bg: 236 253 245;    /* ~emerald-50 */
 }
 
 /* Dark mode */
@@ -42,7 +54,7 @@
     --c-text: 241 245 249;        /* slate-100 */
     --c-text-secondary: 148 163 184;/* slate-400 */
     --c-text-tertiary: 100 116 139;/* slate-500 */
-    --c-text-muted: 71 85 105;    /* slate-600 (was slate-500 visually) */
+    --c-text-muted: 71 85 105;    /* slate-600 */
     --c-text-faint: 51 65 85;     /* slate-700 */
     --c-border: 30 41 59;         /* slate-800 */
     --c-divider: 51 65 85;        /* slate-700 */
@@ -59,6 +71,18 @@
 
     /* Focus */
     --focus-ring: #6366f1;
+
+    /* Active state accent text (dark-safe) */
+    --accent-indigo-text: 199 210 254;   /* indigo-200 */
+    --accent-purple-text: 233 213 255;   /* purple-200 */
+    --accent-emerald-text: 167 243 208;  /* emerald-200 */
+    --accent-indigo-icon: 165 180 252;   /* indigo-300 */
+    --accent-purple-icon: 216 180 254;   /* purple-300 */
+
+    /* Active state tint backgrounds */
+    --accent-indigo-bg: 49 46 129;       /* ~indigo-900 */
+    --accent-purple-bg: 59 7 100;        /* ~purple-900 */
+    --accent-emerald-bg: 6 78 59;        /* ~emerald-900 */
 }
 
 /* ===== Custom Animations ===== */
@@ -115,6 +139,47 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 }
+
+/* ===== Theme-aware accent active states ===== */
+/* These use CSS variables so they automatically adapt to light/dark */
+.accent-indigo-active {
+    background-color: rgb(var(--accent-indigo-bg) / 0.2);
+    border-color: rgb(var(--accent-indigo-icon) / 0.5);
+    color: rgb(var(--accent-indigo-text));
+}
+
+.accent-purple-active {
+    background-color: rgb(var(--accent-purple-bg) / 0.2);
+    border-color: rgb(var(--accent-purple-icon) / 0.5);
+    color: rgb(var(--accent-purple-text));
+}
+
+.accent-emerald-active {
+    background-color: rgb(var(--accent-emerald-bg) / 0.2);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: rgb(var(--accent-emerald-text));
+}
+
+.accent-indigo-icon {
+    color: rgb(var(--accent-indigo-icon));
+}
+
+.accent-purple-icon {
+    color: rgb(var(--accent-purple-icon));
+}
+
+/* ===== Adaptive accent text colors ===== */
+/* indigo-300 in dark, indigo-600 in light */
+.text-accent-indigo { color: rgb(99 102 241); }
+.dark .text-accent-indigo { color: rgb(165 180 252); }
+
+/* purple-300 in dark, purple-600 in light */
+.text-accent-purple { color: rgb(147 51 234); }
+.dark .text-accent-purple { color: rgb(216 180 254); }
+
+/* emerald-300 in dark, emerald-600 in light */
+.text-accent-emerald { color: rgb(5 150 105); }
+.dark .text-accent-emerald { color: rgb(110 231 183); }
 
 /* ===== Custom scrollbar ===== */
 ::-webkit-scrollbar {

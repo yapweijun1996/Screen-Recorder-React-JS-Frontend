@@ -49,7 +49,7 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
 
             {isProcessing && (
                 <div className="bg-indigo-900/25 border border-indigo-500/30 p-4 rounded-xl space-y-3 animate-fade-in">
-                    <div className="flex items-center gap-2 text-indigo-300">
+                    <div className="flex items-center gap-2 text-accent-indigo">
                         <Loader2 size={18} className="animate-spin" />
                         <span className="text-sm font-medium">{t('editor.export.processing')}</span>
                     </div>
@@ -68,7 +68,7 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
 
             {exportUrl && !isProcessing && (
                 <div className="bg-emerald-900/25 border border-emerald-500/30 p-4 rounded-xl text-center space-y-3 animate-fade-in">
-                    <p className="text-emerald-300 text-sm font-medium">{t('editor.export.ready')}</p>
+                    <p className="text-accent-emerald text-sm font-medium">{t('editor.export.ready')}</p>
                     <a
                         href={exportUrl}
                         download={downloadFileName}

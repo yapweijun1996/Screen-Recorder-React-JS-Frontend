@@ -96,7 +96,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                             onClick={onToggleAdvanced}
                             type="button"
                         >
-                            <Settings size={14} className="text-purple-300" />
+                            <Settings size={14} className="text-accent-purple" />
                             <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
@@ -122,7 +122,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                     {/* Estimated size */}
                     <div className="flex items-center justify-between text-xs text-th-secondary">
                         <span>{t('editor.export.estimated')}</span>
-                        <span className="text-indigo-300 font-medium">{estimatedSize}</span>
+                        <span className="text-accent-indigo font-medium">{estimatedSize}</span>
                     </div>
 
                     {showAdvanced && (

@@ -96,7 +96,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         onClick={onToggleAdvanced}
                         type="button"
                     >
-                        <Settings size={12} className="text-purple-300" />
+                        <Settings size={12} className="text-accent-purple" />
                         <ChevronDown size={12} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
@@ -129,7 +129,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     {/* 预估大小 */}
                     <div className="flex items-center justify-between text-xs bg-th-card/30 rounded-lg px-3 py-2">
                         <span className="text-th-tertiary">{t('editor.export.estimated')}</span>
-                        <span className="text-indigo-300 font-mono font-medium">{estimatedSize}</span>
+                        <span className="text-accent-indigo font-mono font-medium">{estimatedSize}</span>
                     </div>
 
                     {/* 高级设置 */}
