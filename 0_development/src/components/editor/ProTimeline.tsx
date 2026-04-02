@@ -59,6 +59,51 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
 
     const safeMax = Math.max(maxDuration, 0.0001);
 
+    // Collapsed timeline: display segments sequentially from 0 (ripple mode)
+    const displayDuration = Math.max(totalSelectedDuration, 0.0001);
+
+    const collapsedSegments = useMemo(() => {
+        let offset = 0;
+        return segments.map(seg => {
+            const duration = seg.end - seg.start;
+            const result = {
+                sourceStart: seg.start,
+                sourceEnd: seg.end,
+                displayStart: offset,
+                displayEnd: offset + duration,
+            };
+            offset += duration;
+            return result;
+        });
+    }, [segments]);
+
+    // Source time → Sequence time (for display)
+    const sourceToSequence = useCallback((sourceTime: number): number => {
+        let seqTime = 0;
+        for (const seg of segments) {
+            if (sourceTime < seg.start) break;
+            if (sourceTime <= seg.end) {
+                seqTime += sourceTime - seg.start;
+                return seqTime;
+            }
+            seqTime += seg.end - seg.start;
+        }
+        return seqTime;
+    }, [segments]);
+
+    // Sequence time → Source time (for seeking)
+    const sequenceToSource = useCallback((seqTime: number): number => {
+        let remaining = Math.max(0, seqTime);
+        for (const seg of segments) {
+            const segDuration = seg.end - seg.start;
+            if (remaining <= segDuration) {
+                return seg.start + remaining;
+            }
+            remaining -= segDuration;
+        }
+        return segments.length > 0 ? segments[segments.length - 1].end : 0;
+    }, [segments]);
+
     // 缩放控制
     const handleZoomIn = useCallback(() => {
         setZoomLevel((prev) => Math.min(prev * 1.5, 10));
@@ -78,8 +123,8 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     }, [zoomLevel]);
 
     const toPct = useCallback((time: number) => {
-        return Math.min(100, Math.max(0, (time / safeMax) * 100));
-    }, [safeMax]);
+        return Math.min(100, Math.max(0, (time / displayDuration) * 100));
+    }, [displayDuration]);
 
     // 悬停预览 (Skimming)
     const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -99,10 +144,10 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         const x = e.clientX - rect.left + scrollOffset;
         const totalWidth = scrollableArea.scrollWidth;
         const timePct = x / totalWidth;
-        const time = timePct * safeMax;
+        const time = timePct * displayDuration;
 
-        setSkimTime(Math.max(0, Math.min(safeMax, time)));
-    }, [skimmingEnabled, activeTool, safeMax]);
+        setSkimTime(Math.max(0, Math.min(displayDuration, time)));
+    }, [skimmingEnabled, activeTool, displayDuration]);
 
     const handleMouseLeave = useCallback(() => {
         setSkimTime(null);
@@ -121,16 +166,17 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         const x = e.clientX - rect.left + scrollOffset;
         const totalWidth = scrollableArea.scrollWidth;
         const timePct = x / totalWidth;
-        const time = Math.max(0, Math.min(safeMax, timePct * safeMax));
+        const seqTime = Math.max(0, Math.min(displayDuration, timePct * displayDuration));
+        const sourceTime = sequenceToSource(seqTime);
 
         if (activeTool === 'blade') {
             // 剪刀工具：在点击位置剪切
-            onSplitAt?.(time);
+            onSplitAt?.(sourceTime);
         } else {
             // 选择工具：跳转到点击位置
-            onSeek(time);
+            onSeek(sourceTime);
         }
-    }, [activeTool, safeMax, onSeek, onSplitAt]);
+    }, [activeTool, displayDuration, sequenceToSource, onSeek, onSplitAt]);
 
     // 生成刻度
     const ticks = useMemo(() => {
@@ -140,7 +186,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         const baseInterval = zoomLevel >= 3 ? 1 : zoomLevel >= 1.5 ? 5 : 10;
         const majorInterval = baseInterval * 5;
 
-        for (let t = 0; t <= safeMax; t += baseInterval) {
+        for (let t = 0; t <= displayDuration; t += baseInterval) {
             const isMajor = t % majorInterval < 0.001;
             result.push({
                 time: t,
