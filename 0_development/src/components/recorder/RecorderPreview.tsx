@@ -37,19 +37,19 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
 
     return (
         <section className="lg:col-span-8 xl:col-span-9">
-            <div className="relative w-full aspect-video bg-slate-950/60 rounded-2xl overflow-hidden shadow-2xl border border-slate-800/70 backdrop-blur-sm">
+            <div className="relative w-full aspect-video bg-th-deep/60 rounded-2xl overflow-hidden shadow-2xl border border-th-edge/70 backdrop-blur-sm">
                 {/* Setup Placeholder */}
                 {!isRecording && !activeStream && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                        <div className="mb-6 p-6 bg-gradient-to-br from-indigo-500/10 via-slate-900/60 to-purple-500/10 rounded-full ring-1 ring-white/10 shadow-2xl">
+                        <div className="mb-6 p-6 bg-gradient-to-br from-indigo-500/10 via-th-surface/60 to-purple-500/10 rounded-full ring-1 ring-white/10 shadow-2xl">
                             <Monitor size={64} className="text-indigo-300 drop-shadow-[0_0_20px_rgba(99,102,241,0.55)]" />
                         </div>
                         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">{t('preview.ready.title')}</h2>
-                        <p className="text-slate-400 max-w-xl text-sm sm:text-base">
+                        <p className="text-th-secondary max-w-xl text-sm sm:text-base">
                             {t('preview.ready.desc')}
                         </p>
 
-                        <div className="mt-6 inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1.5">
+                        <div className="mt-6 inline-flex items-center gap-2 text-xs text-th-secondary bg-th-surface/60 border border-th-edge rounded-full px-3 py-1.5">
                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
                             {t('preview.ready.controls')}
                         </div>
@@ -77,13 +77,13 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                                     </span>
                                 </div>
 
-                                <div className="bg-black/70 px-3 py-1.5 rounded-full backdrop-blur-md border border-slate-700">
+                                <div className="bg-black/70 px-3 py-1.5 rounded-full backdrop-blur-md border border-th-divider">
                                     <span className="text-white font-mono text-base">{recordingTimeLabel}</span>
                                 </div>
                             </div>
 
                             {micStream && (
-                                <div className="flex items-center gap-2 bg-black/70 px-3 py-1.5 rounded-full backdrop-blur-md border border-slate-700">
+                                <div className="flex items-center gap-2 bg-black/70 px-3 py-1.5 rounded-full backdrop-blur-md border border-th-divider">
                                     <Mic size={14} className="text-indigo-300" />
                                     <AudioLevelMeter stream={micStream} />
                                 </div>
@@ -92,7 +92,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
 
                         {/* Bottom Controls (always visible) */}
                         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-                            <div className="mx-auto w-full max-w-3xl bg-slate-900/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center justify-between gap-2 shadow-2xl">
+                            <div className="mx-auto w-full max-w-3xl bg-th-surface/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center justify-between gap-2 shadow-2xl">
                                 <div className="flex items-center gap-2">
                                     <Button
                                         variant={isPaused ? 'success' : 'warning'}
@@ -125,7 +125,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                 )}
             </div>
 
-            <p className="mt-4 text-slate-500 text-xs sm:text-sm font-medium">
+            <p className="mt-4 text-th-tertiary text-xs sm:text-sm font-medium">
                 {isRecording
                     ? isPaused
                         ? t('preview.footer.paused')

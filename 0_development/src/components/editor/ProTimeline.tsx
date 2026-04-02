@@ -165,9 +165,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         && currentTime < (segments[selectedIndex]?.end || maxDuration) - 0.5;
 
     return (
-        <div ref={containerRef} className={`bg-slate-950 rounded-lg border border-slate-800 overflow-hidden ${className}`}>
+        <div ref={containerRef} className={`bg-th-deep rounded-lg border border-th-edge overflow-hidden ${className}`}>
             {/* 工具栏 - 包含工具选择和操作按钮 */}
-            <div className="px-3 py-1.5 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950">
+            <div className="px-3 py-1.5 border-b border-th-edge bg-gradient-to-b from-th-base to-th-deep">
                 <div className="flex items-center justify-between gap-2">
                     {/* 左侧：工具选择 + 缩放 */}
                     <TimelineToolbar
@@ -180,7 +180,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                     />
 
                     {/* 中间：时间统计 - 隐藏在小屏 */}
-                    <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                    <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-th-tertiary">
                         <span>
                             {t('editor.trim.totalSelected')}:
                             <span className="text-indigo-400 ml-1 font-semibold">{formatTime(totalSelectedDuration)}</span>
@@ -196,9 +196,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             className="
                                 group relative flex items-center gap-1 
                                 px-1.5 sm:px-2 py-1 text-[10px] rounded-md 
-                                bg-slate-800/50 text-slate-300 
-                                hover:bg-slate-700 hover:text-white 
-                                transition-all border border-slate-700
+                                bg-th-card/50 text-th-secondary
+                                hover:bg-th-input hover:text-white
+                                transition-all border border-th-divider
                             "
                             title={t('editor.trim.preview')}
                         >
@@ -230,7 +230,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                 <div className="
                                     hidden group-hover:block
                                     absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50
-                                    bg-slate-900/95 backdrop-blur-md
+                                    bg-th-surface/95 backdrop-blur-md
                                     text-[9px] text-amber-300
                                     px-2 py-1 rounded
                                     border border-amber-600/30
@@ -262,7 +262,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         </button>
 
                         {/* 分隔线 - 大屏显示 */}
-                        <div className="hidden sm:block w-px h-4 bg-slate-700/50 mx-0.5" />
+                        <div className="hidden sm:block w-px h-4 bg-th-divider/50 mx-0.5" />
 
                         {/* 撤销按钮 */}
                         <button
@@ -271,8 +271,8 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             disabled={!canUndo}
                             className="
                                 p-1.5 rounded-md 
-                                text-slate-400 hover:text-white hover:bg-slate-700 
-                                transition-all border border-slate-700/50
+                                text-th-secondary hover:text-white hover:bg-th-input
+                                transition-all border border-th-divider/50
                                 disabled:opacity-40 disabled:cursor-not-allowed
                             "
                             title={`${t('editor.trim.undo')} (⌘Z)`}
@@ -286,8 +286,8 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             onClick={onResetTrim}
                             className="
                                 p-1.5 rounded-md 
-                                text-slate-400 hover:text-white hover:bg-slate-700 
-                                transition-all border border-slate-700/50
+                                text-th-secondary hover:text-white hover:bg-th-input
+                                transition-all border border-th-divider/50
                             "
                             title={t('editor.trim.reset')}
                         >
@@ -310,7 +310,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                     onClick={handleTimelineClick}
                 >
                     {/* 时间刻度尺 - 紧凑 */}
-                    <div className="h-5 bg-slate-900 border-b border-slate-800 relative">
+                    <div className="h-5 bg-th-base border-b border-th-edge relative">
                         {ticks.map((tick, idx) => {
                             const leftPct = toPct(tick.time);
                             return (
@@ -319,9 +319,9 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                     className="absolute bottom-0"
                                     style={{ left: `${leftPct}%` }}
                                 >
-                                    <div className={tick.isMajor ? 'w-[1px] h-3 bg-slate-500' : 'w-[1px] h-1.5 bg-slate-700'} />
+                                    <div className={tick.isMajor ? 'w-[1px] h-3 bg-th-tertiary' : 'w-[1px] h-1.5 bg-th-faint'} />
                                     {tick.label && (
-                                        <div className="absolute -top-0.5 left-1 text-[9px] font-mono text-slate-500 whitespace-nowrap select-none">
+                                        <div className="absolute -top-0.5 left-1 text-[9px] font-mono text-th-tertiary whitespace-nowrap select-none">
                                             {tick.label}
                                         </div>
                                     )}
@@ -331,7 +331,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                     </div>
 
                     {/* 轨道区域 - 增加高度以展示更精细的波形 */}
-                    <div className="relative h-14 bg-gradient-to-b from-slate-950 to-slate-900/50">
+                    <div className="relative h-14 bg-gradient-to-b from-th-deep to-th-base/50">
                         {/* 轨道背景网格 */}
                         <div
                             className="absolute inset-0 opacity-10"
@@ -404,37 +404,37 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
             {/* 底部信息栏 - 键盘快捷键提示 */}
             <div className="
                 px-3 py-2 
-                border-t border-slate-700/50 
-                bg-gradient-to-r from-slate-900/80 via-slate-800/50 to-slate-900/80
+                border-t border-th-divider/50
+                bg-gradient-to-r from-th-base/80 via-th-card/50 to-th-base/80
                 backdrop-blur-sm
-                flex items-center justify-between 
-                text-[10px] font-mono text-slate-400
+                flex items-center justify-between
+                text-[10px] font-mono text-th-secondary
             ">
                 <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">Space</kbd>
-                        <span className="text-slate-500">Play</span>
+                        <kbd className="px-1.5 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">Space</kbd>
+                        <span className="text-th-tertiary">Play</span>
                     </span>
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">J</kbd>
-                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">K</kbd>
-                        <kbd className="px-1 py-0.5 bg-slate-700/80 rounded text-slate-300 border border-slate-600/50 shadow-sm">L</kbd>
-                        <span className="text-slate-500">Shuttle</span>
+                        <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">J</kbd>
+                        <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">K</kbd>
+                        <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">L</kbd>
+                        <span className="text-th-tertiary">Shuttle</span>
                     </span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 bg-amber-700/60 rounded text-amber-200 border border-amber-500/50 shadow-sm">B</kbd>
-                        <span className="text-slate-500">Blade</span>
+                        <span className="text-th-tertiary">Blade</span>
                     </span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 bg-red-700/60 rounded text-red-200 border border-red-500/50 shadow-sm">Del</kbd>
-                        <span className="text-slate-500">Delete</span>
+                        <span className="text-th-tertiary">Delete</span>
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-slate-500">
+                    <span className="text-th-tertiary">
                         Segments: <span className="text-purple-400 font-semibold">{segments.length}</span>
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-th-tertiary">
                         Total: <span className="text-indigo-400 font-semibold">{formatTime(safeMax)}</span>
                     </span>
                 </div>
@@ -455,7 +455,7 @@ function renderGaps(segments: TrimRange[], maxDuration: number, toPct: (t: numbe
         gaps.push(
             <div
                 key="gap-start"
-                className="absolute top-0 bottom-0 bg-slate-900/80"
+                className="absolute top-0 bottom-0 bg-th-surface/80"
                 style={{
                     left: 0,
                     width: `${widthPct}%`,
@@ -473,7 +473,7 @@ function renderGaps(segments: TrimRange[], maxDuration: number, toPct: (t: numbe
             gaps.push(
                 <div
                     key={`gap-${i}`}
-                    className="absolute top-0 bottom-0 bg-slate-900/80"
+                    className="absolute top-0 bottom-0 bg-th-surface/80"
                     style={{
                         left: `${toPct(gapStart)}%`,
                         width: `${toPct(gapEnd) - toPct(gapStart)}%`,
@@ -491,7 +491,7 @@ function renderGaps(segments: TrimRange[], maxDuration: number, toPct: (t: numbe
             gaps.push(
                 <div
                     key="gap-end"
-                    className="absolute top-0 bottom-0 bg-slate-900/80"
+                    className="absolute top-0 bottom-0 bg-th-surface/80"
                     style={{
                         left: `${toPct(lastEnd)}%`,
                         width: `${100 - toPct(lastEnd)}%`,

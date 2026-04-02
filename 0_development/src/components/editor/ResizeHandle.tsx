@@ -71,7 +71,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
                 group
                 ${isHorizontal ? 'w-1 cursor-col-resize' : 'h-1 cursor-row-resize'}
                 ${isHorizontal ? 'hover:w-1.5' : 'hover:h-1.5'}
-                bg-slate-800/50
+                bg-th-card/50
                 hover:bg-blue-500/50
                 active:bg-blue-500/70
                 transition-all duration-150
@@ -87,7 +87,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
                 className={`
                     absolute
                     ${isHorizontal ? 'inset-y-0 left-1/2 -translate-x-1/2 w-0.5' : 'inset-x-0 top-1/2 -translate-y-1/2 h-0.5'}
-                    bg-slate-600
+                    bg-th-divider
                     group-hover:bg-blue-400
                     ${isDragging ? 'bg-blue-400' : ''}
                     transition-colors

@@ -73,6 +73,9 @@ const zh: TranslationTable = {
     'recorder.errors.empty': '录制为空，请稍等片刻再停止。',
     'recorder.errors.permission': '权限被拒绝，请允许屏幕共享后再试。',
     'recorder.errors.startFailed': '启动录制失败',
+    'recorder.errors.notFound': '未找到摄像头或麦克风，请连接设备后重试。',
+    'recorder.errors.notReadable': '摄像头或麦克风正被其他应用占用。',
+    'recorder.errors.overconstrained': '您的设备不支持所请求的媒体设置。',
 
     'editor.header.title': '剪辑与导出',
     'editor.header.subtitle': '裁剪片段，调整导出设置并下载。',

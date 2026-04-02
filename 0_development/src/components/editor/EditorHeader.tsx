@@ -17,7 +17,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onReset }) => {
                     <FileVideo className="text-indigo-400" />
                     {t('editor.header.title')}
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-th-tertiary mt-1">
                     {t('editor.header.subtitle')}
                 </p>
             </div>

@@ -80,19 +80,19 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
 
     return (
         <aside className="lg:col-span-3 lg:sticky lg:top-20">
-            <div className="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-2xl backdrop-blur">
+            <div className="bg-th-base/70 border border-th-edge rounded-xl overflow-hidden shadow-2xl backdrop-blur">
                 {/* 顶部标题栏 */}
-                <div className="px-3 py-2 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-900/80">
+                <div className="px-3 py-2 border-b border-th-edge bg-gradient-to-b from-slate-900 to-slate-900/80">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                             <div className="text-xs font-semibold text-white">{t('editor.export.title')}</div>
-                            <div className="text-[10px] text-slate-400">
+                            <div className="text-[10px] text-th-secondary">
                                 {t(`quality.${selectedQuality}.label`)} • {selectedFormat.toUpperCase()}
                             </div>
                         </div>
 
                         <button
-                            className="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white transition-colors"
+                            className="flex items-center gap-1.5 text-[10px] text-th-secondary hover:text-white transition-colors"
                             onClick={onToggleAdvanced}
                             type="button"
                         >
@@ -104,8 +104,8 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
 
                 <div className="p-3 space-y-3 max-h-[50vh] overflow-y-auto">
                     {/* Quick preset helper */}
-                    <div className="flex items-center justify-between gap-2 bg-slate-950/50 border border-slate-800 rounded-lg px-2 py-1.5">
-                        <div className="text-[10px] text-slate-400">
+                    <div className="flex items-center justify-between gap-2 bg-th-deep/50 border border-th-edge rounded-lg px-2 py-1.5">
+                        <div className="text-[10px] text-th-secondary">
                             {t('editor.export.quickHint')}
                         </div>
                         <Button
@@ -120,7 +120,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                     </div>
 
                     {/* Estimated size */}
-                    <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="flex items-center justify-between text-xs text-th-secondary">
                         <span>{t('editor.export.estimated')}</span>
                         <span className="text-indigo-300 font-medium">{estimatedSize}</span>
                     </div>
@@ -154,7 +154,7 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                     />
                 </div>
 
-                <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/40">
+                <div className="px-3 py-2 border-t border-th-edge bg-th-deep/40">
                     <EditorExportFooterActions
                         exportUrl={exportUrl}
                         playbackError={playbackError}

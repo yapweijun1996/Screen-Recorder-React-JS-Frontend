@@ -71,6 +71,9 @@ const id: TranslationTable = {
     'recorder.errors.empty': 'Rekaman kosong. Rekam sedikit lebih lama sebelum berhenti.',
     'recorder.errors.permission': 'Izin ditolak. Izinkan berbagi layar.',
     'recorder.errors.startFailed': 'Gagal memulai rekaman',
+    'recorder.errors.notFound': 'Kamera atau mikrofon tidak ditemukan. Hubungkan perangkat dan coba lagi.',
+    'recorder.errors.notReadable': 'Kamera atau mikrofon sedang digunakan oleh aplikasi lain.',
+    'recorder.errors.overconstrained': 'Pengaturan media yang diminta tidak didukung oleh perangkat Anda.',
 
     'editor.header.title': 'Edit & ekspor',
     'editor.header.subtitle': 'Potong klip, atur ekspor, lalu unduh.',

@@ -20,13 +20,13 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
     const { t } = useI18n();
 
-    const baseStyle = "rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900";
+    const baseStyle = "rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-th-base";
 
     const variants = {
         primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 focus:ring-indigo-500",
         danger: "bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-500/30 focus:ring-red-500",
-        secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 focus:ring-slate-500",
-        ghost: "bg-transparent hover:bg-slate-800 text-slate-300 focus:ring-slate-500",
+        secondary: "bg-th-input hover:bg-th-input text-th-primary focus:ring-slate-500",
+        ghost: "bg-transparent hover:bg-th-card text-th-secondary focus:ring-slate-500",
         success: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 focus:ring-emerald-500",
         warning: "bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/30 focus:ring-amber-500"
     };

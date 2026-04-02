@@ -40,7 +40,7 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
             <Button
                 variant="ghost"
                 size="sm"
-                className="w-full text-xs text-slate-300"
+                className="w-full text-xs text-th-secondary"
                 onClick={onExportFull}
                 disabled={!!playbackError || isProcessing}
             >
@@ -48,7 +48,7 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
             </Button>
 
             {playbackError && (
-                <div className="mt-3 text-[11px] text-slate-500">
+                <div className="mt-3 text-[11px] text-th-tertiary">
                     {t('editor.export.playbackIssue')}
                 </div>
             )}

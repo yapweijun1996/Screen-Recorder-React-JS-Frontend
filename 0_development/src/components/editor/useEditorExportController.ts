@@ -45,7 +45,7 @@ export const useEditorExportController = ({
 
     // Subscribe to FFmpeg progress
     useEffect(() => {
-        ffmpegService.onProgress(({ ratio }) => {
+        const handler = ({ ratio }: { ratio: number }) => {
             const clamped = Math.max(0, Math.min(1, ratio));
             setProcessingProgress(Math.round(clamped * 100));
 
@@ -56,7 +56,13 @@ export const useEditorExportController = ({
                     setProcessingEta(formatEta(etaMs));
                 }
             }
-        });
+        };
+
+        ffmpegService.onProgress(handler);
+
+        return () => {
+            ffmpegService.offProgress(handler);
+        };
     }, [processingStartTime]);
 
     // Revoke generated blob URLs when component unmounts or new exports are created

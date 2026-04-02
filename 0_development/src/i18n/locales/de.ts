@@ -71,6 +71,9 @@ const de: TranslationTable = {
     'recorder.errors.empty': 'Aufnahme ist leer. Nimm etwas länger auf, bevor du stoppst.',
     'recorder.errors.permission': 'Erlaubnis verweigert. Bildschirmfreigabe erlauben.',
     'recorder.errors.startFailed': 'Aufnahme konnte nicht gestartet werden',
+    'recorder.errors.notFound': 'Keine Kamera oder Mikrofon gefunden. Bitte schließen Sie ein Gerät an und versuchen Sie es erneut.',
+    'recorder.errors.notReadable': 'Kamera oder Mikrofon wird von einer anderen Anwendung verwendet.',
+    'recorder.errors.overconstrained': 'Die angeforderten Medieneinstellungen werden von Ihrem Gerät nicht unterstützt.',
 
     'editor.header.title': 'Schneiden & Exportieren',
     'editor.header.subtitle': 'Clip trimmen, Export einstellen und herunterladen.',

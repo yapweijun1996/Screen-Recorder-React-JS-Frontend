@@ -69,8 +69,8 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         if (mr && mr.state !== 'inactive') {
             try {
                 mr.requestData();
-            } catch {
-                // ignore
+            } catch (err) {
+                console.warn('stopAction: requestData() failed', err);
             }
             mr.stop();
         }
@@ -116,7 +116,8 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
             compositorRef.current = compositor;
             audioMixRef.current = audioMix;
 
-            screenStream.getVideoTracks()[0].onended = () => {
+            const screenVideoTrack = screenStream.getVideoTracks()[0];
+            screenVideoTrack.onended = () => {
                 stopAction();
             };
 
@@ -166,10 +167,15 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                     return;
                 }
 
+                // Clean up onended handler
+                screenVideoTrack.onended = null;
+
                 if (compositorRef.current) {
                     compositorRef.current.stop();
                 } else {
-                    cleanupAudioMix().catch(() => undefined);
+                    cleanupAudioMix().catch(err =>
+                        console.warn('cleanupAudioMix failed during finalize', err)
+                    );
                 }
 
                 stopTracks(activeStreamRef.current);
@@ -197,8 +203,15 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
 
         } catch (err: any) {
             console.error(err);
-            if (err?.name === 'NotAllowedError') {
+            const name = err?.name;
+            if (name === 'NotAllowedError') {
                 onError(t('recorder.errors.permission'));
+            } else if (name === 'NotFoundError') {
+                onError(t('recorder.errors.notFound'));
+            } else if (name === 'NotReadableError') {
+                onError(t('recorder.errors.notReadable'));
+            } else if (name === 'OverconstrainedError') {
+                onError(t('recorder.errors.overconstrained'));
             } else {
                 onError(err?.message || t('recorder.errors.startFailed'));
             }
@@ -253,7 +266,9 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     useEffect(() => {
         return () => {
             if (compositorRef.current) compositorRef.current.stop();
-            cleanupAudioMix().catch(() => undefined);
+            cleanupAudioMix().catch(err =>
+                console.warn('cleanupAudioMix failed during unmount', err)
+            );
             stopTracks(activeStreamRef.current);
             if (timerRef.current) clearInterval(timerRef.current);
         };

@@ -53,13 +53,13 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
                         <Loader2 size={18} className="animate-spin" />
                         <span className="text-sm font-medium">{t('editor.export.processing')}</span>
                     </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-th-input rounded-full overflow-hidden">
                         <div
                             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
                             style={{ width: `${processingProgress}%` }}
                         />
                     </div>
-                    <div className="text-[11px] text-slate-400 flex justify-between">
+                    <div className="text-[11px] text-th-secondary flex justify-between">
                         <span>{processingProgress}%</span>
                         <span>{t('editor.export.eta')}: {processingEta ?? t('editor.export.etaEstimating')}</span>
                     </div>
@@ -79,7 +79,7 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
                     </a>
                     <button
                         onClick={onClearExportUrl}
-                        className="text-slate-400 text-xs hover:text-white underline"
+                        className="text-th-secondary text-xs hover:text-white underline"
                         type="button"
                     >
                         {t('editor.export.exportAnother')}

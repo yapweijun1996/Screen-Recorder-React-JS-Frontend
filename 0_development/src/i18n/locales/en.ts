@@ -73,6 +73,9 @@ const en: TranslationTable = {
     'recorder.errors.empty': 'Recording appears to be empty. Please keep the capture running for a moment before stopping.',
     'recorder.errors.permission': 'Permission denied. Please allow screen sharing to record.',
     'recorder.errors.startFailed': 'Failed to start recording',
+    'recorder.errors.notFound': 'No camera or microphone found. Please connect a device and try again.',
+    'recorder.errors.notReadable': 'Camera or microphone is in use by another application.',
+    'recorder.errors.overconstrained': 'The requested media settings are not supported by your device.',
 
     'editor.header.title': 'Edit & Export',
     'editor.header.subtitle': 'Trim your clip, choose export settings, then download.',

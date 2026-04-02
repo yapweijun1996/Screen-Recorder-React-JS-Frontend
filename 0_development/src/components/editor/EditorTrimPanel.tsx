@@ -97,17 +97,17 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
     const canRemoveRange = !playbackError && removeSelectedDuration >= 0.1 && removeIntersectsKept;
 
     return (
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+        <div className="bg-th-surface/70 border border-th-edge rounded-xl overflow-hidden shadow-2xl">
             {/* 顶部工具栏 - 紧凑布局 */}
-            <div className="px-3 py-2 bg-gradient-to-b from-slate-900 to-slate-900/80 border-b border-slate-800">
+            <div className="px-3 py-2 bg-gradient-to-b from-th-base to-th-base/80 border-b border-th-edge">
                 <div className="flex items-center justify-between gap-2">
                     {/* 左侧：标题 + 统计 */}
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
                             <Scissors size={16} className="text-indigo-400" />
-                            <h3 className="font-semibold text-sm text-slate-200">{t('editor.trim.title')}</h3>
+                            <h3 className="font-semibold text-sm text-th-primary">{t('editor.trim.title')}</h3>
                         </div>
-                        <div className="text-xs text-slate-500 font-mono bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
+                        <div className="text-xs text-th-tertiary font-mono bg-th-deep/50 px-2 py-0.5 rounded border border-th-edge">
                             {t('editor.trim.totalSelected')}: <span className="text-indigo-300 font-semibold">{totalSelectedLabel}</span>
                         </div>
                     </div>
@@ -115,12 +115,12 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                     {/* 右侧：模式切换 + 撤销 */}
                     <div className="flex items-center gap-2">
                         {/* 模式切换 */}
-                        <div className="inline-flex rounded-lg border border-slate-800 bg-slate-950/60 p-0.5">
+                        <div className="inline-flex rounded-lg border border-th-edge bg-th-deep/60 p-0.5">
                             <button
                                 type="button"
                                 className={`px-2.5 py-1 text-xs rounded-md transition-all ${mode === 'keep'
                                     ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-400 hover:text-white'
+                                    : 'text-th-secondary hover:text-white'
                                     }`}
                                 onClick={() => setMode('keep')}
                                 disabled={!!playbackError}
@@ -132,7 +132,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                                 type="button"
                                 className={`px-2.5 py-1 text-xs rounded-md transition-all ${mode === 'remove'
                                     ? 'bg-red-600 text-white shadow-sm'
-                                    : 'text-slate-400 hover:text-white'
+                                    : 'text-th-secondary hover:text-white'
                                     }`}
                                 onClick={() => setMode('remove')}
                                 disabled={!!playbackError}
@@ -159,7 +159,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                 {/* 提示文本 */}
                 <div className={`mt-2 text-[11px] px-2 py-1.5 rounded-md ${mode === 'remove' && !removeIntersectsKept
                     ? 'text-amber-200 bg-amber-500/10 border border-amber-500/20'
-                    : 'text-slate-500 bg-slate-950/30'
+                    : 'text-th-tertiary bg-th-deep/30'
                     }`}>
                     {mode === 'remove'
                         ? (removeIntersectsKept ? t('editor.trim.removeHint') : t('editor.trim.removeNoOverlap'))
@@ -169,7 +169,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
 
             {/* 片段列表（可选 - 可折叠或隐藏以节省空间） */}
             {segments.length > 1 && (
-                <div className="px-3 py-2 flex flex-wrap gap-1.5 bg-slate-950/30 border-b border-slate-800">
+                <div className="px-3 py-2 flex flex-wrap gap-1.5 bg-th-deep/30 border-b border-th-edge">
                     {segments.map((seg, idx) => {
                         const isActive = idx === selectedIndex;
                         const label = `${formatTime(seg.start)}-${formatTime(seg.end)}`;
@@ -181,7 +181,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                                 disabled={!!playbackError}
                                 className={`px-2 py-1 rounded-md border text-[10px] font-mono transition-all ${isActive
                                     ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 ring-1 ring-indigo-400/50'
-                                    : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                                    : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider hover:text-th-secondary'
                                     }`}
                                 title={label}
                             >
@@ -193,7 +193,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
             )}
 
             {/* 专业时间轴引擎 (Timeline Engine) */}
-            <div className="relative bg-slate-950 rounded-lg border border-slate-800 overflow-hidden shadow-inner">
+            <div className="relative bg-th-deep rounded-lg border border-th-edge overflow-hidden shadow-inner">
                 {/* 时间刻度尺 */}
                 <TimelineRuler maxDuration={maxDuration} viewportWidth={800} />
 
@@ -239,7 +239,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
             </div>
 
             {/* 底部控制区 */}
-            <div className="px-3 py-2 bg-slate-900/50">
+            <div className="px-3 py-2 bg-th-surface/50">
                 <RangeSlider
                     min={0}
                     max={maxDuration || 100}
@@ -256,7 +256,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                     onPreviewRequest={playbackError ? undefined : onPreviewRequest}
                     variant={mode === 'remove' ? 'remove' : 'keep'}
                 />
-                <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 font-mono">
+                <div className="flex justify-between text-[10px] text-th-tertiary mt-1.5 font-mono">
                     <span>
                         {mode === 'remove'
                             ? `${t('editor.trim.deleteRange')}: ${formatTime(removeRange.start)} - ${formatTime(removeRange.end)}`
@@ -271,7 +271,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
             </div>
 
             {/* 动作按钮区 */}
-            <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/40">
+            <div className="px-3 py-2 border-t border-th-edge bg-th-deep/40">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
                     <Button
                         variant="secondary"
@@ -322,7 +322,7 @@ export const EditorTrimPanel: React.FC<EditorTrimPanelProps> = ({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-xs text-slate-400"
+                        className="w-full text-xs text-th-secondary"
                         disabled={!!playbackError}
                         onClick={onResetTrim}
                     >

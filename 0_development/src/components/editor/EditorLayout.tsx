@@ -83,10 +83,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }, []);
 
     return (
-        <div className="fcp-editor-layout h-[calc(100vh-64px)] flex flex-col bg-gradient-to-b from-slate-950 to-slate-900 overflow-hidden">
+        <div className="fcp-editor-layout h-[calc(100vh-64px)] flex flex-col bg-gradient-to-b from-th-deep to-th-base overflow-hidden">
             {/* Top Bar (optional) */}
             {topBar && (
-                <div className="fcp-topbar flex-shrink-0 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-sm">
+                <div className="fcp-topbar flex-shrink-0 border-b border-th-edge/80 bg-th-surface/90 backdrop-blur-sm">
                     {topBar}
                 </div>
             )}
@@ -99,9 +99,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                         <aside
                             className="
                                 fcp-library flex-shrink-0 overflow-y-auto
-                                bg-gradient-to-b from-slate-900/95 to-slate-950/95
+                                bg-gradient-to-b from-th-base/95 to-th-deep/95
                                 backdrop-blur-md
-                                border-r border-slate-800/50
+                                border-r border-th-edge/50
                                 shadow-[inset_-8px_0_12px_-8px_rgba(0,0,0,0.3)]
                             "
                             style={{ width: libraryWidth }}
@@ -116,7 +116,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 )}
 
                 {/* 中央：监视器 (Viewer) - 主要工作区，稍暗背景突出视频 */}
-                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-slate-950/80">
+                <main className="fcp-viewer flex-1 min-w-0 flex flex-col overflow-hidden bg-th-deep/80">
                     <div className="flex-1 min-h-0 overflow-hidden p-3">
                         {viewerPanel}
                     </div>
@@ -132,9 +132,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 <aside
                     className="
                         fcp-inspector flex-shrink-0 overflow-y-auto
-                        bg-gradient-to-b from-slate-900/95 to-slate-950/95
+                        bg-gradient-to-b from-th-base/95 to-th-deep/95
                         backdrop-blur-md
-                        border-l border-slate-800/50
+                        border-l border-th-edge/50
                         shadow-[inset_8px_0_12px_-8px_rgba(0,0,0,0.3)]
                     "
                     style={{ width: inspectorWidth }}
@@ -153,8 +153,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <div
                 className="
                     fcp-timeline flex-shrink-0
-                    bg-gradient-to-t from-slate-950 via-slate-950 to-slate-900/80
-                    border-t border-slate-700/50
+                    bg-gradient-to-t from-th-deep via-th-deep to-th-base/80
+                    border-t border-th-divider/50
                     shadow-[inset_0_8px_16px_-8px_rgba(0,0,0,0.4)]
                 "
                 style={{ height: timelineHeight }}

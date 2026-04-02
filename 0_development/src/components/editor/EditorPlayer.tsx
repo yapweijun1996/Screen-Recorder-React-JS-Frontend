@@ -56,7 +56,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                 </div>
             )}
 
-            <div className="bg-slate-950/60 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+            <div className="bg-th-deep/60 border border-th-edge rounded-xl overflow-hidden shadow-2xl">
                 <div className="relative aspect-video bg-black group">
                     <video
                         ref={videoRef as React.RefObject<HTMLVideoElement>}
@@ -93,7 +93,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                         </div>
                     )}
 
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-800">
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-th-card">
                         <div
                             className="relative h-full"
                             onPointerDown={(e) => {
@@ -113,7 +113,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                     </div>
                 </div>
 
-                <div className="px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-slate-400 text-xs border-t border-slate-800">
+                <div className="px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-th-secondary text-xs border-t border-th-edge">
                     <div className="flex items-center gap-2 font-mono">
                         <span className="text-indigo-400">{currentTimeLabel}</span>
                         <span>/</span>
@@ -121,7 +121,7 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <span>{t('editor.player.total')}: {totalTimeLabel}</span>
-                        <span className="text-slate-700">|</span>
+                        <span className="text-th-faint">|</span>
                         <span>{t('editor.player.size')}: {sizeLabel}</span>
                     </div>
                 </div>

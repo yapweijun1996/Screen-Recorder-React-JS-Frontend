@@ -22,13 +22,15 @@ export const AudioLevelMeter: React.FC<AudioLevelMeterProps> = ({ stream, classN
             return;
         }
 
+        let source: MediaStreamAudioSourceNode | null = null;
+
         try {
             audioContextRef.current = new AudioContext();
             analyserRef.current = audioContextRef.current.createAnalyser();
             analyserRef.current.fftSize = 256;
             analyserRef.current.smoothingTimeConstant = 0.8;
 
-            const source = audioContextRef.current.createMediaStreamSource(stream);
+            source = audioContextRef.current.createMediaStreamSource(stream);
             source.connect(analyserRef.current);
 
             const bufferLength = analyserRef.current.frequencyBinCount;
@@ -59,8 +61,13 @@ export const AudioLevelMeter: React.FC<AudioLevelMeterProps> = ({ stream, classN
             if (animationIdRef.current) {
                 cancelAnimationFrame(animationIdRef.current);
             }
+            if (source) {
+                try { source.disconnect(); } catch { /* already disconnected */ }
+            }
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-                audioContextRef.current.close();
+                audioContextRef.current.close().catch(err =>
+                    console.warn('AudioLevelMeter: audioContext.close() failed', err)
+                );
             }
         };
     }, [stream]);
@@ -84,7 +91,7 @@ export const AudioLevelMeter: React.FC<AudioLevelMeterProps> = ({ stream, classN
                                     : i < 4
                                         ? 'bg-yellow-400'
                                         : 'bg-red-400'
-                                : 'bg-slate-600'
+                                : 'bg-th-muted'
                             }`}
                         style={{ height: `${barHeight}%` }}
                     />

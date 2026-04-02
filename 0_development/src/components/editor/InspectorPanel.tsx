@@ -83,16 +83,16 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     const { t } = useI18n();
 
     return (
-        <div className="h-full flex flex-col text-slate-300">
+        <div className="h-full flex flex-col text-th-secondary">
             {/* 面板标题 */}
-            <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/80">
+            <div className="px-3 py-2 border-b border-th-edge bg-th-surface/80">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xs font-semibold text-white flex items-center gap-2">
                         <Download size={14} className="text-green-400" />
                         {t('editor.export.title')}
                     </h2>
                     <button
-                        className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white transition-colors"
+                        className="flex items-center gap-1 text-[10px] text-th-tertiary hover:text-white transition-colors"
                         onClick={onToggleAdvanced}
                         type="button"
                     >
@@ -100,7 +100,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <ChevronDown size={12} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                     </button>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
+                <div className="text-[10px] text-th-tertiary mt-0.5">
                     {t(`quality.${selectedQuality}.label`)} • {selectedFormat.toUpperCase()} • {selectedFps}fps
                 </div>
             </div>
@@ -127,14 +127,14 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     </div>
 
                     {/* 预估大小 */}
-                    <div className="flex items-center justify-between text-xs bg-slate-800/30 rounded-lg px-3 py-2">
-                        <span className="text-slate-400">{t('editor.export.estimated')}</span>
+                    <div className="flex items-center justify-between text-xs bg-th-card/30 rounded-lg px-3 py-2">
+                        <span className="text-th-tertiary">{t('editor.export.estimated')}</span>
                         <span className="text-indigo-300 font-mono font-medium">{estimatedSize}</span>
                     </div>
 
                     {/* 高级设置 */}
                     {showAdvanced && (
-                        <div className="border-t border-slate-800/50 pt-3">
+                        <div className="border-t border-th-edge/50 pt-3">
                             <EditorExportAdvancedSettings
                                 selectedQuality={selectedQuality}
                                 onSelectQuality={onSelectQuality}
@@ -167,7 +167,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </div>
 
             {/* 底部操作按钮 */}
-            <div className="px-3 py-3 border-t border-slate-800 bg-slate-900/50">
+            <div className="px-3 py-3 border-t border-th-edge bg-th-surface/50">
                 <EditorExportFooterActions
                     exportUrl={exportUrl}
                     playbackError={playbackError}

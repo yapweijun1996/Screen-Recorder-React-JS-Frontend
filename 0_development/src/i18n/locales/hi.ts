@@ -71,6 +71,9 @@ const hi: TranslationTable = {
     'recorder.errors.empty': 'रिकॉर्डिंग खाली है। रोकने से पहले थोड़ा और रिकॉर्ड करें।',
     'recorder.errors.permission': 'अनुमति अस्वीकृत। स्क्रीन शेयर की अनुमति दें।',
     'recorder.errors.startFailed': 'रिकॉर्डिंग शुरू नहीं हो सकी',
+    'recorder.errors.notFound': 'कोई कैमरा या माइक्रोफ़ोन नहीं मिला। कृपया एक डिवाइस कनेक्ट करें और पुनः प्रयास करें।',
+    'recorder.errors.notReadable': 'कैमरा या माइक्रोफ़ोन किसी अन्य एप्लिकेशन द्वारा उपयोग में है।',
+    'recorder.errors.overconstrained': 'अनुरोधित मीडिया सेटिंग्स आपके डिवाइस द्वारा समर्थित नहीं हैं।',
 
     'editor.header.title': 'संपादित करें और एक्सपोर्ट करें',
     'editor.header.subtitle': 'क्लिप काटें, सेटिंग्स चुनें और डाउनलोड करें।',

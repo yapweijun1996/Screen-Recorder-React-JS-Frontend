@@ -71,6 +71,9 @@ const pt: TranslationTable = {
     'recorder.errors.empty': 'A gravação está vazia. Grave um pouco mais antes de parar.',
     'recorder.errors.permission': 'Permissão negada. Autorize o compartilhamento de tela.',
     'recorder.errors.startFailed': 'Falha ao iniciar a gravação',
+    'recorder.errors.notFound': 'Nenhuma câmera ou microfone encontrado. Conecte um dispositivo e tente novamente.',
+    'recorder.errors.notReadable': 'A câmera ou o microfone está sendo usado por outro aplicativo.',
+    'recorder.errors.overconstrained': 'As configurações de mídia solicitadas não são suportadas pelo seu dispositivo.',
 
     'editor.header.title': 'Editar e exportar',
     'editor.header.subtitle': 'Corte o clipe, ajuste e baixe.',

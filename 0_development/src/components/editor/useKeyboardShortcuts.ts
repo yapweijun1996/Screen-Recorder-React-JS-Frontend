@@ -104,7 +104,9 @@ export function useKeyboardShortcuts({
                     setPlaybackRate(1);
                 }
                 if (video.paused) {
-                    video.play().catch(() => { });
+                    video.play().catch(err =>
+                        console.warn('KeyboardShortcuts: play() failed', err)
+                    );
                 }
                 break;
 

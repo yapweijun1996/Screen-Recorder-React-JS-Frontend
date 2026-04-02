@@ -2,51 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Animations */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+/* ===== Theme CSS Variables ===== */
+/* Light mode (default) */
+:root {
+    --c-base: 248 250 252;        /* slate-50  - app background */
+    --c-surface: 255 255 255;     /* white     - panels, headers */
+    --c-card: 241 245 249;        /* slate-100 - cards, dropdowns */
+    --c-input: 226 232 240;       /* slate-200 - inputs, hover bg */
+    --c-deep: 15 23 42;           /* slate-900 - video/timeline (stays dark) */
+    --c-text: 15 23 42;           /* slate-900 - primary text */
+    --c-text-secondary: 71 85 105;/* slate-600 */
+    --c-text-tertiary: 100 116 139;/* slate-500 */
+    --c-text-muted: 148 163 184;  /* slate-400 */
+    --c-text-faint: 203 213 225;  /* slate-300 */
+    --c-border: 226 232 240;      /* slate-200 */
+    --c-divider: 203 213 225;     /* slate-300 */
 
-    to {
-        opacity: 1;
-    }
+    /* Glass effect */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-dark-bg: rgba(241, 245, 249, 0.8);
+
+    /* Scrollbar */
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-thumb: #94a3b8;
+    --scrollbar-thumb-hover: #64748b;
+
+    /* Focus */
+    --focus-ring: #6366f1;
+}
+
+/* Dark mode */
+.dark {
+    --c-base: 15 23 42;           /* slate-900 */
+    --c-surface: 30 41 59;        /* slate-800 */
+    --c-card: 30 41 59;           /* slate-800 */
+    --c-input: 51 65 85;          /* slate-700 */
+    --c-deep: 2 6 23;             /* slate-950 */
+    --c-text: 241 245 249;        /* slate-100 */
+    --c-text-secondary: 148 163 184;/* slate-400 */
+    --c-text-tertiary: 100 116 139;/* slate-500 */
+    --c-text-muted: 71 85 105;    /* slate-600 (was slate-500 visually) */
+    --c-text-faint: 51 65 85;     /* slate-700 */
+    --c-border: 30 41 59;         /* slate-800 */
+    --c-divider: 51 65 85;        /* slate-700 */
+
+    /* Glass effect */
+    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-dark-bg: rgba(0, 0, 0, 0.7);
+
+    /* Scrollbar */
+    --scrollbar-track: #1e293b;
+    --scrollbar-thumb: #475569;
+    --scrollbar-thumb-hover: #64748b;
+
+    /* Focus */
+    --focus-ring: #6366f1;
+}
+
+/* ===== Custom Animations ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes zoomIn {
-    from {
-        transform: scale(0.95);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 @keyframes slideUp {
-    from {
-        transform: translateY(10px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes pulse-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-    }
-
-    50% {
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
-    }
+    0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
 }
 
 .animate-fade-in {
@@ -69,52 +102,53 @@
     animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
-/* Glassmorphism Utilities */
+/* ===== Glassmorphism Utilities ===== */
 .glass {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
 }
 
 .glass-dark {
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--glass-dark-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
 }
 
-/* Custom scrollbar */
+/* ===== Custom scrollbar ===== */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #1e293b;
+    background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #475569;
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+    background: var(--scrollbar-thumb-hover);
 }
 
-/* Base styles */
+/* ===== Base styles ===== */
 body {
     margin: 0;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: rgb(var(--c-base));
+    color: rgb(var(--c-text));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Focus visible for accessibility */
 :focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
 }
 

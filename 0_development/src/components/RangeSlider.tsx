@@ -104,7 +104,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
             }}
         >
             {/* Background Track */}
-            <div className="absolute w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div className="absolute w-full h-2 bg-th-input rounded-full overflow-hidden">
                 {/* Active Range Highlight */}
                 <div
                     className={`absolute h-full ${variant === 'remove'
@@ -126,7 +126,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
             >
                 <div className="w-0.5 h-3 bg-indigo-800 opacity-50"></div>
                 {/* Tooltip */}
-                <div className="absolute -top-8 bg-slate-800 text-xs px-2 py-1 rounded text-white opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-lg">
+                <div className="absolute -top-8 bg-th-card text-xs px-2 py-1 rounded text-white opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-lg">
                     {t('editor.trim.start')}
                 </div>
             </div>
@@ -139,7 +139,7 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
             >
                 <div className="w-0.5 h-3 bg-purple-800 opacity-50"></div>
                 {/* Tooltip */}
-                <div className="absolute -top-8 bg-slate-800 text-xs px-2 py-1 rounded text-white opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-lg">
+                <div className="absolute -top-8 bg-th-card text-xs px-2 py-1 rounded text-white opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none shadow-lg">
                     {t('editor.trim.end')}
                 </div>
             </div>

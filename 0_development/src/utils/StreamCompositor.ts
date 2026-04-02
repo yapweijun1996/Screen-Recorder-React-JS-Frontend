@@ -22,6 +22,8 @@ export class StreamCompositor {
     private isActive: boolean = false;
     private isPaused: boolean = false;
     private animationFrameId: number | null = null;
+    private audioSourceNodes: MediaStreamAudioSourceNode[] = [];
+    private canvasStream: MediaStream | null = null;
 
     // PIP Configuration (draggable)
     private pipConfig: PIPConfig = {
@@ -96,12 +98,20 @@ export class StreamCompositor {
 
         // 1. Setup Video Sources
         this.screenVideo.srcObject = screenStream;
-        await this.screenVideo.play();
+        try {
+            await this.screenVideo.play();
+        } catch (err) {
+            console.warn('StreamCompositor: screenVideo.play() failed', err);
+        }
 
         if (cameraStream) {
             if (!this.cameraVideo) this.cameraVideo = document.createElement('video');
             this.cameraVideo.srcObject = cameraStream;
-            await this.cameraVideo.play();
+            try {
+                await this.cameraVideo.play();
+            } catch (err) {
+                console.warn('StreamCompositor: cameraVideo.play() failed', err);
+            }
         }
 
         // 2. Setup Audio Mixing
@@ -109,12 +119,14 @@ export class StreamCompositor {
         if (screenStream.getAudioTracks().length > 0) {
             const screenSource = this.audioContext.createMediaStreamSource(screenStream);
             screenSource.connect(this.audioDestination);
+            this.audioSourceNodes.push(screenSource);
         }
 
         // Mix Mic Audio
         if (micStream && micStream.getAudioTracks().length > 0) {
             const micSource = this.audioContext.createMediaStreamSource(micStream);
             micSource.connect(this.audioDestination);
+            this.audioSourceNodes.push(micSource);
         }
 
         // 3. Start Draw Loop
@@ -122,7 +134,8 @@ export class StreamCompositor {
 
         // 4. Capture Canvas Stream
         // Use caller-provided FPS to avoid hardcoding (keeps capture/export settings consistent)
-        const canvasStream = this.canvas.captureStream(this.frameRate);
+        this.canvasStream = this.canvas.captureStream(this.frameRate);
+        const canvasStream = this.canvasStream;
 
         // 5. Combine Canvas Video + Mixed Audio
         const finalStream = new MediaStream([
@@ -223,19 +236,23 @@ export class StreamCompositor {
         this.animationFrameId = requestAnimationFrame(this.draw);
     }
 
-    public pause() {
+    public async pause() {
         this.isPaused = true;
         // Suspend audio context to save resources
         if (this.audioContext.state === 'running') {
-            this.audioContext.suspend();
+            await this.audioContext.suspend().catch(err =>
+                console.warn('StreamCompositor: audioContext.suspend() failed', err)
+            );
         }
     }
 
-    public resume() {
+    public async resume() {
         this.isPaused = false;
         // Resume audio context
         if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+            await this.audioContext.resume().catch(err =>
+                console.warn('StreamCompositor: audioContext.resume() failed', err)
+            );
         }
     }
 
@@ -248,9 +265,23 @@ export class StreamCompositor {
         this.isPaused = false;
         if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
-        // Close context
+        // Disconnect audio source nodes
+        for (const node of this.audioSourceNodes) {
+            try { node.disconnect(); } catch { /* already disconnected */ }
+        }
+        this.audioSourceNodes = [];
+
+        // Stop canvas stream tracks
+        if (this.canvasStream) {
+            this.canvasStream.getTracks().forEach(track => track.stop());
+            this.canvasStream = null;
+        }
+
+        // Close audio context
         if (this.audioContext.state !== 'closed') {
-            this.audioContext.close();
+            this.audioContext.close().catch(err =>
+                console.warn('StreamCompositor: audioContext.close() failed', err)
+            );
         }
 
         // Stop hidden videos

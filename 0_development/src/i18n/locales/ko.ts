@@ -71,6 +71,9 @@ const ko: TranslationTable = {
     'recorder.errors.empty': '녹화가 비어 있습니다. 잠시 더 녹화한 뒤 정지하세요.',
     'recorder.errors.permission': '권한 거부됨. 화면 공유를 허용하세요.',
     'recorder.errors.startFailed': '녹화를 시작하지 못했습니다',
+    'recorder.errors.notFound': '카메라 또는 마이크를 찾을 수 없습니다. 장치를 연결하고 다시 시도해 주세요.',
+    'recorder.errors.notReadable': '카메라 또는 마이크가 다른 애플리케이션에서 사용 중입니다.',
+    'recorder.errors.overconstrained': '요청한 미디어 설정이 장치에서 지원되지 않습니다.',
 
     'editor.header.title': '편집 및 내보내기',
     'editor.header.subtitle': '클립을 다듬고 설정 후 다운로드하세요.',

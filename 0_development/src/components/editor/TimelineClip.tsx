@@ -59,7 +59,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
                 transition-all duration-150 ease-out
                 group overflow-hidden
                 ${isSelected
-                    ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-950 z-20 shadow-lg shadow-yellow-500/20'
+                    ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-th-deep z-20 shadow-lg shadow-yellow-500/20'
                     : 'hover:ring-1 hover:ring-purple-400/50 z-10'
                 }
             `}
@@ -110,7 +110,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
                     text-[9px] font-mono font-bold
                     px-1 py-0.5 rounded
                     ${isSelected
-                        ? 'bg-yellow-400/90 text-slate-900'
+                        ? 'bg-yellow-400/90 text-th-base'
                         : 'bg-black/40 text-white/90'
                     }
                     backdrop-blur-sm

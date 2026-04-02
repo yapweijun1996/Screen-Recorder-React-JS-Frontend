@@ -40,14 +40,14 @@ export const SegmentsTimeline: React.FC<SegmentsTimelineProps> = ({
 
     return (
         <div className={`space-y-2 ${className}`}>
-            <div className="flex items-center justify-between text-[11px] text-slate-500">
+            <div className="flex items-center justify-between text-[11px] text-th-tertiary">
                 <div className="flex items-center gap-3">
                     <span className="inline-flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-sm bg-purple-500/80 border border-purple-300/30" />
                         {t('editor.trim.legend.keep')}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-slate-700 border border-slate-600" />
+                        <span className="w-2.5 h-2.5 rounded-sm bg-th-input border border-th-divider" />
                         {t('editor.trim.legend.deleted')}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
@@ -64,7 +64,7 @@ export const SegmentsTimeline: React.FC<SegmentsTimelineProps> = ({
             </div>
 
             <div
-                className="relative h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700 cursor-pointer"
+                className="relative h-3 rounded-full bg-th-card overflow-hidden border border-th-divider cursor-pointer"
                 onPointerDown={(e) => {
                     if (!onSeek) return;
                     const rect = e.currentTarget.getBoundingClientRect();

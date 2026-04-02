@@ -45,7 +45,9 @@ export const stopTracks = (stream: MediaStream | null | undefined) => {
 export const closeAudioMix = async (audioMix: AudioMix | null) => {
     if (!audioMix) return;
     if (audioMix.context.state !== 'closed') {
-        await audioMix.context.close().catch(() => undefined);
+        await audioMix.context.close().catch(err =>
+            console.warn('closeAudioMix: context.close() failed', err)
+        );
     }
 };
 

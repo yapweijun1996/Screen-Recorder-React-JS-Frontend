@@ -21,15 +21,19 @@ export const FFmpegStatus: React.FC<FFmpegStatusProps> = ({ className = '' }) =>
 
         // Start preloading immediately
         ffmpegService.preload().catch(console.error);
+
+        return () => {
+            ffmpegService.offStatusChange(setStatus);
+        };
     }, []);
 
     const getStatusUI = () => {
         switch (status) {
             case 'idle':
                 return {
-                    icon: <Cpu size={14} className="text-slate-400" />,
+                    icon: <Cpu size={14} className="text-th-secondary" />,
                     text: t('ffmpeg.idle'),
-                    color: 'text-slate-400 bg-slate-800'
+                    color: 'text-th-secondary bg-th-card'
                 };
             case 'loading':
                 return {

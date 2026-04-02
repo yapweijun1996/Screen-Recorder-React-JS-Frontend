@@ -26,11 +26,23 @@ class FFmpegService {
         callback(this.loadStatus);
     }
 
+    offStatusChange(callback: (status: FFmpegLoadStatus) => void) {
+        if (this.onStatusChangeCallback === callback) {
+            this.onStatusChangeCallback = null;
+        }
+    }
+
     /**
      * Subscribe to processing progress
      */
     onProgress(callback: (progress: FFmpegProgress) => void) {
         this.onProgressCallback = callback;
+    }
+
+    offProgress(callback: (progress: FFmpegProgress) => void) {
+        if (this.onProgressCallback === callback) {
+            this.onProgressCallback = null;
+        }
     }
 
     private setStatus(status: FFmpegLoadStatus) {

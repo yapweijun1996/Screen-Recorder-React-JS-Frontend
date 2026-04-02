@@ -127,7 +127,9 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             if (isPlaying) {
                 videoRef.current.pause();
             } else {
-                videoRef.current.play();
+                videoRef.current.play().catch(err =>
+                    console.warn('Editor: keyboard toggle play failed', err)
+                );
             }
             setIsPlaying(!isPlaying);
         },
@@ -201,7 +203,9 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             if (videoRef.current.currentTime >= selectedSegment.end) {
                 videoRef.current.currentTime = selectedSegment.start;
             }
-            videoRef.current.play();
+            videoRef.current.play().catch(err =>
+                console.warn('Editor: togglePlay play() failed', err)
+            );
         }
         setIsPlaying(!isPlaying);
     };
@@ -228,7 +232,9 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         setPreviewIndex(0);
         setSelectedIndexDirect(0);
         videoRef.current.currentTime = safeSegments[0].start;
-        videoRef.current.play().catch(() => undefined);
+        videoRef.current.play().catch(err =>
+            console.warn('Editor: previewEditedResult play() failed', err)
+        );
     };
 
     const segmentProgressPercent = (() => {
@@ -249,7 +255,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     return (
         <div className="w-full flex-1 flex flex-col animate-fade-in min-h-0">
             {/* 顶部标题栏 - 全宽 */}
-            <div className="px-4 py-2 border-b border-slate-800 bg-slate-900/80 flex-shrink-0">
+            <div className="px-4 py-2 border-b border-th-edge bg-th-surface/80 flex-shrink-0">
                 <EditorHeader onReset={onReset} />
             </div>
 

@@ -71,6 +71,9 @@ const ja: TranslationTable = {
     'recorder.errors.empty': '録画が空です。少し長めに録画してから停止してください。',
     'recorder.errors.permission': '許可が必要です。画面共有を許可してください。',
     'recorder.errors.startFailed': '録画の開始に失敗しました',
+    'recorder.errors.notFound': 'カメラまたはマイクが見つかりません。デバイスを接続して再試行してください。',
+    'recorder.errors.notReadable': 'カメラまたはマイクが他のアプリケーションで使用中です。',
+    'recorder.errors.overconstrained': 'リクエストされたメディア設定はお使いのデバイスでサポートされていません。',
 
     'editor.header.title': '編集と書き出し',
     'editor.header.subtitle': 'クリップをトリミングし、設定してダウンロード。',

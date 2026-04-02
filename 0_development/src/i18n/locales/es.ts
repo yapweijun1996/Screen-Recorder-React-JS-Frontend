@@ -71,6 +71,9 @@ const es: TranslationTable = {
     'recorder.errors.empty': 'La grabación está vacía. Graba un poco más antes de detener.',
     'recorder.errors.permission': 'Permiso denegado. Habilita el uso compartido de pantalla.',
     'recorder.errors.startFailed': 'No se pudo iniciar la grabación',
+    'recorder.errors.notFound': 'No se encontró cámara ni micrófono. Conecte un dispositivo e inténtelo de nuevo.',
+    'recorder.errors.notReadable': 'La cámara o el micrófono están siendo utilizados por otra aplicación.',
+    'recorder.errors.overconstrained': 'La configuración de medios solicitada no es compatible con su dispositivo.',
 
     'editor.header.title': 'Editar y exportar',
     'editor.header.subtitle': 'Recorta, ajusta la exportación y descarga.',
