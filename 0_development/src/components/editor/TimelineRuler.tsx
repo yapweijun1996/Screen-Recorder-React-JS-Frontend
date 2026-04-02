@@ -64,7 +64,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
     };
     
     return (
-        <div className={`relative h-8 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-700 ${className}`}>
+        <div className={`relative h-8 bg-gradient-to-b from-th-base to-th-deep border-b border-th-divider ${className}`}>
             {/* 刻度线 */}
             {ticks.map((tick, idx) => {
                 const leftPct = toPct(tick.time);
@@ -78,13 +78,13 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({
                         <div
                             className={`${
                                 tick.isMajor
-                                    ? 'w-[1px] h-3 bg-slate-500'
-                                    : 'w-[1px] h-1.5 bg-slate-600'
+                                    ? 'w-[1px] h-3 bg-th-tertiary'
+                                    : 'w-[1px] h-1.5 bg-th-muted'
                             }`}
                         />
                         {/* 时间标签（仅主刻度）*/}
                         {tick.label && (
-                            <div className="absolute -top-0.5 left-1 text-[10px] font-mono text-slate-400 whitespace-nowrap select-none">
+                            <div className="absolute -top-0.5 left-1 text-[10px] font-mono text-th-secondary whitespace-nowrap select-none">
                                 {tick.label}
                             </div>
                         )}
