@@ -141,7 +141,17 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         },
         onSplitAtPlayhead: () => splitSelectedAt(currentTime),
         onUndo: undo,
-        onDeleteSelected: deleteSelectedSegment,
+        onDeleteSelected: () => {
+            // After deletion, seek to the new selected segment's start
+            const newIdx = Math.max(0, selectedIndex - 1);
+            const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
+            if (remainingSegments.length > 0 && videoRef.current) {
+                const target = remainingSegments[Math.min(newIdx, remainingSegments.length - 1)];
+                videoRef.current.currentTime = target.start;
+                setCurrentTime(target.start);
+            }
+            deleteSelectedSegment();
+        },
         maxDuration,
         segmentStart: selectedSegment.start,
         segmentEnd: selectedSegment.end,
@@ -351,7 +361,16 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         }}
                         onSeek={handleSeek}
                         onSplitAt={(time) => splitSelectedAt(time)}
-                        onDeleteSelected={deleteSelectedSegment}
+                        onDeleteSelected={() => {
+                            const newIdx = Math.max(0, selectedIndex - 1);
+                            const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
+                            if (remainingSegments.length > 0 && videoRef.current) {
+                                const target = remainingSegments[Math.min(newIdx, remainingSegments.length - 1)];
+                                videoRef.current.currentTime = target.start;
+                                setCurrentTime(target.start);
+                            }
+                            deleteSelectedSegment();
+                        }}
                         onUndo={undo}
                         onPreviewEdited={previewEditedResult}
                         onResetTrim={() => {

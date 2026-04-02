@@ -196,7 +196,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         }
 
         return result;
-    }, [safeMax, zoomLevel]);
+    }, [displayDuration, zoomLevel]);
 
     // 光标样式
     const cursorClass = activeTool === 'blade'
@@ -390,35 +390,32 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                             }}
                         />
 
-                        {/* 空隙（Gaps）*/}
-                        {renderGaps(segments, safeMax, toPct)}
-
-                        {/* 片段（Clips）- 使用新的 TimelineClip 组件 */}
-                        {segments.map((seg, idx) => {
-                            const leftPct = toPct(seg.start);
-                            const widthPct = Math.max(0.5, toPct(seg.end) - leftPct);
+                        {/* 片段（Clips）- 使用折叠位置（涟漪模式） */}
+                        {collapsedSegments.map((cseg, idx) => {
+                            const leftPct = toPct(cseg.displayStart);
+                            const widthPct = Math.max(0.5, toPct(cseg.displayEnd) - leftPct);
                             const isSelected = idx === selectedIndex;
 
                             return (
                                 <TimelineClip
                                     key={`segment-${idx}`}
-                                    segment={seg}
+                                    segment={segments[idx]}
                                     index={idx}
                                     isSelected={isSelected}
                                     leftPct={leftPct}
                                     widthPct={widthPct}
                                     onSelect={() => onSelectSegment(idx)}
-                                    maxDuration={safeMax}
+                                    maxDuration={displayDuration}
                                 />
                             );
                         })}
 
-                        {/* 播放头 */}
+                        {/* 播放头 (sequence time) */}
                         <DraggablePlayhead
-                            currentTime={currentTime}
-                            maxDuration={safeMax}
+                            currentTime={sourceToSequence(currentTime)}
+                            maxDuration={displayDuration}
                             containerRef={containerRef as React.RefObject<HTMLElement>}
-                            onSeek={onSeek}
+                            onSeek={(seqTime) => onSeek(sequenceToSource(seqTime))}
                             trackHeight={70}
                         />
 
@@ -481,7 +478,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         Segments: <span className="text-purple-400 font-semibold">{segments.length}</span>
                     </span>
                     <span className="text-th-tertiary">
-                        Total: <span className="text-indigo-400 font-semibold">{formatTime(safeMax)}</span>
+                        Total: <span className="text-indigo-400 font-semibold">{formatTime(displayDuration)}</span>
                     </span>
                 </div>
             </div>
@@ -489,64 +486,3 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     );
 };
 
-/**
- * 渲染空隙 (Gaps)
- */
-function renderGaps(segments: TrimRange[], maxDuration: number, toPct: (t: number) => number): React.ReactNode {
-    const gaps: React.ReactNode[] = [];
-
-    // 开头空隙
-    if (segments.length > 0 && segments[0].start > 0.01) {
-        const widthPct = toPct(segments[0].start);
-        gaps.push(
-            <div
-                key="gap-start"
-                className="absolute top-0 bottom-0 bg-th-surface/80"
-                style={{
-                    left: 0,
-                    width: `${widthPct}%`,
-                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(100,116,139,0.1) 4px, rgba(100,116,139,0.1) 8px)',
-                }}
-            />
-        );
-    }
-
-    // 中间空隙
-    for (let i = 0; i < segments.length - 1; i++) {
-        const gapStart = segments[i].end;
-        const gapEnd = segments[i + 1].start;
-        if (gapEnd - gapStart > 0.01) {
-            gaps.push(
-                <div
-                    key={`gap-${i}`}
-                    className="absolute top-0 bottom-0 bg-th-surface/80"
-                    style={{
-                        left: `${toPct(gapStart)}%`,
-                        width: `${toPct(gapEnd) - toPct(gapStart)}%`,
-                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(100,116,139,0.1) 4px, rgba(100,116,139,0.1) 8px)',
-                    }}
-                />
-            );
-        }
-    }
-
-    // 结尾空隙
-    if (segments.length > 0) {
-        const lastEnd = segments[segments.length - 1].end;
-        if (lastEnd < maxDuration - 0.01) {
-            gaps.push(
-                <div
-                    key="gap-end"
-                    className="absolute top-0 bottom-0 bg-th-surface/80"
-                    style={{
-                        left: `${toPct(lastEnd)}%`,
-                        width: `${100 - toPct(lastEnd)}%`,
-                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(100,116,139,0.1) 4px, rgba(100,116,139,0.1) 8px)',
-                    }}
-                />
-            );
-        }
-    }
-
-    return gaps;
-}
