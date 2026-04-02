@@ -27,7 +27,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     const toPct = (time: number) => Math.min(100, Math.max(0, (time / safeMax) * 100));
 
     return (
-        <div className={`relative h-12 bg-slate-950 border-b border-slate-800 ${className}`}>
+        <div className={`relative h-12 bg-th-deep border-b border-th-edge ${className}`}>
             {/* 背景网格线（可选） */}
             <div className="absolute inset-0 opacity-20 pointer-events-none">
                 <div className="h-full" style={{
@@ -50,7 +50,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                             absolute top-1 bottom-1 rounded-md overflow-hidden
                             transition-all duration-150 cursor-pointer
                             ${isSelected
-                                ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-slate-950 shadow-lg shadow-indigo-500/30 z-10'
+                                ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-th-deep shadow-lg shadow-indigo-500/30 z-10'
                                 : 'hover:ring-1 hover:ring-purple-400/50'
                             }
                         `}
@@ -112,7 +112,7 @@ function renderGaps(
         gaps.push(
             <div
                 key="gap-start"
-                className="absolute top-0 bottom-0 bg-slate-800/50 border-x border-slate-700"
+                className="absolute top-0 bottom-0 bg-th-card/50 border-x border-th-divider"
                 style={{
                     left: 0,
                     width: `${toPct(segments[0].start)}%`,
@@ -132,7 +132,7 @@ function renderGaps(
             gaps.push(
                 <div
                     key={`gap-${i}`}
-                    className="absolute top-0 bottom-0 bg-slate-800/50 border-x border-slate-700"
+                    className="absolute top-0 bottom-0 bg-th-card/50 border-x border-th-divider"
                     style={{
                         left: `${toPct(gapStart)}%`,
                         width: `${gapWidth}%`,
@@ -149,7 +149,7 @@ function renderGaps(
         gaps.push(
             <div
                 key="gap-end"
-                className="absolute top-0 bottom-0 bg-slate-800/50 border-x border-slate-700"
+                className="absolute top-0 bottom-0 bg-th-card/50 border-x border-th-divider"
                 style={{
                     left: `${toPct(lastSeg.end)}%`,
                     width: `${100 - toPct(lastSeg.end)}%`,
