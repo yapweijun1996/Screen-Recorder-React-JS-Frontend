@@ -192,15 +192,20 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const handleLoadedMetadata = () => {
         if (videoRef.current) {
             const dur = videoRef.current.duration;
-            if (Number.isFinite(dur) && dur !== Infinity && !isNaN(dur)) {
-                if (dur <= 0) {
-                    setPlaybackError(t('editor.playback.durationZero'));
-                } else {
-                    setPlaybackError(null);
-                }
+            if (Number.isFinite(dur) && dur > 0) {
+                setPlaybackError(null);
                 syncDurationIfUntouched(dur);
+            } else if (Number.isFinite(dur) && dur <= 0) {
+                setPlaybackError(t('editor.playback.durationZero'));
             } else {
-                setPlaybackError(t('editor.playback.readError'));
+                // WebM from MediaRecorder reports Infinity duration;
+                // fall back to the duration measured via timer
+                if (Number.isFinite(videoMetadata.duration) && videoMetadata.duration > 0) {
+                    setPlaybackError(null);
+                    syncDurationIfUntouched(videoMetadata.duration);
+                } else {
+                    setPlaybackError(t('editor.playback.readError'));
+                }
             }
         }
     };
