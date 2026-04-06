@@ -26,6 +26,19 @@ const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> =
     '4k': { width: 3840, height: 2160 },
 };
 
+/**
+ * Select AVC profile/level string based on resolution.
+ * Coded area = width * ceil_to_16(height).
+ */
+function getAvcCodecString(width: number, height: number): string {
+    const area = width * height;
+    // Baseline profile (42), constraint set (00), level
+    if (area <= 921600)  return 'avc1.42001f'; // Level 3.1 – up to ~1280x720
+    if (area <= 2088960) return 'avc1.640028'; // Level 4.0 – up to ~1920x1088
+    if (area <= 8355840) return 'avc1.640032'; // Level 5.1 – up to ~3840x2176
+    return 'avc1.640033';                      // Level 5.2 – 4K+
+}
+
 function getVideoBitrate(quality: VideoQualityPreset, width: number, height: number): number {
     const preset = VIDEO_QUALITY_PRESETS[quality];
     const pixelRatio = (width * height) / (1920 * 1080);
@@ -154,7 +167,7 @@ export async function exportWithWebCodecs(
         error: (e) => console.error('[VideoEncoder]', e),
     });
 
-    const videoCodec = useH264 ? 'avc1.42001f' : 'vp8';
+    const videoCodec = useH264 ? getAvcCodecString(width, height) : 'vp8';
     videoEncoder.configure({
         codec: videoCodec,
         width,
@@ -229,18 +242,19 @@ export async function exportWithWebCodecs(
             const length = endSample - startSample;
             if (length <= 0) continue;
 
-            // Extract interleaved audio data
+            // Extract planar audio data (each channel contiguous)
             const channels = audioBuffer.numberOfChannels;
             const f32 = new Float32Array(length * channels);
             for (let ch = 0; ch < channels; ch++) {
                 const channelData = audioBuffer.getChannelData(ch);
+                const offset = ch * length;
                 for (let s = 0; s < length; s++) {
-                    f32[s * channels + ch] = channelData[startSample + s];
+                    f32[offset + s] = channelData[startSample + s];
                 }
             }
 
             const audioData = new AudioData({
-                format: 'f32-interleaved' as AudioSampleFormat,
+                format: 'f32-planar' as AudioSampleFormat,
                 sampleRate: audioBuffer.sampleRate,
                 numberOfFrames: length,
                 numberOfChannels: channels,
