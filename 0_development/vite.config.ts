@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  const base = mode === 'production' ? '/Screen-Recorder-React-JS-Frontend/' : '/';
+  const base = mode === 'production' ? './' : '/';
   return {
     root: '.',
     base,
