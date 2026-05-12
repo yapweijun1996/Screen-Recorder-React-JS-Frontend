@@ -9,7 +9,7 @@ const ko: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': '클라이언트 MP4 내보내기',
-    'app.footer.line1': 'React, Tailwind, FFmpeg.wasm 기반 • yapweijun1996',
+    'app.footer.line1': 'React, Tailwind, WebCodecs 기반 • yapweijun1996',
     'app.footer.line2': '버전 2.0 - 일시정지, 드래그 카메라, 사전 로드 내보내기',
     'app.processing.title': '캡처를 마무리하는 중...',
     'app.processing.desc': '재생과 트리밍이 안정되도록 메타데이터를 정리하고 있습니다.',

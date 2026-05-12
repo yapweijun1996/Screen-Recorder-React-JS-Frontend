@@ -34,9 +34,9 @@ export interface VideoQualityConfig {
     preset: VideoQualityPreset;
     label: string;
     description: string;
-    // FFmpeg settings
-    crf: number; // Constant Rate Factor (0-51, lower = better quality)
-    ffmpegPreset: 'ultrafast' | 'superfast' | 'veryfast' | 'faster' | 'fast' | 'medium' | 'slow' | 'slower' | 'veryslow';
+    // Encoder settings (legacy fields kept for UI compatibility; WebCodecs uses videoBitsPerSecond)
+    crf: number; // Constant Rate Factor (0-51, lower = better quality) — currently UI-only
+    encoderPreset: 'ultrafast' | 'superfast' | 'veryfast' | 'faster' | 'fast' | 'medium' | 'slow' | 'slower' | 'veryslow';
     audioBitrate: string; // e.g., '128k', '192k', '320k'
     // Recording settings
     videoBitsPerSecond: number; // MediaRecorder bitrate
@@ -48,7 +48,7 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         label: 'Low (Fast)',
         description: 'Smaller file size, faster processing',
         crf: 28,
-        ffmpegPreset: 'ultrafast',
+        encoderPreset: 'ultrafast',
         audioBitrate: '96k',
         videoBitsPerSecond: 1_500_000, // 1.5 Mbps
     },
@@ -57,7 +57,7 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         label: 'Medium (Balanced)',
         description: 'Good balance of quality and size',
         crf: 20, // default export CRF closer to visually lossless
-        ffmpegPreset: 'fast',
+        encoderPreset: 'fast',
         audioBitrate: '128k',
         videoBitsPerSecond: 3_000_000, // 3 Mbps
     },
@@ -66,7 +66,7 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         label: 'High (Quality)',
         description: 'High quality, larger file size',
         crf: 18,
-        ffmpegPreset: 'medium',
+        encoderPreset: 'medium',
         audioBitrate: '192k',
         videoBitsPerSecond: 5_000_000, // 5 Mbps
     },
@@ -75,7 +75,7 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         label: 'Lossless (Max)',
         description: 'Best quality, very large file',
         crf: 0,
-        ffmpegPreset: 'slow',
+        encoderPreset: 'slow',
         audioBitrate: '320k',
         videoBitsPerSecond: 10_000_000, // 10 Mbps
     }

@@ -9,7 +9,7 @@ const ja: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': 'クライアント側 MP4 書き出し',
-    'app.footer.line1': 'React・Tailwind・FFmpeg.wasm で構築 • yapweijun1996',
+    'app.footer.line1': 'React・Tailwind・WebCodecs で構築 • yapweijun1996',
     'app.footer.line2': 'バージョン 2.0 - 一時停止、ドラッグ可能カメラ、事前ロード導出',
     'app.processing.title': '録画を仕上げています...',
     'app.processing.desc': '再生とトリミングが安定するようメタデータを整えています。',

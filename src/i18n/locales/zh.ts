@@ -10,7 +10,7 @@ const zh: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': '本地 MP4 导出',
-    'app.footer.line1': '由 React、Tailwind 和 FFmpeg.wasm 构建 • yapweijun1996',
+    'app.footer.line1': '由 React、Tailwind 和 WebCodecs 构建 • yapweijun1996',
     'app.footer.line2': '2.0 版 - 支持暂停、可拖动摄像头与预加载导出',
     'app.processing.title': '正在完成录制...',
     'app.processing.desc': '我们正在校准录制元数据，确保播放与裁剪稳定。',

@@ -9,7 +9,7 @@ const pt: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': 'Exportação MP4 no navegador',
-    'app.footer.line1': 'Feito com React, Tailwind e FFmpeg.wasm • yapweijun1996',
+    'app.footer.line1': 'Feito com React, Tailwind e WebCodecs • yapweijun1996',
     'app.footer.line2': 'Versão 2.0 - Pausa, câmera móvel e export pré-carregado',
     'app.processing.title': 'Finalizando sua captura...',
     'app.processing.desc': 'Ajustamos os metadados para reprodução e corte confiáveis.',

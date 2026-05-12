@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: false,
         includeAssets: ['favicon.svg'],
         manifest: {
           name: 'ScreenClip Pro',

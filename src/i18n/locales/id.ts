@@ -9,7 +9,7 @@ const id: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': 'Ekspor MP4 di sisi klien',
-    'app.footer.line1': 'Dibuat dengan React, Tailwind & FFmpeg.wasm • yapweijun1996',
+    'app.footer.line1': 'Dibuat dengan React, Tailwind & WebCodecs • yapweijun1996',
     'app.footer.line2': 'Versi 2.0 - Jeda, kamera bisa digeser & ekspor pramuat',
     'app.processing.title': 'Menyelesaikan rekaman...',
     'app.processing.desc': 'Kami merapikan metadata agar pemutaran dan trim stabil.',

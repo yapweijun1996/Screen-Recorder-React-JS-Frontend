@@ -9,7 +9,7 @@ const hi: TranslationTable = {
 
     'app.title': 'ScreenClip Pro',
     'app.tagline': 'क्लाइंट-साइड MP4 एक्सपोर्ट',
-    'app.footer.line1': 'React, Tailwind और FFmpeg.wasm से निर्मित • yapweijun1996',
+    'app.footer.line1': 'React, Tailwind और WebCodecs से निर्मित • yapweijun1996',
     'app.footer.line2': 'संस्करण 2.0 - पॉज़, ड्रैगेबल कैमरा और प्रीलोडेड एक्सपोर्ट',
     'app.processing.title': 'आपकी रिकॉर्डिंग पूरी हो रही है...',
     'app.processing.desc': 'प्लेबैक और ट्रिम को स्थिर रखने के लिए मेटाडेटा ठीक किया जा रहा है।',
