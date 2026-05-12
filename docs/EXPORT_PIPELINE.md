@@ -164,6 +164,47 @@ Firefox writes the correct duration on `MediaRecorder.stop()` so this workaround
 
 ---
 
+## Cancellation
+
+`exportWithWebCodecs()` accepts an optional `AbortSignal` so the user can cancel a long export from the progress modal. The wiring:
+
+```
+ExportProgressModal "Cancel" click
+        │
+        ▼
+useEditorExportController.cancelExport()
+        │
+        ▼
+abortController.abort()
+        │
+        ├──► AbortSignal listener inside the rVFC playback Promise
+        │    rejects the playback loop immediately (no need to wait
+        │    for the next frame)
+        │
+        └──► throwIfAborted(signal) checkpoints scattered through the
+             pipeline throw DOMException('Export cancelled', 'AbortError')
+```
+
+Checkpoint locations in [`webcodecExportService.ts`](../src/services/webcodecs/webcodecExportService.ts):
+
+1. Immediately after the support check
+2. After `openSourceVideo`
+3. After audio decode
+4. Inside the rVFC `onFrame` callback (per frame)
+5. As an `abort` event listener on the rVFC playback Promise
+6. Inside the seek-based fallback loop (per iteration)
+7. After the playback loop completes
+8. Inside the tail flush loop (per iteration)
+9. Inside the audio segment encode loop (per segment)
+10. Before `videoEncoder.flush()`
+11. After `audioEncoder.flush()` and before muxer finalize
+
+On abort the function's `catch` block tears down resources independently — `prevBitmap.close()`, `videoEncoder.close()` (guarded by `state !== 'closed'`), `audioEncoder.close()`, and `releaseSource()` (pause `<video>`, clear `src`, revoke object URL) — then re-throws the `AbortError`. The controller catch checks `error instanceof DOMException && error.name === 'AbortError'` and dismisses the modal silently rather than showing an error banner.
+
+A fresh `AbortController` is created per export, so cancelling one export does not poison the next.
+
+---
+
 ## When to Touch This Code
 
 - **Adding a new output format** — add a muxer + capability flags in `capability.ts`, wire codec selection in `exportWithWebCodecs`

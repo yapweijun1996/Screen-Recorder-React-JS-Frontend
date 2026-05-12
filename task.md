@@ -6,6 +6,30 @@ Newest first.
 
 ---
 
+## 2026-05-12 — Cancellable export
+
+**Status:** ✅ shipped (`d58205d`)
+
+Users can now stop a running export from the progress modal.
+
+- [`webcodecExportService.ts`](src/services/webcodecs/webcodecExportService.ts) accepts an optional `AbortSignal`. `throwIfAborted(signal)` checkpoints are scattered through the pipeline (post-source-open, post-audio-decode, per rVFC frame, per seek-fallback iteration, tail flush loop, audio segment loop, pre-flush, pre-finalize). The rVFC playback Promise also installs an `abort` listener so cancellation is responsive even mid-frame.
+- On abort the `catch` block independently closes `prevBitmap`, both encoders (guarded by `state !== 'closed'`), and releases the source `<video>` + object URL, then re-throws `DOMException('Export cancelled', 'AbortError')`.
+- [`useEditorExportController.ts`](src/components/editor/useEditorExportController.ts) creates a fresh `AbortController` per export, exposes `cancelExport()`, and treats `AbortError` as a silent dismissal (no error banner).
+- [`ExportProgressModal.tsx`](src/components/editor/ExportProgressModal.tsx) renders a **Cancel export** button when an `onCancel` callback is supplied.
+- Translation key `editor.export.cancel` added in all 10 locales.
+
+Docs: see the **Cancellation** section in [docs/EXPORT_PIPELINE.md](docs/EXPORT_PIPELINE.md).
+
+---
+
+## 2026-05-12 — Use relative base path everywhere
+
+**Status:** ✅ shipped (`d15e447`)
+
+Dropped the `mode === 'production' ? './' : '/'` branch in [`vite.config.ts`](vite.config.ts) and always use `base: './'`. Simpler config, and module asset URLs resolve correctly whether the app is served from a subpath (GitHub Pages project site) or the root. PWA `start_url` and `scope` also become `./`.
+
+---
+
 ## 2026-05-12 — Streaming WebCodecs export
 
 **Status:** ✅ shipped (`f84e894`)
