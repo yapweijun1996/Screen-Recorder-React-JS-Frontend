@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "author": "yapweijun1996",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -334,6 +334,21 @@ async function demuxBlob(
         });
     }
 
+    // Chrome quirk: MediaRecorder WebM blobs report duration = Infinity until
+    // the playhead is seeked past the end. Seek to a large number to force
+    // Chrome to scan the file and report the real duration.
+    if (!Number.isFinite(video.duration)) {
+        await new Promise<void>((resolve) => {
+            const onSeeked = () => {
+                video.removeEventListener('seeked', onSeeked);
+                video.currentTime = 0;
+                resolve();
+            };
+            video.addEventListener('seeked', onSeeked);
+            video.currentTime = 1e101;
+        });
+    }
+
     const width = video.videoWidth;
     const height = video.videoHeight;
     const duration = video.duration;
