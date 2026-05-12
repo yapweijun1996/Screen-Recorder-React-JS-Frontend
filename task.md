@@ -6,6 +6,20 @@ Newest first.
 
 ---
 
+## 2026-05-12 — Relicense to MIT
+
+**Status:** ✅ shipped (this commit)
+
+Project is now open source under the **MIT License**. Anyone may use, copy, modify, merge, publish, distribute, sublicense, or sell copies, provided the copyright notice and license text are preserved. No commercial-license negotiation needed.
+
+- [LICENSE](LICENSE) rewritten from proprietary "All Rights Reserved" to standard MIT
+- [package.json](package.json): `"license": "MIT"`
+- [README.md](README.md): License section + Project Status updated to reflect open-source positioning, contributions welcome
+
+Why the change: the project is being treated as a portfolio piece, not a paid product. MIT is the simplest path to maximum reach and lets the WebCodecs streaming pattern + PWA techniques benefit other engineers freely.
+
+---
+
 ## 2026-05-12 — Cancellable export
 
 **Status:** ✅ shipped (`d58205d`)

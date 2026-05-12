@@ -2,7 +2,7 @@
 
 Professional browser-based screen recorder and video editor. 100% client-side — your video never leaves your machine.
 
-> **License:** Proprietary. See [LICENSE](LICENSE). For commercial licensing contact `yapweijun1996@gmail.com`.
+> **License:** MIT — free for personal and commercial use, including modification and redistribution. See [LICENSE](LICENSE).
 
 ---
 
@@ -75,11 +75,12 @@ Detailed docs:
 
 ## 🔄 Project Status
 
-This project recently underwent a hardening pass for commercial readiness:
+Open-source portfolio project under active development. Recent hardening pass:
 
 - ✅ Removed GPL-encumbered `ffmpeg.wasm` binaries (replaced with WebCodecs + MIT muxers)
-- ✅ Proprietary LICENSE and third-party notices added
+- ✅ Released under MIT — anyone can use, fork, modify, and ship
 - ✅ Streaming WebCodecs export — ~500× faster on Chrome (38s clip: 40 min → 3 s)
+- ✅ Cancellable export with AbortSignal — users can stop a long export mid-flight
 - ✅ PWA auto-update with forced reload (no more stale tabs)
 - ✅ `viewport-fit=cover` + safe-area CSS for notched devices
 - ✅ Dropped legacy v1 dead code (~1200 LoC)
@@ -88,6 +89,8 @@ See [task.md](task.md) for the running task log and [REVIEW_AND_PLAN.md](REVIEW_
 
 ## 📜 License
 
-**Proprietary** — all rights reserved. Source is viewable here for evaluation only. Commercial licensing inquiries: `yapweijun1996@gmail.com`. See [LICENSE](LICENSE) for full terms.
+**MIT** — free for personal, educational, and commercial use. You may use, copy, modify, merge, publish, distribute, sublicense, or sell copies of the software, as long as the original copyright notice and the MIT license text are preserved.
 
-Third-party components retain their own MIT / ISC / Apache-2.0 licenses — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+See [LICENSE](LICENSE) for the full text and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the attribution of bundled open-source components (all MIT / ISC / Apache-2.0).
+
+Contributions, issues, and stars welcome on [GitHub](https://github.com/yapweijun1996/Screen-Recorder-React-JS-Frontend).

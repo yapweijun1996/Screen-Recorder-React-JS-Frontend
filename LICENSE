@@ -1,60 +1,21 @@
-ScreenClip Pro — Proprietary Software License
+MIT License
 
-Copyright (c) 2026 Yap Wei Jun. All rights reserved.
+Copyright (c) 2026 Yap Wei Jun
 
-This software and its source code (the "Software") are the proprietary and
-confidential property of Yap Wei Jun ("Licensor"). The Software is protected by
-copyright laws and international copyright treaties, as well as other intellectual
-property laws and treaties.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-1. GRANT OF LICENSE
-   No license, express or implied, is granted by this file alone. Use,
-   reproduction, modification, distribution, sublicensing, publication, or
-   creation of derivative works of the Software is permitted ONLY under the
-   terms of a separate written license agreement signed by the Licensor.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-   Without such a written agreement, you have no right to use the Software for
-   any purpose, including but not limited to:
-     - Running the Software in production or for commercial purposes
-     - Copying or redistributing the Software in any form
-     - Modifying, adapting, translating, or creating derivative works
-     - Reverse engineering, decompiling, or disassembling the Software
-     - Removing or altering any copyright, trademark, or other proprietary
-       notices contained in the Software
-
-2. EVALUATION USE
-   Solely for the purpose of evaluating whether to license the Software,
-   Licensor permits you to view the source code in this repository. This
-   evaluation right does not grant permission to execute, deploy, or
-   distribute the Software.
-
-3. COMMERCIAL LICENSING
-   To obtain a commercial license to use, deploy, modify, or redistribute the
-   Software, please contact the Licensor at:
-
-       Yap Wei Jun
-       yapweijun1996@gmail.com
-
-4. THIRD-PARTY COMPONENTS
-   The Software includes open-source components, each governed by its own
-   license. A list of third-party components and their licenses is available in
-   THIRD_PARTY_NOTICES.md. Nothing in this License modifies the terms of those
-   third-party licenses.
-
-5. NO WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
-   THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-6. TERMINATION
-   Any rights granted under a separate written license terminate automatically
-   if you breach any of its terms. Upon termination, you must cease all use
-   of the Software and destroy all copies in your possession.
-
-7. GOVERNING LAW
-   This License shall be governed by and construed in accordance with the laws
-   of the jurisdiction in which the Licensor resides, without regard to its
-   conflict of law provisions.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
