@@ -1,9 +1,14 @@
 /**
  * WebCodecs-based video export service.
- * Decodes input WebM via <video> + canvas, re-encodes and muxes to MP4 or WebM.
+ *
+ * Streaming pipeline: play input <video> linearly via requestVideoFrameCallback,
+ * encode each frame as it is produced, hand encoded chunks straight to the muxer.
+ * No frames are buffered to memory beyond the current and previous decoded
+ * bitmap (used for nearest-neighbour resampling), so RAM stays bounded
+ * regardless of clip length.
  *
  * Chrome/Edge: H.264 + AAC → MP4 (via mp4-muxer)
- * Firefox:     VP8 + Opus → WebM (via webm-muxer)
+ * Firefox:     VP8  + Opus → WebM (via webm-muxer)
  *
  * License: MIT (no GPL dependencies)
  */
@@ -12,7 +17,7 @@ import { Muxer as Mp4Muxer, ArrayBufferTarget as Mp4Target } from 'mp4-muxer';
 import { Muxer as WebmMuxer, ArrayBufferTarget as WebmTarget } from 'webm-muxer';
 import type { ExportOptions, VideoQualityPreset } from '../../types';
 import { VIDEO_QUALITY_PRESETS } from '../../types';
-import { getCachedSupport, type WebCodecsSupport } from './capability';
+import { getCachedSupport } from './capability';
 
 export interface ExportProgress {
     ratio: number;
@@ -26,17 +31,12 @@ const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> =
     '4k': { width: 3840, height: 2160 },
 };
 
-/**
- * Select AVC profile/level string based on resolution.
- * Coded area = width * ceil_to_16(height).
- */
 function getAvcCodecString(width: number, height: number): string {
     const area = width * height;
-    // Baseline profile (42), constraint set (00), level
-    if (area <= 921600)  return 'avc1.42001f'; // Level 3.1 – up to ~1280x720
-    if (area <= 2088960) return 'avc1.640028'; // Level 4.0 – up to ~1920x1088
-    if (area <= 8355840) return 'avc1.640032'; // Level 5.1 – up to ~3840x2176
-    return 'avc1.640033';                      // Level 5.2 – 4K+
+    if (area <= 921600)  return 'avc1.42001f';
+    if (area <= 2088960) return 'avc1.640028';
+    if (area <= 8355840) return 'avc1.640032';
+    return 'avc1.640033';
 }
 
 function getVideoBitrate(quality: VideoQualityPreset, width: number, height: number): number {
@@ -56,11 +56,103 @@ function normalizeSegments(segments: Array<{ start: number; end: number }>) {
         .sort((a, b) => a.start - b.start);
 }
 
+interface Deadline {
+    inputTime: number;        // seconds in source video this output frame samples from
+    outputTimestampUs: number; // microseconds in output stream
+    isKeyframe: boolean;
+}
+
 /**
- * Export video using WebCodecs API.
- * Auto-selects codec based on browser capability:
- * - H.264/AAC → MP4 (Chrome, Edge)
- * - VP8/Opus → WebM (Firefox)
+ * Build the full list of output frame deadlines from the requested segments.
+ * Output timestamps are gap-free: segments are stitched together back-to-back.
+ */
+function planDeadlines(
+    segments: Array<{ start: number; end: number }>,
+    targetFps: number,
+    frameDurationUs: number,
+): Deadline[] {
+    const deadlines: Deadline[] = [];
+    let outputUs = 0;
+    for (const seg of segments) {
+        const segDur = seg.end - seg.start;
+        const frameCount = Math.max(1, Math.ceil(segDur * targetFps));
+        for (let i = 0; i < frameCount; i++) {
+            deadlines.push({
+                inputTime: seg.start + i / targetFps,
+                outputTimestampUs: outputUs,
+                isKeyframe: i % (targetFps * 2) === 0,
+            });
+            outputUs += frameDurationUs;
+        }
+    }
+    return deadlines;
+}
+
+interface SourceVideo {
+    video: HTMLVideoElement;
+    url: string;
+    width: number;
+    height: number;
+    duration: number;
+}
+
+/**
+ * Set up a hidden <video> element for the input blob and wait until dimensions
+ * and a finite duration are available. Includes the Chrome MediaRecorder
+ * duration=Infinity workaround.
+ */
+async function openSourceVideo(blob: Blob): Promise<SourceVideo> {
+    const url = URL.createObjectURL(blob);
+    const video = document.createElement('video');
+    video.muted = true;
+    video.preload = 'auto';
+    video.crossOrigin = 'anonymous';
+    video.src = url;
+
+    await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('Failed to load video for export'));
+    });
+
+    if (video.readyState < 2) {
+        await new Promise<void>((resolve) => { video.oncanplay = () => resolve(); });
+    }
+
+    // Chrome quirk: MediaRecorder WebM blobs report duration=Infinity until the
+    // playhead is seeked past the end. Force a scan.
+    if (!Number.isFinite(video.duration)) {
+        await new Promise<void>((resolve) => {
+            const onSeeked = () => {
+                video.removeEventListener('seeked', onSeeked);
+                video.currentTime = 0;
+                resolve();
+            };
+            video.addEventListener('seeked', onSeeked);
+            video.currentTime = 1e101;
+        });
+    }
+
+    return {
+        video,
+        url,
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: video.duration,
+    };
+}
+
+async function decodeAudioFromBlob(blob: Blob): Promise<AudioBuffer | null> {
+    try {
+        const arrayBuf = await blob.arrayBuffer();
+        const audioCtx = new OfflineAudioContext(2, 1, 48000);
+        return await audioCtx.decodeAudioData(arrayBuf);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Export video using WebCodecs API with a streaming decode→encode→mux pipeline.
  */
 export async function exportWithWebCodecs(
     inputBlob: Blob,
@@ -80,38 +172,39 @@ export async function exportWithWebCodecs(
     const resolution = options.resolution || 'original';
     const frameDurationUs = Math.round(1_000_000 / targetFps);
 
+    onProgress?.({ ratio: 0, phase: 'decoding' });
+
+    // ─── 1. Open source ───
+    const source = await openSourceVideo(inputBlob);
+    const { video, url, duration: inputDuration } = source;
+
+    // ─── 2. Normalize segments ───
     let segments = options.segments?.length
         ? normalizeSegments(options.segments)
         : (options.trimStart !== undefined && options.trimEnd !== undefined)
             ? normalizeSegments([{ start: options.trimStart, end: options.trimEnd }])
             : null;
-
-    // Demux input
-    onProgress?.({ ratio: 0, phase: 'decoding' });
-    const { videoFrames, audioBuffer, videoInfo } = await demuxBlob(inputBlob, onProgress);
-
-    // Output dimensions
-    const resConfig = RESOLUTION_MAP[resolution];
-    const rawW = resConfig?.width ?? videoInfo.width;
-    const rawH = resConfig?.height ?? videoInfo.height;
-    const width = rawW + (rawW % 2);   // ensure even
-    const height = rawH + (rawH % 2);
-
-    const videoBitrate = getVideoBitrate(quality, width, height);
-    const audioBitrate = getAudioBitrate(quality);
-    const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
-
-    if (!segments) {
-        segments = [{ start: 0, end: videoInfo.duration }];
+    if (!segments || segments.length === 0) {
+        segments = [{ start: 0, end: inputDuration }];
     }
 
-    const totalDuration = segments.reduce((sum, s) => sum + (s.end - s.start), 0);
-    const expectedFrames = Math.ceil(totalDuration * targetFps);
+    // ─── 3. Output dimensions ───
+    const resConfig = RESOLUTION_MAP[resolution];
+    const rawW = resConfig?.width ?? source.width;
+    const rawH = resConfig?.height ?? source.height;
+    const width = rawW + (rawW % 2);
+    const height = rawH + (rawH % 2);
 
-    // ─── Create muxer ───
-    const videoCodecStr = useH264 ? 'avc' as const : 'V_VP8' as const;
-    const audioCodecStr = useAAC ? 'aac' as const : 'Opus' as const;
+    // ─── 4. Plan output deadlines (sorted by inputTime since segments are sorted) ───
+    const deadlines = planDeadlines(segments, targetFps, frameDurationUs);
+    const totalDeadlines = deadlines.length;
 
+    // ─── 5. Decode audio in one shot (still in memory; small relative to video) ───
+    onProgress?.({ ratio: 0.02, phase: 'decoding' });
+    const audioBuffer = await decodeAudioFromBlob(inputBlob);
+    const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
+
+    // ─── 6. Setup muxer ───
     let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
     let webmMuxer: WebmMuxer<WebmTarget> | null = null;
     let mp4Target: Mp4Target | null = null;
@@ -146,23 +239,21 @@ export async function exportWithWebCodecs(
         if (mp4Muxer) mp4Muxer.addVideoChunk(chunk, meta, chunk.timestamp);
         else if (webmMuxer) webmMuxer.addVideoChunk(chunk, meta, chunk.timestamp);
     };
-
     const addAudioChunk = (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
         if (mp4Muxer) mp4Muxer.addAudioChunk(chunk, meta, chunk.timestamp);
         else if (webmMuxer) webmMuxer.addAudioChunk(chunk, meta, chunk.timestamp);
     };
 
-    // ─── Video encoder ───
+    // ─── 7. Setup encoders ───
     let encodedFrames = 0;
-
     const videoEncoder = new VideoEncoder({
         output: (chunk, meta) => {
             addVideoChunk(chunk, meta ?? undefined);
             encodedFrames++;
-            onProgress?.({
-                ratio: Math.min(0.9, 0.3 + 0.6 * (encodedFrames / Math.max(expectedFrames, 1))),
-                phase: 'encoding',
-            });
+            const ratio = totalDeadlines > 0
+                ? 0.1 + 0.8 * (encodedFrames / totalDeadlines)
+                : 0.5;
+            onProgress?.({ ratio: Math.min(0.9, ratio), phase: 'encoding' });
         },
         error: (e) => console.error('[VideoEncoder]', e),
     });
@@ -172,77 +263,167 @@ export async function exportWithWebCodecs(
         codec: videoCodec,
         width,
         height,
-        bitrate: videoBitrate,
+        bitrate: getVideoBitrate(quality, width, height),
         framerate: targetFps,
         ...(useH264 ? { avc: { format: 'avc' } } : {}),
     });
 
-    // ─── Audio encoder ───
     let audioEncoder: AudioEncoder | null = null;
     if (hasAudio) {
-        const audioCodec = useAAC ? 'mp4a.40.2' : 'opus';
         audioEncoder = new AudioEncoder({
             output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
             error: (e) => console.error('[AudioEncoder]', e),
         });
         audioEncoder.configure({
-            codec: audioCodec,
+            codec: useAAC ? 'mp4a.40.2' : 'opus',
             numberOfChannels: audioBuffer!.numberOfChannels,
             sampleRate: audioBuffer!.sampleRate,
-            bitrate: audioBitrate,
+            bitrate: getAudioBitrate(quality),
         });
     }
 
-    // ─── Encode video frames per segment ───
-    onProgress?.({ ratio: 0.3, phase: 'encoding' });
-    let outputTimestamp = 0;
+    // ─── 8. Streaming decode → encode pipeline ───
+    // Two rolling bitmaps: prev and current. For each pending deadline whose
+    // inputTime is ≤ currentInputTime, pick whichever of {prev, current} is
+    // nearest in time and encode it at the deadline's output timestamp.
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d', { alpha: false })!;
 
-    for (const segment of segments) {
-        const segFrames = videoFrames.filter(
-            (f) => f.time >= segment.start - 0.02 && f.time < segment.end + 0.02
-        );
+    let nextDeadline = 0;
+    let prevBitmap: ImageBitmap | null = null;
+    let prevInputTime = -1;
 
-        const segDuration = segment.end - segment.start;
-        const frameCount = Math.ceil(segDuration * targetFps);
-
-        for (let i = 0; i < frameCount; i++) {
-            const targetTime = segment.start + (i / targetFps);
-
-            // Find nearest decoded frame
-            let best = segFrames[0];
-            let bestDist = Infinity;
-            for (const f of segFrames) {
-                const dist = Math.abs(f.time - targetTime);
-                if (dist < bestDist) { bestDist = dist; best = f; }
+    const drainDeadlinesUpTo = (currentBitmap: ImageBitmap | null, currentInputTime: number) => {
+        while (
+            nextDeadline < totalDeadlines
+            && deadlines[nextDeadline].inputTime <= currentInputTime + 1e-6
+        ) {
+            const d = deadlines[nextDeadline];
+            let pick: ImageBitmap | null = null;
+            if (prevBitmap !== null && currentBitmap !== null) {
+                const distPrev = Math.abs(d.inputTime - prevInputTime);
+                const distCurr = Math.abs(d.inputTime - currentInputTime);
+                pick = distCurr <= distPrev ? currentBitmap : prevBitmap;
+            } else {
+                pick = currentBitmap ?? prevBitmap;
             }
-
-            if (best) {
-                const frame = new VideoFrame(best.bitmap, {
-                    timestamp: outputTimestamp,
-                    duration: frameDurationUs,
-                });
-                videoEncoder.encode(frame, { keyFrame: i % (targetFps * 2) === 0 });
-                frame.close();
+            if (!pick) {
+                nextDeadline++;
+                continue;
             }
+            const vf = new VideoFrame(pick, {
+                timestamp: d.outputTimestampUs,
+                duration: frameDurationUs,
+            });
+            videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
+            vf.close();
+            nextDeadline++;
+        }
+    };
 
-            outputTimestamp += frameDurationUs;
+    const captureCurrentFrame = (mediaTime: number): ImageBitmap => {
+        ctx.drawImage(video as unknown as CanvasImageSource, 0, 0, width, height);
+        const bitmap = canvas.transferToImageBitmap();
+        onProgress?.({
+            ratio: Math.min(0.85, 0.05 + 0.05 * (mediaTime / Math.max(inputDuration, 0.001))),
+            phase: 'decoding',
+        });
+        return bitmap;
+    };
+
+    const supportsRVFC = typeof (video as unknown as { requestVideoFrameCallback?: unknown })
+        .requestVideoFrameCallback === 'function';
+
+    if (supportsRVFC) {
+        // ── Fast path: requestVideoFrameCallback + linear playback ──
+        const rvfcVideo = video as unknown as HTMLVideoElement & {
+            requestVideoFrameCallback: (
+                cb: (now: number, metadata: { mediaTime: number }) => void
+            ) => number;
+        };
+
+        video.playbackRate = 16; // browsers cap to ~4-16x; uncapped if hardware allows
+
+        await new Promise<void>((resolve, reject) => {
+            let settled = false;
+            const finish = () => { if (!settled) { settled = true; resolve(); } };
+            const fail = (msg: string) => { if (!settled) { settled = true; reject(new Error(msg)); } };
+
+            const onFrame = (_now: number, metadata: { mediaTime: number }) => {
+                if (settled) return;
+                if (nextDeadline >= totalDeadlines) { finish(); return; }
+
+                const inputTime = metadata.mediaTime;
+                const bitmap = captureCurrentFrame(inputTime);
+
+                drainDeadlinesUpTo(bitmap, inputTime);
+
+                if (prevBitmap) prevBitmap.close();
+                prevBitmap = bitmap;
+                prevInputTime = inputTime;
+
+                if (video.ended || nextDeadline >= totalDeadlines) {
+                    finish();
+                } else {
+                    rvfcVideo.requestVideoFrameCallback(onFrame);
+                }
+            };
+
+            video.onended = finish;
+            video.onerror = () => fail('Video playback failed');
+            rvfcVideo.requestVideoFrameCallback(onFrame);
+            video.play().catch((err) => fail(err?.message || 'Failed to play video'));
+        });
+    } else {
+        // ── Fallback: legacy seek-based decode (kept for very old browsers) ──
+        const seekInterval = Math.max(1 / 60, 1 / targetFps);
+        for (let t = 0; t <= inputDuration && nextDeadline < totalDeadlines; t += seekInterval) {
+            video.currentTime = Math.min(t, inputDuration - 0.001);
+            await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
+            const bitmap = captureCurrentFrame(t);
+            drainDeadlinesUpTo(bitmap, t);
+            if (prevBitmap) prevBitmap.close();
+            prevBitmap = bitmap;
+            prevInputTime = t;
         }
     }
 
-    // ─── Encode audio per segment ───
-    if (audioEncoder && audioBuffer) {
-        let audioOutputTime = 0;
+    // ─── 9. Flush remaining deadlines using the last decoded bitmap ───
+    if (prevBitmap && nextDeadline < totalDeadlines) {
+        while (nextDeadline < totalDeadlines) {
+            const d = deadlines[nextDeadline];
+            const vf = new VideoFrame(prevBitmap, {
+                timestamp: d.outputTimestampUs,
+                duration: frameDurationUs,
+            });
+            videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
+            vf.close();
+            nextDeadline++;
+        }
+    }
 
+    if (prevBitmap) {
+        prevBitmap.close();
+        prevBitmap = null;
+    }
+
+    // Release source video
+    try { video.pause(); } catch { /* ignore */ }
+    video.src = '';
+    URL.revokeObjectURL(url);
+
+    // ─── 10. Encode audio (single pass across segments) ───
+    if (audioEncoder && audioBuffer) {
+        let audioOutputUs = 0;
         for (const segment of segments) {
             const startSample = Math.floor(segment.start * audioBuffer.sampleRate);
             const endSample = Math.min(
                 Math.ceil(segment.end * audioBuffer.sampleRate),
-                audioBuffer.length
+                audioBuffer.length,
             );
             const length = endSample - startSample;
             if (length <= 0) continue;
 
-            // Extract planar audio data (each channel contiguous)
             const channels = audioBuffer.numberOfChannels;
             const f32 = new Float32Array(length * channels);
             for (let ch = 0; ch < channels; ch++) {
@@ -258,17 +439,17 @@ export async function exportWithWebCodecs(
                 sampleRate: audioBuffer.sampleRate,
                 numberOfFrames: length,
                 numberOfChannels: channels,
-                timestamp: audioOutputTime,
+                timestamp: audioOutputUs,
                 data: f32,
             });
             audioEncoder.encode(audioData);
             audioData.close();
 
-            audioOutputTime += Math.round((length / audioBuffer.sampleRate) * 1_000_000);
+            audioOutputUs += Math.round((length / audioBuffer.sampleRate) * 1_000_000);
         }
     }
 
-    // ─── Flush and finalize ───
+    // ─── 11. Flush and finalize ───
     onProgress?.({ ratio: 0.92, phase: 'muxing' });
 
     await videoEncoder.flush();
@@ -279,9 +460,6 @@ export async function exportWithWebCodecs(
         audioEncoder.close();
     }
 
-    // Clean up bitmaps
-    for (const f of videoFrames) f.bitmap.close();
-
     if (mp4Muxer) {
         mp4Muxer.finalize();
         onProgress?.({ ratio: 1, phase: 'muxing' });
@@ -291,106 +469,4 @@ export async function exportWithWebCodecs(
         onProgress?.({ ratio: 1, phase: 'muxing' });
         return new Blob([webmTarget!.buffer], { type: 'video/webm' });
     }
-}
-
-// ─── Demux via <video> + canvas ──────────────────────────────────────────
-
-interface DecodedFrame {
-    time: number;       // seconds
-    bitmap: ImageBitmap;
-}
-
-interface VideoInfo {
-    width: number;
-    height: number;
-    duration: number;
-}
-
-interface DemuxResult {
-    videoFrames: DecodedFrame[];
-    audioBuffer: AudioBuffer | null;
-    videoInfo: VideoInfo;
-}
-
-async function demuxBlob(
-    blob: Blob,
-    onProgress?: (progress: ExportProgress) => void,
-): Promise<DemuxResult> {
-    const url = URL.createObjectURL(blob);
-    const video = document.createElement('video');
-    video.muted = true;
-    video.preload = 'auto';
-    video.src = url;
-
-    await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => resolve();
-        video.onerror = () => reject(new Error('Failed to load video for demuxing'));
-    });
-
-    // Wait for video to be fully loaded
-    if (video.readyState < 2) {
-        await new Promise<void>((resolve) => {
-            video.oncanplay = () => resolve();
-        });
-    }
-
-    // Chrome quirk: MediaRecorder WebM blobs report duration = Infinity until
-    // the playhead is seeked past the end. Seek to a large number to force
-    // Chrome to scan the file and report the real duration.
-    if (!Number.isFinite(video.duration)) {
-        await new Promise<void>((resolve) => {
-            const onSeeked = () => {
-                video.removeEventListener('seeked', onSeeked);
-                video.currentTime = 0;
-                resolve();
-            };
-            video.addEventListener('seeked', onSeeked);
-            video.currentTime = 1e101;
-        });
-    }
-
-    const width = video.videoWidth;
-    const height = video.videoHeight;
-    const duration = video.duration;
-
-    const frames: DecodedFrame[] = [];
-    const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d')!;
-
-    const seekInterval = 1 / 30;
-    const totalFrames = Math.ceil(duration / seekInterval);
-
-    for (let i = 0; i <= totalFrames; i++) {
-        const time = Math.min(i * seekInterval, duration - 0.001);
-        video.currentTime = time;
-        await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
-
-        ctx.drawImage(video, 0, 0, width, height);
-        const bitmap = await createImageBitmap(canvas);
-
-        frames.push({ time, bitmap });
-
-        if (onProgress && i % 10 === 0) {
-            onProgress({ ratio: 0.3 * (i / totalFrames), phase: 'decoding' });
-        }
-    }
-
-    video.src = '';
-    URL.revokeObjectURL(url);
-
-    // Decode audio
-    let audioBuffer: AudioBuffer | null = null;
-    try {
-        const arrayBuf = await blob.arrayBuffer();
-        const audioCtx = new OfflineAudioContext(2, 1, 48000);
-        audioBuffer = await audioCtx.decodeAudioData(arrayBuf);
-    } catch {
-        audioBuffer = null;
-    }
-
-    return {
-        videoFrames: frames,
-        audioBuffer,
-        videoInfo: { width, height, duration },
-    };
 }
