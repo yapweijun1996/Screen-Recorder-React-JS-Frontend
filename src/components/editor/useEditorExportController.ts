@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ExportFormat, ExportOptions, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
 import { exportService } from '../../services/exportService';
 
@@ -36,6 +36,7 @@ export const useEditorExportController = ({
     const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
     const [exportError, setExportError] = useState<string | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
     // Subscribe to export progress
     useEffect(() => {
@@ -86,6 +87,11 @@ export const useEditorExportController = ({
         setProcessingStartTime(Date.now());
         setExportUrl(null);
 
+        // Abort any prior in-flight export and create a fresh controller.
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         try {
             const options: ExportOptions = {
                 quality: selectedQuality,
@@ -104,18 +110,34 @@ export const useEditorExportController = ({
                 }
             }
 
-            const outputBlob = await exportService.processVideo(videoMetadata.blob, options);
+            const outputBlob = await exportService.processVideo(
+                videoMetadata.blob,
+                options,
+                controller.signal,
+            );
             const url = URL.createObjectURL(outputBlob);
             setExportUrl(url);
         } catch (error) {
-            console.error(error);
-            setExportError(t('editor.export.failed'));
+            // User-initiated cancel: drop the modal silently, no error banner.
+            const isAbort =
+                error instanceof DOMException && error.name === 'AbortError';
+            if (!isAbort) {
+                console.error(error);
+                setExportError(t('editor.export.failed'));
+            }
         } finally {
             setIsProcessing(false);
             setProcessingProgress(0);
             setProcessingEta(null);
             setProcessingStartTime(null);
+            if (abortRef.current === controller) {
+                abortRef.current = null;
+            }
         }
+    };
+
+    const cancelExport = () => {
+        abortRef.current?.abort();
     };
 
     return {
@@ -126,6 +148,7 @@ export const useEditorExportController = ({
         exportError,
         exportTrimmed: () => exportVideo('trimmed'),
         exportFull: () => exportVideo('full'),
+        cancelExport,
         clearExportUrl: () => setExportUrl(null),
         clearExportError: () => setExportError(null),
     };

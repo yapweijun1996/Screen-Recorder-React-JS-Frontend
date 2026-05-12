@@ -122,6 +122,7 @@ const de: TranslationTable = {
     'editor.export.failed': 'Export fehlgeschlagen. Konsole prüfen.',
     'editor.export.modalExporting': 'Exportiert nach {{format}}...',
     'editor.export.modalStayHint': 'Bleiben Sie auf dieser Registerkarte für die beste Leistung. Ein Wechsel kann die Verarbeitung verlangsamen.',
+    'editor.export.cancel': 'Export abbrechen',
 
     'quality.low.label': 'Niedrig (Schnell)',
     'quality.low.description': 'Kleiner, schnell verarbeitet',

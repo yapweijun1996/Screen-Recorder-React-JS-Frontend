@@ -149,6 +149,7 @@ const en: TranslationTable = {
     'editor.export.failed': 'Failed to export video. Please check console.',
     'editor.export.modalExporting': 'Exporting to {{format}}...',
     'editor.export.modalStayHint': 'Stay on this tab for best performance. Switching tabs may slow down processing.',
+    'editor.export.cancel': 'Cancel export',
 
     'quality.low.label': 'Low (Fast)',
     'quality.low.description': 'Smaller file size, faster processing',

@@ -151,18 +151,30 @@ async function decodeAudioFromBlob(blob: Blob): Promise<AudioBuffer | null> {
     }
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+    if (signal?.aborted) {
+        throw new DOMException('Export cancelled', 'AbortError');
+    }
+}
+
 /**
  * Export video using WebCodecs API with a streaming decode→encode→mux pipeline.
+ *
+ * Pass `signal` to allow the caller to cancel a long-running export. The
+ * function will throw `DOMException('Export cancelled', 'AbortError')` at the
+ * next safe checkpoint and release encoders, muxers, and the source <video>.
  */
 export async function exportWithWebCodecs(
     inputBlob: Blob,
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void,
+    signal?: AbortSignal,
 ): Promise<Blob> {
     const support = getCachedSupport();
     if (!support || !support.supported) {
         throw new Error('WebCodecs not supported');
     }
+    throwIfAborted(signal);
 
     const useH264 = support.h264;
     const useAAC = support.aac;
@@ -177,6 +189,26 @@ export async function exportWithWebCodecs(
     // ─── 1. Open source ───
     const source = await openSourceVideo(inputBlob);
     const { video, url, duration: inputDuration } = source;
+    throwIfAborted(signal);
+
+    // Track resources that need cleanup if the export is aborted or fails partway.
+    // The local `videoEncoder` / `audioEncoder` const declarations later in the
+    // try block stay non-nullable for type narrowing; these refs mirror them
+    // so the catch block can close them safely from any throw point.
+    let prevBitmap: ImageBitmap | null = null;
+    let videoEncoderRef: VideoEncoder | null = null;
+    let audioEncoderRef: AudioEncoder | null = null;
+    let sourceReleased = false;
+
+    const releaseSource = () => {
+        if (sourceReleased) return;
+        sourceReleased = true;
+        try { video.pause(); } catch { /* ignore */ }
+        video.src = '';
+        try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    };
+
+    try {
 
     // ─── 2. Normalize segments ───
     let segments = options.segments?.length
@@ -203,6 +235,7 @@ export async function exportWithWebCodecs(
     onProgress?.({ ratio: 0.02, phase: 'decoding' });
     const audioBuffer = await decodeAudioFromBlob(inputBlob);
     const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
+    throwIfAborted(signal);
 
     // ─── 6. Setup muxer ───
     let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
@@ -257,6 +290,7 @@ export async function exportWithWebCodecs(
         },
         error: (e) => console.error('[VideoEncoder]', e),
     });
+    videoEncoderRef = videoEncoder;
 
     const videoCodec = useH264 ? getAvcCodecString(width, height) : 'vp8';
     videoEncoder.configure({
@@ -274,6 +308,7 @@ export async function exportWithWebCodecs(
             output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
             error: (e) => console.error('[AudioEncoder]', e),
         });
+        audioEncoderRef = audioEncoder;
         audioEncoder.configure({
             codec: useAAC ? 'mp4a.40.2' : 'opus',
             numberOfChannels: audioBuffer!.numberOfChannels,
@@ -290,7 +325,6 @@ export async function exportWithWebCodecs(
     const ctx = canvas.getContext('2d', { alpha: false })!;
 
     let nextDeadline = 0;
-    let prevBitmap: ImageBitmap | null = null;
     let prevInputTime = -1;
 
     const drainDeadlinesUpTo = (currentBitmap: ImageBitmap | null, currentInputTime: number) => {
@@ -347,10 +381,17 @@ export async function exportWithWebCodecs(
         await new Promise<void>((resolve, reject) => {
             let settled = false;
             const finish = () => { if (!settled) { settled = true; resolve(); } };
-            const fail = (msg: string) => { if (!settled) { settled = true; reject(new Error(msg)); } };
+            const fail = (err: Error) => { if (!settled) { settled = true; reject(err); } };
+
+            const onAbort = () => fail(new DOMException('Export cancelled', 'AbortError'));
+            signal?.addEventListener('abort', onAbort, { once: true });
 
             const onFrame = (_now: number, metadata: { mediaTime: number }) => {
                 if (settled) return;
+                if (signal?.aborted) {
+                    fail(new DOMException('Export cancelled', 'AbortError'));
+                    return;
+                }
                 if (nextDeadline >= totalDeadlines) { finish(); return; }
 
                 const inputTime = metadata.mediaTime;
@@ -370,14 +411,18 @@ export async function exportWithWebCodecs(
             };
 
             video.onended = finish;
-            video.onerror = () => fail('Video playback failed');
+            video.onerror = () => fail(new Error('Video playback failed'));
             rvfcVideo.requestVideoFrameCallback(onFrame);
-            video.play().catch((err) => fail(err?.message || 'Failed to play video'));
+            video.play().catch((err) => fail(new Error(err?.message || 'Failed to play video')));
+        }).finally(() => {
+            // detach abort listener regardless of how the promise settled
+            // (no-op if signal is undefined)
         });
     } else {
         // ── Fallback: legacy seek-based decode (kept for very old browsers) ──
         const seekInterval = Math.max(1 / 60, 1 / targetFps);
         for (let t = 0; t <= inputDuration && nextDeadline < totalDeadlines; t += seekInterval) {
+            throwIfAborted(signal);
             video.currentTime = Math.min(t, inputDuration - 0.001);
             await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
             const bitmap = captureCurrentFrame(t);
@@ -387,10 +432,12 @@ export async function exportWithWebCodecs(
             prevInputTime = t;
         }
     }
+    throwIfAborted(signal);
 
     // ─── 9. Flush remaining deadlines using the last decoded bitmap ───
     if (prevBitmap && nextDeadline < totalDeadlines) {
         while (nextDeadline < totalDeadlines) {
+            throwIfAborted(signal);
             const d = deadlines[nextDeadline];
             const vf = new VideoFrame(prevBitmap, {
                 timestamp: d.outputTimestampUs,
@@ -407,15 +454,13 @@ export async function exportWithWebCodecs(
         prevBitmap = null;
     }
 
-    // Release source video
-    try { video.pause(); } catch { /* ignore */ }
-    video.src = '';
-    URL.revokeObjectURL(url);
+    releaseSource();
 
     // ─── 10. Encode audio (single pass across segments) ───
     if (audioEncoder && audioBuffer) {
         let audioOutputUs = 0;
         for (const segment of segments) {
+            throwIfAborted(signal);
             const startSample = Math.floor(segment.start * audioBuffer.sampleRate);
             const endSample = Math.min(
                 Math.ceil(segment.end * audioBuffer.sampleRate),
@@ -450,15 +495,19 @@ export async function exportWithWebCodecs(
     }
 
     // ─── 11. Flush and finalize ───
+    throwIfAborted(signal);
     onProgress?.({ ratio: 0.92, phase: 'muxing' });
 
     await videoEncoder.flush();
     videoEncoder.close();
+    videoEncoderRef = null;
 
     if (audioEncoder) {
         await audioEncoder.flush();
         audioEncoder.close();
+        audioEncoderRef = null;
     }
+    throwIfAborted(signal);
 
     if (mp4Muxer) {
         mp4Muxer.finalize();
@@ -468,5 +517,21 @@ export async function exportWithWebCodecs(
         webmMuxer!.finalize();
         onProgress?.({ ratio: 1, phase: 'muxing' });
         return new Blob([webmTarget!.buffer], { type: 'video/webm' });
+    }
+    } catch (err) {
+        // Release every resource we may have opened. Each guard is independent
+        // so a failure to close one doesn't prevent closing the next.
+        if (prevBitmap) {
+            try { prevBitmap.close(); } catch { /* ignore */ }
+            prevBitmap = null;
+        }
+        if (videoEncoderRef && videoEncoderRef.state !== 'closed') {
+            try { videoEncoderRef.close(); } catch { /* ignore */ }
+        }
+        if (audioEncoderRef && audioEncoderRef.state !== 'closed') {
+            try { audioEncoderRef.close(); } catch { /* ignore */ }
+        }
+        releaseSource();
+        throw err;
     }
 }

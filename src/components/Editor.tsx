@@ -102,6 +102,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         exportError,
         exportTrimmed,
         exportFull,
+        cancelExport,
         clearExportUrl,
         clearExportError,
     } = useEditorExportController({
@@ -276,6 +277,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                     progress={processingProgress}
                     eta={processingEta}
                     format={selectedFormat}
+                    onCancel={cancelExport}
                 />
             )}
 

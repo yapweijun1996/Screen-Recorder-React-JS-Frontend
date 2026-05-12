@@ -122,6 +122,7 @@ const ja: TranslationTable = {
     'editor.export.failed': '書き出しに失敗しました。コンソールを確認してください。',
     'editor.export.modalExporting': '{{format}}にエクスポート中...',
     'editor.export.modalStayHint': '最高のパフォーマンスを得るには、このタブにとどまってください。タブを切り替えると処理が遅くなる場合があります。',
+    'editor.export.cancel': 'エクスポートをキャンセル',
 
     'quality.low.label': '低 (高速)',
     'quality.low.description': '小さいサイズ、処理が速い',

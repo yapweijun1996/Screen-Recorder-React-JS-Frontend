@@ -122,6 +122,7 @@ const hi: TranslationTable = {
     'editor.export.failed': 'एक्सपोर्ट विफल। कंसोल देखें।',
     'editor.export.modalExporting': '{{format}} में निर्यात हो रहा है...',
     'editor.export.modalStayHint': 'सर्वोत्तम प्रदर्शन के लिए इस टैब पर बने रहें। टैब बदलने से प्रोसेसिंग धीमी हो सकती है।',
+    'editor.export.cancel': 'निर्यात रद्द करें',
 
     'quality.low.label': 'निम्न (तेज़)',
     'quality.low.description': 'छोटी फ़ाइल, तेज़ प्रोसेस',

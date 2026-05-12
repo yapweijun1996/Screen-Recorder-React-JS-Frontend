@@ -5,12 +5,14 @@ interface ExportProgressModalProps {
     progress: number; // 0-100
     eta: string | null;
     format: string;
+    onCancel?: () => void;
 }
 
 export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
     progress,
     eta,
     format,
+    onCancel,
 }) => {
     const { t } = useI18n();
     const clampedProgress = Math.min(100, Math.max(0, progress));
@@ -81,6 +83,17 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
                         {t('editor.export.modalStayHint')}
                     </span>
                 </div>
+
+                {/* Cancel button */}
+                {onCancel && (
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="w-full px-4 py-2 text-sm font-medium rounded-lg border border-th-edge text-th-primary hover:bg-th-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-th-input"
+                    >
+                        {t('editor.export.cancel')}
+                    </button>
+                )}
             </div>
         </div>
     );

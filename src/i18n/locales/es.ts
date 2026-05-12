@@ -122,6 +122,7 @@ const es: TranslationTable = {
     'editor.export.failed': 'Error al exportar. Revisa la consola.',
     'editor.export.modalExporting': 'Exportando a {{format}}...',
     'editor.export.modalStayHint': 'Permanezca en esta pestaña para un mejor rendimiento. Cambiar de pestaña puede ralentizar el procesamiento.',
+    'editor.export.cancel': 'Cancelar exportación',
 
     'quality.low.label': 'Baja (Rápida)',
     'quality.low.description': 'Archivo pequeño, procesamiento rápido',

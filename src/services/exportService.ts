@@ -106,8 +106,14 @@ class ExportService {
 
     /**
      * Export video to MP4 using WebCodecs + mp4-muxer.
+     * Pass `signal` to allow the caller to cancel; the returned promise will
+     * reject with `DOMException('Export cancelled', 'AbortError')`.
      */
-    async processVideo(inputBlob: Blob, options: ExportOptions): Promise<Blob> {
+    async processVideo(
+        inputBlob: Blob,
+        options: ExportOptions,
+        signal?: AbortSignal,
+    ): Promise<Blob> {
         if (this.status !== 'ready') await this.init();
 
         if (this.engine !== 'webcodecs') {
@@ -117,9 +123,14 @@ class ExportService {
             );
         }
 
-        return exportWithWebCodecs(inputBlob, options, (progress) => {
-            this.onProgressCallback?.({ ratio: progress.ratio });
-        });
+        return exportWithWebCodecs(
+            inputBlob,
+            options,
+            (progress) => {
+                this.onProgressCallback?.({ ratio: progress.ratio });
+            },
+            signal,
+        );
     }
 
     /**

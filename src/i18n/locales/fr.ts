@@ -122,6 +122,7 @@ const fr: TranslationTable = {
     'editor.export.failed': "Échec de l\u2019export. Consultez la console.",
     'editor.export.modalExporting': "Exportation vers {{format}}...",
     'editor.export.modalStayHint': "Restez sur cet onglet pour de meilleures performances. Changer d'onglet peut ralentir le traitement.",
+    'editor.export.cancel': "Annuler l'exportation",
 
     'quality.low.label': 'Basse (Rapide)',
     'quality.low.description': 'Fichier plus petit, traitement rapide',
