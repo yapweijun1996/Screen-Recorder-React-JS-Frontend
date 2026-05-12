@@ -23,11 +23,11 @@
         else if (t === 'dark') document.documentElement.classList.add('dark');
         else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.classList.remove('dark');
       })();
-    </script>
-  <script type="module" crossorigin src="./assets/index-BI1HHE1t.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-hlOtNFyY.css">
-<link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+    </script>
+<link rel="stylesheet" href="./src/index.css">
+</head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+  <script type="module" src="./src/index.tsx"></script>
 </body>
 </html>
