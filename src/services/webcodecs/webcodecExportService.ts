@@ -279,28 +279,45 @@ export async function exportWithWebCodecs(
 
     // ─── 7. Setup encoders ───
     let encodedFrames = 0;
-    const videoEncoder = new VideoEncoder({
-        output: (chunk, meta) => {
-            addVideoChunk(chunk, meta ?? undefined);
-            encodedFrames++;
-            const ratio = totalDeadlines > 0
-                ? 0.1 + 0.8 * (encodedFrames / totalDeadlines)
-                : 0.5;
-            onProgress?.({ ratio: Math.min(0.9, ratio), phase: 'encoding' });
-        },
-        error: (e) => console.error('[VideoEncoder]', e),
-    });
-    videoEncoderRef = videoEncoder;
+    let encoderNeedsReset = false;
 
     const videoCodec = useH264 ? getAvcCodecString(width, height) : 'vp8';
-    videoEncoder.configure({
+    const videoEncoderConfig: VideoEncoderConfig = {
         codec: videoCodec,
         width,
         height,
         bitrate: getVideoBitrate(quality, width, height),
         framerate: targetFps,
         ...(useH264 ? { avc: { format: 'avc' } } : {}),
-    });
+    };
+
+    // Factory so we can recreate the encoder if the browser reclaims it
+    // (QuotaExceededError: Codec reclaimed due to inactivity).
+    const makeVideoEncoder = (): VideoEncoder => {
+        const enc = new VideoEncoder({
+            output: (chunk, meta) => {
+                addVideoChunk(chunk, meta ?? undefined);
+                encodedFrames++;
+                const ratio = totalDeadlines > 0
+                    ? 0.1 + 0.8 * (encodedFrames / totalDeadlines)
+                    : 0.5;
+                onProgress?.({ ratio: Math.min(0.9, ratio), phase: 'encoding' });
+            },
+            error: (e) => {
+                console.error('[VideoEncoder]', e);
+                // Mark for recreation on the next encode call; the encoder
+                // state is already 'closed' by the time this fires.
+                if ((e as DOMException).name === 'QuotaExceededError') {
+                    encoderNeedsReset = true;
+                }
+            },
+        });
+        enc.configure(videoEncoderConfig);
+        return enc;
+    };
+
+    let videoEncoder = makeVideoEncoder();
+    videoEncoderRef = videoEncoder;
 
     let audioEncoder: AudioEncoder | null = null;
     if (hasAudio) {
@@ -332,6 +349,16 @@ export async function exportWithWebCodecs(
             nextDeadline < totalDeadlines
             && deadlines[nextDeadline].inputTime <= currentInputTime + 1e-6
         ) {
+            // Recreate encoder if the browser reclaimed the hardware codec.
+            if (encoderNeedsReset || videoEncoder.state === 'closed') {
+                if (videoEncoder.state !== 'closed') {
+                    try { videoEncoder.close(); } catch { /* ignore */ }
+                }
+                videoEncoder = makeVideoEncoder();
+                videoEncoderRef = videoEncoder;
+                encoderNeedsReset = false;
+            }
+
             const d = deadlines[nextDeadline];
             let pick: ImageBitmap | null = null;
             if (prevBitmap !== null && currentBitmap !== null) {
@@ -349,8 +376,13 @@ export async function exportWithWebCodecs(
                 timestamp: d.outputTimestampUs,
                 duration: frameDurationUs,
             });
-            videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
-            vf.close();
+            try {
+                videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
+            } finally {
+                // Always close — if encode() throws, the frame must still be freed
+                // or the browser will log a GC warning and stall the pipeline.
+                vf.close();
+            }
             nextDeadline++;
         }
     };
@@ -438,13 +470,24 @@ export async function exportWithWebCodecs(
     if (prevBitmap && nextDeadline < totalDeadlines) {
         while (nextDeadline < totalDeadlines) {
             throwIfAborted(signal);
+            if (encoderNeedsReset || videoEncoder.state === 'closed') {
+                if (videoEncoder.state !== 'closed') {
+                    try { videoEncoder.close(); } catch { /* ignore */ }
+                }
+                videoEncoder = makeVideoEncoder();
+                videoEncoderRef = videoEncoder;
+                encoderNeedsReset = false;
+            }
             const d = deadlines[nextDeadline];
             const vf = new VideoFrame(prevBitmap, {
                 timestamp: d.outputTimestampUs,
                 duration: frameDurationUs,
             });
-            videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
-            vf.close();
+            try {
+                videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
+            } finally {
+                vf.close();
+            }
             nextDeadline++;
         }
     }
@@ -456,7 +499,18 @@ export async function exportWithWebCodecs(
 
     releaseSource();
 
-    // ─── 10. Encode audio (single pass across segments) ───
+    // ─── 10a. Flush video encoder now, before audio encoding ───
+    // Flushing here (rather than after audio) prevents the hardware video codec
+    // from sitting idle during audio encoding and being reclaimed by the browser
+    // (QuotaExceededError: Codec reclaimed due to inactivity).
+    if (videoEncoder.state !== 'closed') {
+        await videoEncoder.flush();
+        videoEncoder.close();
+    }
+    videoEncoderRef = null;
+    throwIfAborted(signal);
+
+    // ─── 10b. Encode audio (single pass across segments) ───
     if (audioEncoder && audioBuffer) {
         let audioOutputUs = 0;
         for (const segment of segments) {
@@ -494,13 +548,9 @@ export async function exportWithWebCodecs(
         }
     }
 
-    // ─── 11. Flush and finalize ───
+    // ─── 11. Flush audio and finalize ───
     throwIfAborted(signal);
     onProgress?.({ ratio: 0.92, phase: 'muxing' });
-
-    await videoEncoder.flush();
-    videoEncoder.close();
-    videoEncoderRef = null;
 
     if (audioEncoder) {
         await audioEncoder.flush();
