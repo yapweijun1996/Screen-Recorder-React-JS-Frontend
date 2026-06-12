@@ -143,6 +143,7 @@ const zh: TranslationTable = {
     'editor.export.exportAnother': '导出其他版本',
     'editor.export.exportTrimmed': '导出裁剪片段（{{label}}）',
     'editor.export.exportFull': '导出完整视频（不裁剪）',
+    'editor.export.downloadRaw': '下载原始视频 (WebM)',
     'editor.export.playbackIssue': '请重新录制以修复播放问题。',
     'editor.export.failed': '导出失败，请查看控制台。',
     'editor.export.modalExporting': '正在导出为 {{format}}...',

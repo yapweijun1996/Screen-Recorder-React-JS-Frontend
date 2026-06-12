@@ -4,18 +4,24 @@ import { Recorder } from './components/Recorder';
 import { Editor } from './components/Editor';
 import { EngineStatus } from './components/EngineStatus';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Layers, Loader2 } from 'lucide-react';
+import { Layers, Loader2, RefreshCw } from 'lucide-react';
 import { exportService } from './services/exportService';
 import { videoStorageService } from './services/videoStorageService';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
+import { setupServiceWorker, applyUpdate } from './registerSW';
 
 const App: React.FC = () => {
     const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
     const [videoData, setVideoData] = useState<VideoMetadata | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isLoadingStored, setIsLoadingStored] = useState(true);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
     const { t } = useI18n();
+
+    useEffect(() => {
+        setupServiceWorker(() => setUpdateAvailable(true));
+    }, []);
 
     useEffect(() => {
         const loadStoredVideo = async () => {
@@ -194,6 +200,29 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Update Available Banner */}
+            {updateAvailable && (
+                <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-300 dark:border-indigo-500/50 text-indigo-800 dark:text-indigo-200 flex items-center justify-between gap-3 animate-fade-in flex-shrink-0">
+                    <span className="text-sm">A new version of ScreenClip is available.</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                            onClick={() => applyUpdate()}
+                            className="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            <RefreshCw size={12} />
+                            Reload
+                        </button>
+                        <button
+                            onClick={() => setUpdateAvailable(false)}
+                            className="text-indigo-400 hover:text-indigo-200 text-xl leading-none"
+                            aria-label="Dismiss"
+                        >
+                            &times;
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Error Message */}
             {errorMsg && (

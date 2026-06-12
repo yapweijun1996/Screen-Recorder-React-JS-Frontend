@@ -118,6 +118,7 @@ const ko: TranslationTable = {
     'editor.export.exportAnother': '다른 버전 내보내기',
     'editor.export.exportTrimmed': '트림된 부분 내보내기 ({{label}})',
     'editor.export.exportFull': '전체 영상 내보내기 (트림 없음)',
+    'editor.export.downloadRaw': '원본 다운로드 (WebM)',
     'editor.export.playbackIssue': '재녹화하여 재생 문제를 해결하세요.',
     'editor.export.failed': '내보내기에 실패했습니다. 콘솔을 확인하세요.',
     'editor.export.modalExporting': '{{format}}으로 내보내는 중...',

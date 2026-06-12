@@ -145,6 +145,7 @@ const en: TranslationTable = {
     'editor.export.exportAnother': 'Export another version',
     'editor.export.exportTrimmed': 'Export Trimmed ({{label}})',
     'editor.export.exportFull': 'Export Full Video (No Trim)',
+    'editor.export.downloadRaw': 'Download Original (WebM)',
     'editor.export.playbackIssue': 'Fix playback issue by recording again.',
     'editor.export.failed': 'Failed to export video. Please check console.',
     'editor.export.modalExporting': 'Exporting to {{format}}...',

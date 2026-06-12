@@ -118,6 +118,7 @@ const pt: TranslationTable = {
     'editor.export.exportAnother': 'Exportar outra versão',
     'editor.export.exportTrimmed': 'Exportar trecho ({{label}})',
     'editor.export.exportFull': 'Exportar vídeo completo (sem corte)',
+    'editor.export.downloadRaw': 'Baixar original (WebM)',
     'editor.export.playbackIssue': 'Grave novamente para corrigir a reprodução.',
     'editor.export.failed': 'Falha ao exportar. Verifique o console.',
     'editor.export.modalExporting': 'Exportando para {{format}}...',

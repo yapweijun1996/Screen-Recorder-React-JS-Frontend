@@ -1,4 +1,5 @@
 import React from 'react';
+import { Download } from 'lucide-react';
 import type { VideoQualityPreset } from '../../../types';
 import { Button } from '../../Button';
 import { useI18n } from '../../../i18n';
@@ -9,6 +10,9 @@ interface EditorExportFooterActionsProps {
     isProcessing: boolean;
     selectedQuality: VideoQualityPreset;
 
+    rawDownloadUrl: string;
+    rawDownloadFileName: string;
+
     onExportTrimmed: () => void;
     onExportFull: () => void;
 }
@@ -18,6 +22,8 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
     playbackError,
     isProcessing,
     selectedQuality,
+    rawDownloadUrl,
+    rawDownloadFileName,
     onExportTrimmed,
     onExportFull,
 }) => {
@@ -46,6 +52,15 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
             >
                 {t('editor.export.exportFull')}
             </Button>
+
+            <a
+                href={rawDownloadUrl}
+                download={rawDownloadFileName}
+                className="flex items-center justify-center gap-1.5 w-full text-xs text-th-tertiary hover:text-th-secondary py-1.5 transition-colors"
+            >
+                <Download size={12} />
+                {t('editor.export.downloadRaw')}
+            </a>
 
             {playbackError && (
                 <div className="mt-3 text-[11px] text-th-tertiary">

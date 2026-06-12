@@ -118,6 +118,7 @@ const hi: TranslationTable = {
     'editor.export.exportAnother': 'एक और संस्करण एक्सपोर्ट करें',
     'editor.export.exportTrimmed': 'कट भाग एक्सपोर्ट करें ({{label}})',
     'editor.export.exportFull': 'पूरा वीडियो एक्सपोर्ट (कोई कट नहीं)',
+    'editor.export.downloadRaw': 'मूल वीडियो डाउनलोड करें (WebM)',
     'editor.export.playbackIssue': 'प्लेबैक सुधारने के लिए फिर से रिकॉर्ड करें।',
     'editor.export.failed': 'एक्सपोर्ट विफल। कंसोल देखें।',
     'editor.export.modalExporting': '{{format}} में निर्यात हो रहा है...',

@@ -47,6 +47,8 @@ interface InspectorPanelProps {
 
     // download
     downloadFileName: string;
+    rawDownloadUrl: string;
+    rawDownloadFileName: string;
 }
 
 /**
@@ -79,6 +81,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     onClearExportUrl,
     onClearExportError,
     downloadFileName,
+    rawDownloadUrl,
+    rawDownloadFileName,
 }) => {
     const { t } = useI18n();
 
@@ -173,6 +177,8 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     playbackError={playbackError}
                     isProcessing={isProcessing}
                     selectedQuality={selectedQuality}
+                    rawDownloadUrl={rawDownloadUrl}
+                    rawDownloadFileName={rawDownloadFileName}
                     onExportTrimmed={onExportTrimmed}
                     onExportFull={onExportFull}
                 />

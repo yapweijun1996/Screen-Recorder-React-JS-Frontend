@@ -357,6 +357,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onClearExportUrl={clearExportUrl}
                         onClearExportError={clearExportError}
                         downloadFileName={generateFileName('screen-recording', selectedFormat)}
+                        rawDownloadUrl={videoMetadata.url}
+                        rawDownloadFileName={generateFileName('screen-recording', 'webm')}
                     />
                 }
 
