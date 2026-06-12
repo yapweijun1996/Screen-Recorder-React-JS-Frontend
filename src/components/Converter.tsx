@@ -99,7 +99,7 @@ export const Converter: React.FC = () => {
                 { quality, format: 'mp4', resolution: 'original', fps: 30, crf: preset.crf },
                 ctrl.signal,
             );
-            setOutputUrl(URL.createObjectURL(output));
+            setOutputUrl(URL.createObjectURL(output.blob));
         } catch (err) {
             const isAbort = err instanceof DOMException && err.name === 'AbortError';
             if (!isAbort) {

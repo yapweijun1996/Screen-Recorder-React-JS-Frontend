@@ -20,7 +20,10 @@ const App: React.FC = () => {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isLoadingStored, setIsLoadingStored] = useState(true);
     const [updateAvailable, setUpdateAvailable] = useState(false);
-    const [page, setPage] = useState<Page>('recorder');
+    const [page, setPage] = useState<Page>(() => {
+        const p = new URLSearchParams(window.location.search).get('page');
+        return p === 'converter' ? 'converter' : 'recorder';
+    });
     const { t } = useI18n();
 
     useEffect(() => {
