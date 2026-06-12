@@ -24,6 +24,11 @@ export interface ExportProgress {
     phase: 'decoding' | 'encoding' | 'muxing';
 }
 
+export interface WebCodecsExportResult {
+    blob: Blob;
+    format: 'mp4' | 'webm';
+}
+
 const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> = {
     original: null,
     '720p': { width: 1280, height: 720 },
@@ -169,15 +174,12 @@ export async function exportWithWebCodecs(
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void,
     signal?: AbortSignal,
-): Promise<Blob> {
+): Promise<WebCodecsExportResult> {
     const support = getCachedSupport();
     if (!support || !support.supported) {
         throw new Error('WebCodecs not supported');
     }
     throwIfAborted(signal);
-
-    const useH264 = support.h264;
-    const useAAC = support.aac;
 
     const quality = options.quality || 'medium';
     const targetFps = options.fps || 30;
@@ -237,13 +239,23 @@ export async function exportWithWebCodecs(
     const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
     throwIfAborted(signal);
 
+    const requestedFormat = options.format || 'mp4';
+    const canUseMp4 = support.h264 && (!hasAudio || support.aac);
+    const canUseWebm = support.vp8 && (!hasAudio || support.opus);
+    const useMp4 = requestedFormat === 'mp4' ? canUseMp4 : !canUseWebm && canUseMp4;
+    const useWebm = requestedFormat === 'webm' ? canUseWebm : !useMp4 && canUseWebm;
+
+    if (!useMp4 && !useWebm) {
+        throw new Error('No supported video/audio codec combination is available for export.');
+    }
+
     // ─── 6. Setup muxer ───
     let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
     let webmMuxer: WebmMuxer<WebmTarget> | null = null;
     let mp4Target: Mp4Target | null = null;
     let webmTarget: WebmTarget | null = null;
 
-    if (useH264) {
+    if (useMp4) {
         mp4Target = new Mp4Target();
         mp4Muxer = new Mp4Muxer({
             target: mp4Target,
@@ -281,14 +293,14 @@ export async function exportWithWebCodecs(
     let encodedFrames = 0;
     let encoderNeedsReset = false;
 
-    const videoCodec = useH264 ? getAvcCodecString(width, height) : 'vp8';
+    const videoCodec = useMp4 ? getAvcCodecString(width, height) : 'vp8';
     const videoEncoderConfig: VideoEncoderConfig = {
         codec: videoCodec,
         width,
         height,
         bitrate: getVideoBitrate(quality, width, height),
         framerate: targetFps,
-        ...(useH264 ? { avc: { format: 'avc' } } : {}),
+        ...(useMp4 ? { avc: { format: 'avc' } } : {}),
     };
 
     // Factory so we can recreate the encoder if the browser reclaims it
@@ -327,7 +339,7 @@ export async function exportWithWebCodecs(
         });
         audioEncoderRef = audioEncoder;
         audioEncoder.configure({
-            codec: useAAC ? 'mp4a.40.2' : 'opus',
+            codec: useMp4 ? 'mp4a.40.2' : 'opus',
             numberOfChannels: audioBuffer!.numberOfChannels,
             sampleRate: audioBuffer!.sampleRate,
             bitrate: getAudioBitrate(quality),
@@ -562,11 +574,11 @@ export async function exportWithWebCodecs(
     if (mp4Muxer) {
         mp4Muxer.finalize();
         onProgress?.({ ratio: 1, phase: 'muxing' });
-        return new Blob([mp4Target!.buffer], { type: 'video/mp4' });
+        return { blob: new Blob([mp4Target!.buffer], { type: 'video/mp4' }), format: 'mp4' };
     } else {
         webmMuxer!.finalize();
         onProgress?.({ ratio: 1, phase: 'muxing' });
-        return new Blob([webmTarget!.buffer], { type: 'video/webm' });
+        return { blob: new Blob([webmTarget!.buffer], { type: 'video/webm' }), format: 'webm' };
     }
     } catch (err) {
         // Release every resource we may have opened. Each guard is independent

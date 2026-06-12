@@ -11,7 +11,7 @@
 import type { ExportOptions, VideoQualityPreset } from '../types';
 import { VIDEO_QUALITY_PRESETS } from '../types';
 import { detectWebCodecsSupport, getCachedSupport } from './webcodecs/capability';
-import { exportWithWebCodecs } from './webcodecs/webcodecExportService';
+import { exportWithWebCodecs, type WebCodecsExportResult } from './webcodecs/webcodecExportService';
 
 export type ExportEngineType = 'webcodecs' | 'none';
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -113,7 +113,7 @@ class ExportService {
         inputBlob: Blob,
         options: ExportOptions,
         signal?: AbortSignal,
-    ): Promise<Blob> {
+    ): Promise<WebCodecsExportResult> {
         if (this.status !== 'ready') await this.init();
 
         if (this.engine !== 'webcodecs') {

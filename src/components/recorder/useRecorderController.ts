@@ -78,10 +78,13 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
 
     const startRecording = async () => {
         setIsPreparing(true);
+        let screenStream: MediaStream | undefined;
+        let micStreamLocal: MediaStream | undefined;
+        let camStream: MediaStream | undefined;
         try {
             const chosenPreset = getChosenRecordingPreset(recordingQuality, customFps, customBitrateMbps);
 
-            const screenStream = await navigator.mediaDevices.getDisplayMedia({
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
                     width: { ideal: 2560, max: 3840 },
                     height: { ideal: 1440, max: 2160 },
@@ -89,9 +92,6 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 },
                 audio: true
             });
-
-            let micStreamLocal: MediaStream | undefined;
-            let camStream: MediaStream | undefined;
 
             if (enableMic) {
                 micStreamLocal = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -203,6 +203,22 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
 
         } catch (err: any) {
             console.error(err);
+            // Release streams acquired before a later permission/device step failed.
+            if (compositorRef.current) compositorRef.current.stop();
+            cleanupAudioMix().catch(cleanupErr =>
+                console.warn('cleanupAudioMix failed after start error', cleanupErr)
+            );
+            stopTracks(activeStreamRef.current);
+            stopTracks(screenStream);
+            stopTracks(micStreamLocal);
+            stopTracks(camStream);
+            activeStreamRef.current = null;
+            compositorRef.current = null;
+            mediaRecorderRef.current = null;
+            setActiveStream(null);
+            setMicStream(null);
+            setIsRecording(false);
+            setIsPaused(false);
             const name = err?.name;
             if (name === 'NotAllowedError') {
                 onError(t('recorder.errors.permission'));

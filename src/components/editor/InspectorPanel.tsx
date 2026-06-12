@@ -34,6 +34,7 @@ interface InspectorPanelProps {
     processingEta: string | null;
 
     exportUrl: string | null;
+    exportFormat: ExportFormat;
     exportError: string | null;
 
     playbackError: string | null;
@@ -73,6 +74,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     processingProgress,
     processingEta,
     exportUrl,
+    exportFormat,
     exportError,
     playbackError,
     onApplyHighQualityPreset,
@@ -162,7 +164,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         processingEta={processingEta}
                         exportUrl={exportUrl}
                         exportError={exportError}
-                        selectedFormat={selectedFormat}
+                        selectedFormat={exportFormat}
                         downloadFileName={downloadFileName}
                         onClearExportUrl={onClearExportUrl}
                         onClearExportError={onClearExportError}

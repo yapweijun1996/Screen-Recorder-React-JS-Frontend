@@ -99,6 +99,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         processingProgress,
         processingEta,
         exportUrl,
+        exportFormat,
         exportError,
         exportTrimmed,
         exportFull,
@@ -349,6 +350,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         processingProgress={processingProgress}
                         processingEta={processingEta}
                         exportUrl={exportUrl}
+                        exportFormat={exportFormat}
                         exportError={exportError}
                         playbackError={playbackError}
                         onApplyHighQualityPreset={applyHighQualityPreset}
@@ -356,7 +358,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onExportFull={exportFull}
                         onClearExportUrl={clearExportUrl}
                         onClearExportError={clearExportError}
-                        downloadFileName={generateFileName('screen-recording', selectedFormat)}
+                        downloadFileName={generateFileName('screen-recording', exportFormat)}
                         rawDownloadUrl={videoMetadata.url}
                         rawDownloadFileName={generateFileName('screen-recording', 'webm')}
                     />

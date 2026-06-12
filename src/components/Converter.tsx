@@ -17,6 +17,7 @@ export const Converter: React.FC = () => {
     const [progress, setProgress] = useState(0);
     const [eta, setEta] = useState<string | null>(null);
     const [outputUrl, setOutputUrl] = useState<string | null>(null);
+    const [outputFormat, setOutputFormat] = useState<'mp4' | 'webm'>('mp4');
     const [error, setError] = useState<string | null>(null);
 
     const abortRef = useRef<AbortController | null>(null);
@@ -49,6 +50,7 @@ export const Converter: React.FC = () => {
     const loadFile = (f: File) => {
         setFile(f);
         setOutputUrl(null);
+        setOutputFormat('mp4');
         setError(null);
         setProgress(0);
         setEta(null);
@@ -99,6 +101,7 @@ export const Converter: React.FC = () => {
                 { quality, format: 'mp4', resolution: 'original', fps: 30, crf: preset.crf },
                 ctrl.signal,
             );
+            setOutputFormat(output.format);
             setOutputUrl(URL.createObjectURL(output.blob));
         } catch (err) {
             const isAbort = err instanceof DOMException && err.name === 'AbortError';
@@ -121,13 +124,14 @@ export const Converter: React.FC = () => {
         if (outputUrl) URL.revokeObjectURL(outputUrl);
         setFile(null);
         setOutputUrl(null);
+        setOutputFormat('mp4');
         setError(null);
         setProgress(0);
     };
 
     const outputFileName = file
-        ? generateFileName(file.name.replace(/\.[^.]+$/, ''), 'mp4')
-        : generateFileName('converted', 'mp4');
+        ? generateFileName(file.name.replace(/\.[^.]+$/, ''), outputFormat)
+        : generateFileName('converted', outputFormat);
 
     return (
         <main className="max-w-2xl mx-auto px-4 py-10 flex flex-col gap-6">

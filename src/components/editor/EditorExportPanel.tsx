@@ -47,6 +47,8 @@ interface EditorExportPanelProps {
 
     // download
     downloadFileName: string;
+    rawDownloadUrl: string;
+    rawDownloadFileName: string;
 }
 
 export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
@@ -75,6 +77,8 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
     onClearExportUrl,
     onClearExportError,
     downloadFileName,
+    rawDownloadUrl,
+    rawDownloadFileName,
 }) => {
     const { t } = useI18n();
 
@@ -160,6 +164,8 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                         playbackError={playbackError}
                         isProcessing={isProcessing}
                         selectedQuality={selectedQuality}
+                        rawDownloadUrl={rawDownloadUrl}
+                        rawDownloadFileName={rawDownloadFileName}
                         onExportTrimmed={onExportTrimmed}
                         onExportFull={onExportFull}
                     />

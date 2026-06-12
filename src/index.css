@@ -222,14 +222,6 @@ body {
     box-sizing: border-box;
 }
 
-/* iPhone 15+ landscape: home-indicator edge gesture extends ~20px beyond the
-   reported safe-area-inset. Add a conservative floor in landscape only. */
-@media (orientation: landscape) {
-    body {
-        padding-top: max(env(safe-area-inset-top), 20px);
-    }
-}
-
 /* Focus visible for accessibility */
 :focus-visible {
     outline: 2px solid var(--focus-ring);

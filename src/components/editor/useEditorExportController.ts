@@ -35,6 +35,7 @@ export const useEditorExportController = ({
     const [processingEta, setProcessingEta] = useState<string | null>(null);
     const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
+    const [exportFormat, setExportFormat] = useState<ExportFormat>(selectedFormat);
     const [exportError, setExportError] = useState<string | null>(null);
     const abortRef = useRef<AbortController | null>(null);
 
@@ -86,6 +87,7 @@ export const useEditorExportController = ({
         setProcessingEta(null);
         setProcessingStartTime(Date.now());
         setExportUrl(null);
+        setExportFormat(selectedFormat);
 
         // Abort any prior in-flight export and create a fresh controller.
         abortRef.current?.abort();
@@ -110,12 +112,13 @@ export const useEditorExportController = ({
                 }
             }
 
-            const outputBlob = await exportService.processVideo(
+            const result = await exportService.processVideo(
                 videoMetadata.blob,
                 options,
                 controller.signal,
             );
-            const url = URL.createObjectURL(outputBlob);
+            const url = URL.createObjectURL(result.blob);
+            setExportFormat(result.format);
             setExportUrl(url);
         } catch (error) {
             // User-initiated cancel: drop the modal silently, no error banner.
@@ -145,6 +148,7 @@ export const useEditorExportController = ({
         processingProgress,
         processingEta,
         exportUrl,
+        exportFormat,
         exportError,
         exportTrimmed: () => exportVideo('trimmed'),
         exportFull: () => exportVideo('full'),
