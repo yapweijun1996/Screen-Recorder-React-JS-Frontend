@@ -4,12 +4,15 @@ import { Recorder } from './components/Recorder';
 import { Editor } from './components/Editor';
 import { EngineStatus } from './components/EngineStatus';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Layers, Loader2, RefreshCw } from 'lucide-react';
+import { Layers, Loader2, RefreshCw, Video, FileVideo } from 'lucide-react';
 import { exportService } from './services/exportService';
 import { videoStorageService } from './services/videoStorageService';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
+import { Converter } from './components/Converter';
 import { setupServiceWorker, applyUpdate } from './registerSW';
+
+type Page = 'recorder' | 'converter';
 
 const App: React.FC = () => {
     const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
@@ -17,6 +20,7 @@ const App: React.FC = () => {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [isLoadingStored, setIsLoadingStored] = useState(true);
     const [updateAvailable, setUpdateAvailable] = useState(false);
+    const [page, setPage] = useState<Page>('recorder');
     const { t } = useI18n();
 
     useEffect(() => {
@@ -188,13 +192,39 @@ const App: React.FC = () => {
                             {t('app.title')}
                         </h1>
                     </div>
+
+                    {/* Page nav tabs — hidden in editor mode */}
+                    {!isEditorMode && (
+                        <nav className="flex items-center gap-1 bg-th-card border border-th-edge rounded-xl p-1">
+                            <button
+                                type="button"
+                                onClick={() => setPage('recorder')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                    page === 'recorder'
+                                        ? 'bg-indigo-600 text-white shadow'
+                                        : 'text-th-secondary hover:text-th-primary'
+                                }`}
+                            >
+                                <Video size={13} />
+                                {t('app.title')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPage('converter')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                    page === 'converter'
+                                        ? 'bg-indigo-600 text-white shadow'
+                                        : 'text-th-secondary hover:text-th-primary'
+                                }`}
+                            >
+                                <FileVideo size={13} />
+                                {t('converter.nav')}
+                            </button>
+                        </nav>
+                    )}
+
                     <div className="flex items-center gap-3">
                         <EngineStatus />
-                        {!isEditorMode && (
-                            <div className="text-xs font-mono text-th-tertiary bg-th-card h-8 px-2 rounded-lg border border-th-divider flex items-center">
-                                {t('app.tagline')}
-                            </div>
-                        )}
                         <ThemeToggle />
                         <LanguageSelector />
                     </div>
@@ -238,6 +268,14 @@ const App: React.FC = () => {
                     videoMetadata={videoData}
                     onReset={handleReset}
                 />
+            ) : page === 'converter' ? (
+                <>
+                    <Converter />
+                    <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
+                        <p>{t('app.footer.line1')}</p>
+                        <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
+                    </footer>
+                </>
             ) : (
                 <>
                     <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
