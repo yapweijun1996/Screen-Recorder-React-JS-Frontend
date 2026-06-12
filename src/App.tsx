@@ -167,6 +167,8 @@ const App: React.FC = () => {
     }, [errorMsg]);
 
     const isEditorMode = status === AppStatus.REVIEWING && videoData;
+    // Converter tab overrides editor — user can still access it mid-session.
+    const showEditor = !!isEditorMode && page !== 'converter';
 
     if (isLoadingStored) {
         return (
@@ -180,48 +182,46 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className={`bg-th-base text-th-primary font-sans selection:bg-indigo-500 selection:text-white flex flex-col ${isEditorMode ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+        <div className={`bg-th-base text-th-primary font-sans selection:bg-indigo-500 selection:text-white flex flex-col ${showEditor ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
             {/* Header */}
-            <header className={`border-b border-th-edge bg-th-surface/80 backdrop-blur-md sticky top-0 z-50 flex-shrink-0 ${isEditorMode ? 'h-12' : 'h-16'}`}>
-                <div className={`${isEditorMode ? 'px-4' : 'max-w-7xl mx-auto px-4'} h-full flex items-center justify-between`}>
+            <header className={`border-b border-th-edge bg-th-surface/80 backdrop-blur-md sticky top-0 z-50 flex-shrink-0 ${showEditor ? 'h-12' : 'h-16'}`}>
+                <div className={`${showEditor ? 'px-4' : 'max-w-7xl mx-auto px-4'} h-full flex items-center justify-between`}>
                     <div className="flex items-center gap-2">
-                        <div className={`bg-gradient-to-br from-indigo-500 to-purple-600 ${isEditorMode ? 'p-1.5' : 'p-2'} rounded-lg shadow-lg shadow-indigo-500/20`}>
-                            <Layers size={isEditorMode ? 18 : 24} className="text-white" />
+                        <div className={`bg-gradient-to-br from-indigo-500 to-purple-600 ${showEditor ? 'p-1.5' : 'p-2'} rounded-lg shadow-lg shadow-indigo-500/20`}>
+                            <Layers size={showEditor ? 18 : 24} className="text-white" />
                         </div>
-                        <h1 className={`${isEditorMode ? 'text-base' : 'text-xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-white dark:to-slate-400`}>
+                        <h1 className={`${showEditor ? 'text-base' : 'text-xl'} font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-white dark:to-slate-400`}>
                             {t('app.title')}
                         </h1>
                     </div>
 
-                    {/* Page nav tabs — hidden in editor mode */}
-                    {!isEditorMode && (
-                        <nav className="flex items-center gap-1 bg-th-card border border-th-edge rounded-xl p-1">
-                            <button
-                                type="button"
-                                onClick={() => setPage('recorder')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                    page === 'recorder'
-                                        ? 'bg-indigo-600 text-white shadow'
-                                        : 'text-th-secondary hover:text-th-primary'
-                                }`}
-                            >
-                                <Video size={13} />
-                                {t('app.title')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPage('converter')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                    page === 'converter'
-                                        ? 'bg-indigo-600 text-white shadow'
-                                        : 'text-th-secondary hover:text-th-primary'
-                                }`}
-                            >
-                                <FileVideo size={13} />
-                                {t('converter.nav')}
-                            </button>
-                        </nav>
-                    )}
+                    {/* Page nav tabs — always visible */}
+                    <nav className="flex items-center gap-1 bg-th-card border border-th-edge rounded-xl p-1">
+                        <button
+                            type="button"
+                            onClick={() => setPage('recorder')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                page === 'recorder'
+                                    ? 'bg-indigo-600 text-white shadow'
+                                    : 'text-th-secondary hover:text-th-primary'
+                            }`}
+                        >
+                            <Video size={13} />
+                            {t('app.title')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPage('converter')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                page === 'converter'
+                                    ? 'bg-indigo-600 text-white shadow'
+                                    : 'text-th-secondary hover:text-th-primary'
+                            }`}
+                        >
+                            <FileVideo size={13} />
+                            {t('converter.nav')}
+                        </button>
+                    </nav>
 
                     <div className="flex items-center gap-3">
                         <EngineStatus />
@@ -262,13 +262,8 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {/* Main Content */}
-            {isEditorMode ? (
-                <Editor
-                    videoMetadata={videoData}
-                    onReset={handleReset}
-                />
-            ) : page === 'converter' ? (
+            {/* Main Content — converter tab overrides editor */}
+            {page === 'converter' ? (
                 <>
                     <Converter />
                     <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
@@ -276,6 +271,11 @@ const App: React.FC = () => {
                         <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
                     </footer>
                 </>
+            ) : showEditor ? (
+                <Editor
+                    videoMetadata={videoData!}
+                    onReset={handleReset}
+                />
             ) : (
                 <>
                     <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
@@ -299,7 +299,6 @@ const App: React.FC = () => {
                         </div>
                     </main>
 
-                    {/* Footer */}
                     <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
                         <p>{t('app.footer.line1')}</p>
                         <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
