@@ -87,6 +87,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     rawDownloadFileName,
 }) => {
     const { t } = useI18n();
+    const isAudioOnly = selectedFormat === 'audio';
 
     return (
         <div className="h-full flex flex-col text-th-secondary">
@@ -107,7 +108,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     </button>
                 </div>
                 <div className="text-[10px] text-th-tertiary mt-0.5">
-                    {t(`quality.${selectedQuality}.label`)} • {selectedFormat.toUpperCase()} • {selectedFps}fps
+                    {t(`quality.${selectedQuality}.label`)} • {isAudioOnly ? selectedFormat.toUpperCase() : `${selectedFormat.toUpperCase()} • ${selectedFps}fps`}
                 </div>
             </div>
 

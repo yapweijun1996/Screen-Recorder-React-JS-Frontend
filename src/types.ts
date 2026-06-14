@@ -87,7 +87,7 @@ export interface ExportOptions {
     trimEnd?: number;
     quality: VideoQualityPreset;
     resolution?: 'original' | '720p' | '1080p' | '4k';
-    format?: 'mp4' | 'webm';
+    format?: 'mp4' | 'webm' | 'audio';
     fps?: number; // Target frame rate for export
     crf?: number; // Optional override for Constant Rate Factor (lower = higher quality)
     /**

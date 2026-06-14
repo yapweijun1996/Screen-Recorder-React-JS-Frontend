@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ExportFormat, ExportOptions, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
 import { exportService } from '../../services/exportService';
+import { generateFileName } from '../../utils/format';
 
 interface UseEditorExportControllerArgs {
     videoMetadata: VideoMetadata;
@@ -36,8 +37,20 @@ export const useEditorExportController = ({
     const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
     const [exportUrl, setExportUrl] = useState<string | null>(null);
     const [exportFormat, setExportFormat] = useState<ExportFormat>(selectedFormat);
+    const [exportDownloadFileName, setExportDownloadFileName] = useState(
+        () => generateFileName('screen-recording', selectedFormat === 'audio' ? 'm4a' : selectedFormat)
+    );
     const [exportError, setExportError] = useState<string | null>(null);
     const abortRef = useRef<AbortController | null>(null);
+
+    const getDownloadExtension = (format: ExportFormat, blobType: string) => {
+        if (format === 'audio') {
+            if (blobType.includes('audio/mp4') || blobType.includes('video/mp4')) return 'm4a';
+            if (blobType.includes('audio/webm') || blobType.includes('video/webm')) return 'webm';
+            return 'm4a';
+        }
+        return format;
+    };
 
     // Subscribe to export progress
     useEffect(() => {
@@ -118,7 +131,9 @@ export const useEditorExportController = ({
                 controller.signal,
             );
             const url = URL.createObjectURL(result.blob);
+            const downloadExt = getDownloadExtension(result.format, result.blob.type);
             setExportFormat(result.format);
+            setExportDownloadFileName(generateFileName('screen-recording', downloadExt));
             setExportUrl(url);
         } catch (error) {
             // User-initiated cancel: drop the modal silently, no error banner.
@@ -155,6 +170,7 @@ export const useEditorExportController = ({
         cancelExport,
         clearExportUrl: () => setExportUrl(null),
         clearExportError: () => setExportError(null),
+        exportDownloadFileName,
     };
 };
 

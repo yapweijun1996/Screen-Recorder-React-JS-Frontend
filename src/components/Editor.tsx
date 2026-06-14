@@ -101,6 +101,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         exportUrl,
         exportFormat,
         exportError,
+        exportDownloadFileName,
         exportTrimmed,
         exportFull,
         cancelExport,
@@ -119,7 +120,16 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         t,
     });
 
-    const estimatedSize = exportService.estimateFileSize(totalSelectedDuration, selectedQuality);
+    const estimatedSize = exportService.estimateFileSize(totalSelectedDuration, selectedQuality, selectedFormat);
+
+    const handleSelectFormat = (format: ExportFormat) => {
+        setSelectedFormat(format);
+
+        if (format === 'audio') {
+            setSelectedResolution('original');
+            setSelectedFps(30);
+        }
+    };
 
     // Final Cut Pro 风格键盘快捷键
     useKeyboardShortcuts({
@@ -340,7 +350,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         selectedResolution={selectedResolution}
                         onSelectResolution={setSelectedResolution}
                         selectedFormat={selectedFormat}
-                        onSelectFormat={setSelectedFormat}
+                        onSelectFormat={handleSelectFormat}
                         selectedFps={selectedFps}
                         onSelectFps={setSelectedFps}
                         customCrf={customCrf}
@@ -358,7 +368,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onExportFull={exportFull}
                         onClearExportUrl={clearExportUrl}
                         onClearExportError={clearExportError}
-                        downloadFileName={generateFileName('screen-recording', exportFormat)}
+                        downloadFileName={exportDownloadFileName}
                         rawDownloadUrl={videoMetadata.url}
                         rawDownloadFileName={generateFileName('screen-recording', 'webm')}
                     />

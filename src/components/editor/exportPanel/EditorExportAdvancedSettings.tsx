@@ -44,6 +44,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
     isProcessing,
 }) => {
     const { t } = useI18n();
+    const isAudioOnly = selectedFormat === 'audio';
 
     return (
         <div className="space-y-4 animate-fade-in">
@@ -106,7 +107,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                                 ? 'bg-purple-600/20 border-purple-500 text-purple-700 dark:text-purple-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
-                            disabled={isProcessing}
+                            disabled={isProcessing || isAudioOnly}
                             type="button"
                         >
                             {res === 'original' ? t('editor.export.resolutionOriginal') : res}
@@ -127,7 +128,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                                 ? 'bg-indigo-600/20 border-indigo-500 text-indigo-700 dark:text-indigo-200'
                                 : 'bg-th-card/50 border-th-divider text-th-secondary hover:border-th-divider'
                                 }`}
-                            disabled={isProcessing}
+                            disabled={isProcessing || isAudioOnly}
                             type="button"
                         >
                             {fps}
@@ -137,11 +138,11 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                 <p className="text-[11px] text-th-tertiary">{t('editor.export.frameRateHint')}</p>
             </div>
 
-            {/* Format */}
-            <div className="space-y-2">
-                <label className="text-xs text-th-tertiary uppercase tracking-wide">{t('editor.export.format')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                    {(['mp4', 'webm'] as ExportFormat[]).map((fmt) => (
+                {/* Format */}
+                <div className="space-y-2">
+                    <label className="text-xs text-th-tertiary uppercase tracking-wide">{t('editor.export.format')}</label>
+                    <div className="grid grid-cols-2 gap-2">
+                    {(['mp4', 'webm', 'audio'] as ExportFormat[]).map((fmt) => (
                         <button
                             key={fmt}
                             onClick={() => onSelectFormat(fmt)}
@@ -152,7 +153,7 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                             disabled={isProcessing}
                             type="button"
                         >
-                            {fmt}
+                            {fmt.toUpperCase()}
                         </button>
                     ))}
                 </div>

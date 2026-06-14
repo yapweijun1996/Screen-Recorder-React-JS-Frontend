@@ -8,7 +8,7 @@
  * MediaRecorder WebM output is used as fallback (no export processing).
  */
 
-import type { ExportOptions, VideoQualityPreset } from '../types';
+import type { ExportFormat, ExportOptions, VideoQualityPreset } from '../types';
 import { VIDEO_QUALITY_PRESETS } from '../types';
 import { detectWebCodecsSupport, getCachedSupport } from './webcodecs/capability';
 import { exportWithWebCodecs, type WebCodecsExportResult } from './webcodecs/webcodecExportService';
@@ -92,11 +92,11 @@ class ExportService {
     /**
      * Estimate output file size.
      */
-    estimateFileSize(durationSeconds: number, quality: VideoQualityPreset): string {
+    estimateFileSize(durationSeconds: number, quality: VideoQualityPreset, format: ExportFormat = 'mp4'): string {
         const config = VIDEO_QUALITY_PRESETS[quality];
         const videoBitrate = config.videoBitsPerSecond;
         const audioBitrate = parseInt(config.audioBitrate) * 1000;
-        const totalBitrate = videoBitrate + audioBitrate;
+        const totalBitrate = format === 'audio' ? audioBitrate : videoBitrate + audioBitrate;
         const bytes = (totalBitrate * durationSeconds) / 8;
 
         if (bytes < 1024 * 1024) return `~${(bytes / 1024).toFixed(1)} KB`;

@@ -26,7 +26,7 @@ export interface ExportProgress {
 
 export interface WebCodecsExportResult {
     blob: Blob;
-    format: 'mp4' | 'webm';
+    format: 'mp4' | 'webm' | 'audio';
 }
 
 const RESOLUTION_MAP: Record<string, { width: number; height: number } | null> = {
@@ -211,375 +211,418 @@ export async function exportWithWebCodecs(
     };
 
     try {
-
-    // ─── 2. Normalize segments ───
-    let segments = options.segments?.length
-        ? normalizeSegments(options.segments)
-        : (options.trimStart !== undefined && options.trimEnd !== undefined)
-            ? normalizeSegments([{ start: options.trimStart, end: options.trimEnd }])
-            : null;
-    if (!segments || segments.length === 0) {
-        segments = [{ start: 0, end: inputDuration }];
-    }
-
-    // ─── 3. Output dimensions ───
-    const resConfig = RESOLUTION_MAP[resolution];
-    const rawW = resConfig?.width ?? source.width;
-    const rawH = resConfig?.height ?? source.height;
-    const width = rawW + (rawW % 2);
-    const height = rawH + (rawH % 2);
-
-    // ─── 4. Plan output deadlines (sorted by inputTime since segments are sorted) ───
-    const deadlines = planDeadlines(segments, targetFps, frameDurationUs);
-    const totalDeadlines = deadlines.length;
-
-    // ─── 5. Decode audio in one shot (still in memory; small relative to video) ───
-    onProgress?.({ ratio: 0.02, phase: 'decoding' });
-    const audioBuffer = await decodeAudioFromBlob(inputBlob);
-    const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
-    throwIfAborted(signal);
-
-    const requestedFormat = options.format || 'mp4';
-    const canUseMp4 = support.h264 && (!hasAudio || support.aac);
-    const canUseWebm = support.vp8 && (!hasAudio || support.opus);
-    const useMp4 = requestedFormat === 'mp4' ? canUseMp4 : !canUseWebm && canUseMp4;
-    const useWebm = requestedFormat === 'webm' ? canUseWebm : !useMp4 && canUseWebm;
-
-    if (!useMp4 && !useWebm) {
-        throw new Error('No supported video/audio codec combination is available for export.');
-    }
-
-    // ─── 6. Setup muxer ───
-    let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
-    let webmMuxer: WebmMuxer<WebmTarget> | null = null;
-    let mp4Target: Mp4Target | null = null;
-    let webmTarget: WebmTarget | null = null;
-
-    if (useMp4) {
-        mp4Target = new Mp4Target();
-        mp4Muxer = new Mp4Muxer({
-            target: mp4Target,
-            video: { codec: 'avc', width, height },
-            audio: hasAudio ? {
-                codec: 'aac',
-                numberOfChannels: audioBuffer!.numberOfChannels,
-                sampleRate: audioBuffer!.sampleRate,
-            } : undefined,
-            fastStart: 'in-memory',
-        });
-    } else {
-        webmTarget = new WebmTarget();
-        webmMuxer = new WebmMuxer({
-            target: webmTarget,
-            video: { codec: 'V_VP8', width, height },
-            audio: hasAudio ? {
-                codec: 'Opus',
-                numberOfChannels: audioBuffer!.numberOfChannels,
-                sampleRate: audioBuffer!.sampleRate,
-            } : undefined,
-        });
-    }
-
-    const addVideoChunk = (chunk: EncodedVideoChunk, meta?: EncodedVideoChunkMetadata) => {
-        if (mp4Muxer) mp4Muxer.addVideoChunk(chunk, meta, chunk.timestamp);
-        else if (webmMuxer) webmMuxer.addVideoChunk(chunk, meta, chunk.timestamp);
-    };
-    const addAudioChunk = (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
-        if (mp4Muxer) mp4Muxer.addAudioChunk(chunk, meta, chunk.timestamp);
-        else if (webmMuxer) webmMuxer.addAudioChunk(chunk, meta, chunk.timestamp);
-    };
-
-    // ─── 7. Setup encoders ───
-    let encodedFrames = 0;
-    let encoderNeedsReset = false;
-
-    const videoCodec = useMp4 ? getAvcCodecString(width, height) : 'vp8';
-    const videoEncoderConfig: VideoEncoderConfig = {
-        codec: videoCodec,
-        width,
-        height,
-        bitrate: getVideoBitrate(quality, width, height),
-        framerate: targetFps,
-        ...(useMp4 ? { avc: { format: 'avc' } } : {}),
-    };
-
-    // Factory so we can recreate the encoder if the browser reclaims it
-    // (QuotaExceededError: Codec reclaimed due to inactivity).
-    const makeVideoEncoder = (): VideoEncoder => {
-        const enc = new VideoEncoder({
-            output: (chunk, meta) => {
-                addVideoChunk(chunk, meta ?? undefined);
-                encodedFrames++;
-                const ratio = totalDeadlines > 0
-                    ? 0.1 + 0.8 * (encodedFrames / totalDeadlines)
-                    : 0.5;
-                onProgress?.({ ratio: Math.min(0.9, ratio), phase: 'encoding' });
-            },
-            error: (e) => {
-                console.error('[VideoEncoder]', e);
-                // Mark for recreation on the next encode call; the encoder
-                // state is already 'closed' by the time this fires.
-                if ((e as DOMException).name === 'QuotaExceededError') {
-                    encoderNeedsReset = true;
-                }
-            },
-        });
-        enc.configure(videoEncoderConfig);
-        return enc;
-    };
-
-    let videoEncoder = makeVideoEncoder();
-    videoEncoderRef = videoEncoder;
-
-    let audioEncoder: AudioEncoder | null = null;
-    if (hasAudio) {
-        audioEncoder = new AudioEncoder({
-            output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
-            error: (e) => console.error('[AudioEncoder]', e),
-        });
-        audioEncoderRef = audioEncoder;
-        audioEncoder.configure({
-            codec: useMp4 ? 'mp4a.40.2' : 'opus',
-            numberOfChannels: audioBuffer!.numberOfChannels,
-            sampleRate: audioBuffer!.sampleRate,
-            bitrate: getAudioBitrate(quality),
-        });
-    }
-
-    // ─── 8. Streaming decode → encode pipeline ───
-    // Two rolling bitmaps: prev and current. For each pending deadline whose
-    // inputTime is ≤ currentInputTime, pick whichever of {prev, current} is
-    // nearest in time and encode it at the deadline's output timestamp.
-    const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d', { alpha: false })!;
-
-    let nextDeadline = 0;
-    let prevInputTime = -1;
-
-    const drainDeadlinesUpTo = (currentBitmap: ImageBitmap | null, currentInputTime: number) => {
-        while (
-            nextDeadline < totalDeadlines
-            && deadlines[nextDeadline].inputTime <= currentInputTime + 1e-6
-        ) {
-            // Recreate encoder if the browser reclaimed the hardware codec.
-            if (encoderNeedsReset || videoEncoder.state === 'closed') {
-                if (videoEncoder.state !== 'closed') {
-                    try { videoEncoder.close(); } catch { /* ignore */ }
-                }
-                videoEncoder = makeVideoEncoder();
-                videoEncoderRef = videoEncoder;
-                encoderNeedsReset = false;
-            }
-
-            const d = deadlines[nextDeadline];
-            let pick: ImageBitmap | null = null;
-            if (prevBitmap !== null && currentBitmap !== null) {
-                const distPrev = Math.abs(d.inputTime - prevInputTime);
-                const distCurr = Math.abs(d.inputTime - currentInputTime);
-                pick = distCurr <= distPrev ? currentBitmap : prevBitmap;
-            } else {
-                pick = currentBitmap ?? prevBitmap;
-            }
-            if (!pick) {
-                nextDeadline++;
-                continue;
-            }
-            const vf = new VideoFrame(pick, {
-                timestamp: d.outputTimestampUs,
-                duration: frameDurationUs,
-            });
-            try {
-                videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
-            } finally {
-                // Always close — if encode() throws, the frame must still be freed
-                // or the browser will log a GC warning and stall the pipeline.
-                vf.close();
-            }
-            nextDeadline++;
+        // ─── 2. Normalize segments ───
+        let segments = options.segments?.length
+            ? normalizeSegments(options.segments)
+            : (options.trimStart !== undefined && options.trimEnd !== undefined)
+                ? normalizeSegments([{ start: options.trimStart, end: options.trimEnd }])
+                : null;
+        if (!segments || segments.length === 0) {
+            segments = [{ start: 0, end: inputDuration }];
         }
-    };
 
-    const captureCurrentFrame = (mediaTime: number): ImageBitmap => {
-        ctx.drawImage(video as unknown as CanvasImageSource, 0, 0, width, height);
-        const bitmap = canvas.transferToImageBitmap();
-        onProgress?.({
-            ratio: Math.min(0.85, 0.05 + 0.05 * (mediaTime / Math.max(inputDuration, 0.001))),
-            phase: 'decoding',
-        });
-        return bitmap;
-    };
+        // ─── 3. Decode audio in one shot (small relative to video) ───
+        onProgress?.({ ratio: 0.02, phase: 'decoding' });
+        const audioBuffer = await decodeAudioFromBlob(inputBlob);
+        const hasAudio = audioBuffer !== null && audioBuffer.length > 0;
+        const audioSource = hasAudio ? audioBuffer : null;
+        throwIfAborted(signal);
 
-    const supportsRVFC = typeof (video as unknown as { requestVideoFrameCallback?: unknown })
-        .requestVideoFrameCallback === 'function';
+        const requestedFormat = options.format || 'mp4';
+        const isAudioOnly = requestedFormat === 'audio';
+        if (isAudioOnly && !hasAudio) {
+            throw new Error('No audio track found for audio-only export.');
+        }
 
-    if (supportsRVFC) {
-        // ── Fast path: requestVideoFrameCallback + linear playback ──
-        const rvfcVideo = video as unknown as HTMLVideoElement & {
-            requestVideoFrameCallback: (
-                cb: (now: number, metadata: { mediaTime: number }) => void
-            ) => number;
+        // Keep current behavior for full/trimmed video exports: fail if no
+        // compatible muxer+codec combination exists.
+        const canUseMp4 = support.h264 && (!hasAudio || support.aac);
+        const canUseWebm = support.vp8 && (!hasAudio || support.opus);
+        const canUseMp4Audio = support.aac;
+        const canUseWebmAudio = support.opus;
+
+        const useMp4 = isAudioOnly
+            ? canUseMp4Audio
+            : requestedFormat === 'mp4' ? canUseMp4 : !canUseWebm && canUseMp4;
+        const useWebm = isAudioOnly
+            ? (!useMp4 && canUseWebmAudio)
+            : requestedFormat === 'webm' ? canUseWebm : !useMp4 && canUseWebm;
+
+        if (!useMp4 && !useWebm) {
+            throw new Error('No supported codec combination is available for export.');
+        }
+
+        // ─── 4. Optional video pipeline setup ───
+        let width = source.width;
+        let height = source.height;
+        let deadlines: Deadline[] = [];
+        let totalDeadlines = 0;
+
+        if (!isAudioOnly) {
+            const resConfig = RESOLUTION_MAP[resolution];
+            const rawW = resConfig?.width ?? source.width;
+            const rawH = resConfig?.height ?? source.height;
+            width = rawW + (rawW % 2);
+            height = rawH + (rawH % 2);
+
+            // ─── 4b. Plan output deadlines (sorted by inputTime since segments are sorted) ───
+            deadlines = planDeadlines(segments, targetFps, frameDurationUs);
+            totalDeadlines = deadlines.length;
+        }
+
+        // ─── 5. Setup muxer ───
+        let mp4Muxer: Mp4Muxer<Mp4Target> | null = null;
+        let webmMuxer: WebmMuxer<WebmTarget> | null = null;
+        let mp4Target: Mp4Target | null = null;
+        let webmTarget: WebmTarget | null = null;
+
+        const mp4AudioTrack = audioSource ? {
+            audio: {
+                codec: 'aac',
+                numberOfChannels: audioSource.numberOfChannels,
+                sampleRate: audioSource.sampleRate,
+            },
+        } : null;
+
+        const webmAudioTrack = audioSource ? {
+            audio: {
+                codec: 'Opus',
+                numberOfChannels: audioSource.numberOfChannels,
+                sampleRate: audioSource.sampleRate,
+            },
+        } : null;
+
+        if (useMp4) {
+            mp4Target = new Mp4Target();
+            mp4Muxer = new Mp4Muxer({
+                target: mp4Target,
+                ...(isAudioOnly ? {} : { video: { codec: 'avc', width, height } }),
+                ...(mp4AudioTrack || {}),
+                fastStart: isAudioOnly ? undefined : 'in-memory',
+            });
+        } else {
+            webmTarget = new WebmTarget();
+            webmMuxer = new WebmMuxer({
+                target: webmTarget,
+                ...(isAudioOnly ? {} : { video: { codec: 'V_VP8', width, height } }),
+                ...(webmAudioTrack || {}),
+            });
+        }
+
+        const addVideoChunk = (chunk: EncodedVideoChunk, meta?: EncodedVideoChunkMetadata) => {
+            if (mp4Muxer) mp4Muxer.addVideoChunk(chunk, meta, chunk.timestamp);
+            else if (webmMuxer) webmMuxer.addVideoChunk(chunk, meta, chunk.timestamp);
+        };
+        const addAudioChunk = (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
+            if (mp4Muxer) mp4Muxer.addAudioChunk(chunk, meta, chunk.timestamp);
+            else if (webmMuxer) webmMuxer.addAudioChunk(chunk, meta, chunk.timestamp);
         };
 
-        video.playbackRate = 16; // browsers cap to ~4-16x; uncapped if hardware allows
+        // ─── 6. Setup encoders ───
+        let encodedFrames = 0;
+        let encoderNeedsReset = false;
+        let videoEncoder: VideoEncoder | null = null;
+        const makeVideoEncoder = (): VideoEncoder => {
+            const enc = new VideoEncoder({
+                output: (chunk, meta) => {
+                    addVideoChunk(chunk, meta ?? undefined);
+                    encodedFrames++;
+                    const ratio = totalDeadlines > 0
+                        ? 0.1 + 0.8 * (encodedFrames / totalDeadlines)
+                        : 0.5;
+                    onProgress?.({ ratio: Math.min(0.9, ratio), phase: 'encoding' });
+                },
+                error: (e) => {
+                    console.error('[VideoEncoder]', e);
+                    // Mark for recreation on the next encode call; the encoder
+                    // state is already 'closed' by the time this fires.
+                    if ((e as DOMException).name === 'QuotaExceededError') {
+                        encoderNeedsReset = true;
+                    }
+                },
+            });
+            if (!isAudioOnly) {
+                const videoCodec = useMp4 ? getAvcCodecString(width, height) : 'vp8';
+                const videoEncoderConfig: VideoEncoderConfig = {
+                    codec: videoCodec,
+                    width,
+                    height,
+                    bitrate: getVideoBitrate(quality, width, height),
+                    framerate: targetFps,
+                    ...(useMp4 ? { avc: { format: 'avc' } } : {}),
+                };
+                enc.configure(videoEncoderConfig);
+            }
+            return enc;
+        };
 
-        await new Promise<void>((resolve, reject) => {
-            let settled = false;
-            const finish = () => { if (!settled) { settled = true; resolve(); } };
-            const fail = (err: Error) => { if (!settled) { settled = true; reject(err); } };
+        if (!isAudioOnly) {
+            videoEncoder = makeVideoEncoder();
+            videoEncoderRef = videoEncoder;
+        }
 
-            const onAbort = () => fail(new DOMException('Export cancelled', 'AbortError'));
-            signal?.addEventListener('abort', onAbort, { once: true });
+        let audioEncoder: AudioEncoder | null = null;
+        if (audioSource) {
+            audioEncoder = new AudioEncoder({
+                output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
+                error: (e) => console.error('[AudioEncoder]', e),
+            });
+            audioEncoderRef = audioEncoder;
+            audioEncoder.configure({
+                codec: useMp4 ? 'mp4a.40.2' : 'opus',
+                numberOfChannels: audioSource.numberOfChannels,
+                sampleRate: audioSource.sampleRate,
+                bitrate: getAudioBitrate(quality),
+            });
+        }
 
-            const onFrame = (_now: number, metadata: { mediaTime: number }) => {
-                if (settled) return;
-                if (signal?.aborted) {
-                    fail(new DOMException('Export cancelled', 'AbortError'));
-                    return;
-                }
-                if (nextDeadline >= totalDeadlines) { finish(); return; }
+        // ─── 7. Streaming decode → encode pipeline (video path only) ───
+        if (!isAudioOnly) {
+            // Two rolling bitmaps: prev and current. For each pending deadline whose
+            // inputTime is ≤ currentInputTime, pick whichever of {prev, current} is
+            // nearest in time and encode it at the deadline's output timestamp.
+            const canvas = new OffscreenCanvas(width, height);
+            const ctx = canvas.getContext('2d', { alpha: false })!;
 
-                const inputTime = metadata.mediaTime;
-                const bitmap = captureCurrentFrame(inputTime);
+            let nextDeadline = 0;
+            let prevInputTime = -1;
 
-                drainDeadlinesUpTo(bitmap, inputTime);
+            const drainDeadlinesUpTo = (currentBitmap: ImageBitmap | null, currentInputTime: number) => {
+                while (
+                    nextDeadline < totalDeadlines
+                    && deadlines[nextDeadline].inputTime <= currentInputTime + 1e-6
+                ) {
+                    // Recreate encoder if the browser reclaimed the hardware codec.
+                    if (encoderNeedsReset || videoEncoder!.state === 'closed') {
+                        if (videoEncoder && videoEncoder.state !== 'closed') {
+                            try { videoEncoder.close(); } catch { /* ignore */ }
+                        }
+                        videoEncoder = makeVideoEncoder();
+                        videoEncoderRef = videoEncoder;
+                        encoderNeedsReset = false;
+                    }
 
-                if (prevBitmap) prevBitmap.close();
-                prevBitmap = bitmap;
-                prevInputTime = inputTime;
-
-                if (video.ended || nextDeadline >= totalDeadlines) {
-                    finish();
-                } else {
-                    rvfcVideo.requestVideoFrameCallback(onFrame);
+                    const d = deadlines[nextDeadline];
+                    let pick: ImageBitmap | null = null;
+                    if (prevBitmap !== null && currentBitmap !== null) {
+                        const distPrev = Math.abs(d.inputTime - prevInputTime);
+                        const distCurr = Math.abs(d.inputTime - currentInputTime);
+                        pick = distCurr <= distPrev ? currentBitmap : prevBitmap;
+                    } else {
+                        pick = currentBitmap ?? prevBitmap;
+                    }
+                    if (!pick) {
+                        nextDeadline++;
+                        continue;
+                    }
+                    const vf = new VideoFrame(pick, {
+                        timestamp: d.outputTimestampUs,
+                        duration: frameDurationUs,
+                    });
+                    try {
+                        videoEncoder!.encode(vf, { keyFrame: d.isKeyframe });
+                    } finally {
+                        // Always close — if encode() throws, the frame must still be freed
+                        // or the browser will log a GC warning and stall the pipeline.
+                        vf.close();
+                    }
+                    nextDeadline++;
                 }
             };
 
-            video.onended = finish;
-            video.onerror = () => fail(new Error('Video playback failed'));
-            rvfcVideo.requestVideoFrameCallback(onFrame);
-            video.play().catch((err) => fail(new Error(err?.message || 'Failed to play video')));
-        }).finally(() => {
-            // detach abort listener regardless of how the promise settled
-            // (no-op if signal is undefined)
-        });
-    } else {
-        // ── Fallback: legacy seek-based decode (kept for very old browsers) ──
-        const seekInterval = Math.max(1 / 60, 1 / targetFps);
-        for (let t = 0; t <= inputDuration && nextDeadline < totalDeadlines; t += seekInterval) {
-            throwIfAborted(signal);
-            video.currentTime = Math.min(t, inputDuration - 0.001);
-            await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
-            const bitmap = captureCurrentFrame(t);
-            drainDeadlinesUpTo(bitmap, t);
-            if (prevBitmap) prevBitmap.close();
-            prevBitmap = bitmap;
-            prevInputTime = t;
-        }
-    }
-    throwIfAborted(signal);
+            const captureCurrentFrame = (mediaTime: number): ImageBitmap => {
+                ctx.drawImage(video as unknown as CanvasImageSource, 0, 0, width, height);
+                const bitmap = canvas.transferToImageBitmap();
+                onProgress?.({
+                    ratio: Math.min(0.85, 0.05 + 0.05 * (mediaTime / Math.max(inputDuration, 0.001))),
+                    phase: 'decoding',
+                });
+                return bitmap;
+            };
 
-    // ─── 9. Flush remaining deadlines using the last decoded bitmap ───
-    if (prevBitmap && nextDeadline < totalDeadlines) {
-        while (nextDeadline < totalDeadlines) {
-            throwIfAborted(signal);
-            if (encoderNeedsReset || videoEncoder.state === 'closed') {
-                if (videoEncoder.state !== 'closed') {
-                    try { videoEncoder.close(); } catch { /* ignore */ }
-                }
-                videoEncoder = makeVideoEncoder();
-                videoEncoderRef = videoEncoder;
-                encoderNeedsReset = false;
-            }
-            const d = deadlines[nextDeadline];
-            const vf = new VideoFrame(prevBitmap, {
-                timestamp: d.outputTimestampUs,
-                duration: frameDurationUs,
-            });
-            try {
-                videoEncoder.encode(vf, { keyFrame: d.isKeyframe });
-            } finally {
-                vf.close();
-            }
-            nextDeadline++;
-        }
-    }
+            const supportsRVFC = typeof (video as unknown as { requestVideoFrameCallback?: unknown })
+                .requestVideoFrameCallback === 'function';
 
-    if (prevBitmap) {
-        prevBitmap.close();
-        prevBitmap = null;
-    }
+            if (supportsRVFC) {
+                // ── Fast path: requestVideoFrameCallback + linear playback ──
+                const rvfcVideo = video as unknown as HTMLVideoElement & {
+                    requestVideoFrameCallback: (
+                        cb: (now: number, metadata: { mediaTime: number }) => void
+                    ) => number;
+                };
 
-    releaseSource();
+                video.playbackRate = 16; // browsers cap to ~4-16x; uncapped if hardware allows
 
-    // ─── 10a. Flush video encoder now, before audio encoding ───
-    // Flushing here (rather than after audio) prevents the hardware video codec
-    // from sitting idle during audio encoding and being reclaimed by the browser
-    // (QuotaExceededError: Codec reclaimed due to inactivity).
-    if (videoEncoder.state !== 'closed') {
-        await videoEncoder.flush();
-        videoEncoder.close();
-    }
-    videoEncoderRef = null;
-    throwIfAborted(signal);
+                await new Promise<void>((resolve, reject) => {
+                    let settled = false;
+                    const finish = () => { if (!settled) { settled = true; resolve(); } };
+                    const fail = (err: Error) => { if (!settled) { settled = true; reject(err); } };
 
-    // ─── 10b. Encode audio (single pass across segments) ───
-    if (audioEncoder && audioBuffer) {
-        let audioOutputUs = 0;
-        for (const segment of segments) {
-            throwIfAborted(signal);
-            const startSample = Math.floor(segment.start * audioBuffer.sampleRate);
-            const endSample = Math.min(
-                Math.ceil(segment.end * audioBuffer.sampleRate),
-                audioBuffer.length,
-            );
-            const length = endSample - startSample;
-            if (length <= 0) continue;
+                    const onAbort = () => fail(new DOMException('Export cancelled', 'AbortError'));
+                    signal?.addEventListener('abort', onAbort, { once: true });
 
-            const channels = audioBuffer.numberOfChannels;
-            const f32 = new Float32Array(length * channels);
-            for (let ch = 0; ch < channels; ch++) {
-                const channelData = audioBuffer.getChannelData(ch);
-                const offset = ch * length;
-                for (let s = 0; s < length; s++) {
-                    f32[offset + s] = channelData[startSample + s];
+                    const onFrame = (_now: number, metadata: { mediaTime: number }) => {
+                        if (settled) return;
+                        if (signal?.aborted) {
+                            fail(new DOMException('Export cancelled', 'AbortError'));
+                            return;
+                        }
+                        if (nextDeadline >= totalDeadlines) { finish(); return; }
+
+                        const inputTime = metadata.mediaTime;
+                        const bitmap = captureCurrentFrame(inputTime);
+
+                        drainDeadlinesUpTo(bitmap, inputTime);
+
+                        if (prevBitmap) prevBitmap.close();
+                        prevBitmap = bitmap;
+                        prevInputTime = inputTime;
+
+                        if (video.ended || nextDeadline >= totalDeadlines) {
+                            finish();
+                        } else {
+                            rvfcVideo.requestVideoFrameCallback(onFrame);
+                        }
+                    };
+
+                    video.onended = finish;
+                    video.onerror = () => fail(new Error('Video playback failed'));
+                    rvfcVideo.requestVideoFrameCallback(onFrame);
+                    video.play().catch((err) => fail(new Error(err?.message || 'Failed to play video')));
+                }).finally(() => {
+                    // detach abort listener regardless of how the promise settled
+                    // (no-op if signal is undefined)
+                });
+            } else {
+                // ── Fallback: legacy seek-based decode (kept for very old browsers) ──
+                const seekInterval = Math.max(1 / 60, 1 / targetFps);
+                for (let t = 0; t <= inputDuration && nextDeadline < totalDeadlines; t += seekInterval) {
+                    throwIfAborted(signal);
+                    video.currentTime = Math.min(t, inputDuration - 0.001);
+                    await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
+                    const bitmap = captureCurrentFrame(t);
+                    drainDeadlinesUpTo(bitmap, t);
+                    if (prevBitmap) prevBitmap.close();
+                    prevBitmap = bitmap;
+                    prevInputTime = t;
                 }
             }
+            throwIfAborted(signal);
 
-            const audioData = new AudioData({
-                format: 'f32-planar' as AudioSampleFormat,
-                sampleRate: audioBuffer.sampleRate,
-                numberOfFrames: length,
-                numberOfChannels: channels,
-                timestamp: audioOutputUs,
-                data: f32,
-            });
-            audioEncoder.encode(audioData);
-            audioData.close();
+            // ─── 8a. Flush remaining deadlines using the last decoded bitmap ───
+            if (prevBitmap && nextDeadline < totalDeadlines) {
+                while (nextDeadline < totalDeadlines) {
+                    throwIfAborted(signal);
+                    if (encoderNeedsReset || videoEncoder!.state === 'closed') {
+                        if (videoEncoder && videoEncoder.state !== 'closed') {
+                            try { videoEncoder.close(); } catch { /* ignore */ }
+                        }
+                        videoEncoder = makeVideoEncoder();
+                        videoEncoderRef = videoEncoder;
+                        encoderNeedsReset = false;
+                    }
+                    const d = deadlines[nextDeadline];
+                    const vf = new VideoFrame(prevBitmap, {
+                        timestamp: d.outputTimestampUs,
+                        duration: frameDurationUs,
+                    });
+                    try {
+                        videoEncoder!.encode(vf, { keyFrame: d.isKeyframe });
+                    } finally {
+                        vf.close();
+                    }
+                    nextDeadline++;
+                }
+            }
 
-            audioOutputUs += Math.round((length / audioBuffer.sampleRate) * 1_000_000);
+            if (prevBitmap) {
+                prevBitmap.close();
+                prevBitmap = null;
+            }
+
+            // ─── 8b. Flush video encoder now, before audio encoding ───
+            // Flushing here (rather than after audio) prevents the hardware video codec
+            // from sitting idle during audio encoding and being reclaimed by the browser
+            // (QuotaExceededError: Codec reclaimed due to inactivity).
+            if (videoEncoder && videoEncoder.state !== 'closed') {
+                await videoEncoder.flush();
+                videoEncoder.close();
+            }
+            videoEncoderRef = null;
         }
-    }
 
-    // ─── 11. Flush audio and finalize ───
-    throwIfAborted(signal);
-    onProgress?.({ ratio: 0.92, phase: 'muxing' });
+        releaseSource();
 
-    if (audioEncoder) {
-        await audioEncoder.flush();
-        audioEncoder.close();
-        audioEncoderRef = null;
-    }
-    throwIfAborted(signal);
+        // ─── 9. Encode audio (single pass across segments) ───
+        if (audioEncoder && audioSource) {
+            let audioOutputUs = 0;
+            onProgress?.({ ratio: isAudioOnly ? 0.4 : 0.92, phase: 'muxing' });
+            for (const segment of segments) {
+                throwIfAborted(signal);
+                const startSample = Math.floor(segment.start * audioSource.sampleRate);
+                const endSample = Math.min(
+                    Math.ceil(segment.end * audioSource.sampleRate),
+                    audioSource.length,
+                );
+                const length = endSample - startSample;
+                if (length <= 0) continue;
 
-    if (mp4Muxer) {
-        mp4Muxer.finalize();
-        onProgress?.({ ratio: 1, phase: 'muxing' });
-        return { blob: new Blob([mp4Target!.buffer], { type: 'video/mp4' }), format: 'mp4' };
-    } else {
-        webmMuxer!.finalize();
-        onProgress?.({ ratio: 1, phase: 'muxing' });
-        return { blob: new Blob([webmTarget!.buffer], { type: 'video/webm' }), format: 'webm' };
-    }
+                const channels = audioSource.numberOfChannels;
+                const f32 = new Float32Array(length * channels);
+                for (let ch = 0; ch < channels; ch++) {
+                    const channelData = audioSource.getChannelData(ch);
+                    const offset = ch * length;
+                    for (let s = 0; s < length; s++) {
+                        f32[offset + s] = channelData[startSample + s];
+                    }
+                }
+
+                const audioChunk = new AudioData({
+                    format: 'f32-planar' as AudioSampleFormat,
+                    sampleRate: audioSource.sampleRate,
+                    numberOfFrames: length,
+                    numberOfChannels: channels,
+                    timestamp: audioOutputUs,
+                    data: f32,
+                });
+                audioEncoder.encode(audioChunk);
+                audioChunk.close();
+
+                audioOutputUs += Math.round((length / audioSource.sampleRate) * 1_000_000);
+            }
+            onProgress?.({ ratio: 0.9, phase: 'muxing' });
+        }
+
+        // ─── 10. Flush audio and finalize ───
+        throwIfAborted(signal);
+        if (audioEncoder) {
+            await audioEncoder.flush();
+            audioEncoder.close();
+            audioEncoderRef = null;
+        }
+        throwIfAborted(signal);
+
+        if (isAudioOnly) {
+            if (mp4Muxer) {
+                mp4Muxer.finalize();
+                onProgress?.({ ratio: 1, phase: 'muxing' });
+                return { blob: new Blob([mp4Target!.buffer], { type: 'audio/mp4' }), format: 'audio' };
+            }
+            webmMuxer!.finalize();
+            onProgress?.({ ratio: 1, phase: 'muxing' });
+            return { blob: new Blob([webmTarget!.buffer], { type: 'audio/webm' }), format: 'audio' };
+        }
+
+        if (mp4Muxer) {
+            mp4Muxer.finalize();
+            onProgress?.({ ratio: 1, phase: 'muxing' });
+            return { blob: new Blob([mp4Target!.buffer], { type: 'video/mp4' }), format: 'mp4' };
+        } else {
+            webmMuxer!.finalize();
+            onProgress?.({ ratio: 1, phase: 'muxing' });
+            return { blob: new Blob([webmTarget!.buffer], { type: 'video/webm' }), format: 'webm' };
+        }
+
     } catch (err) {
         // Release every resource we may have opened. Each guard is independent
         // so a failure to close one doesn't prevent closing the next.
