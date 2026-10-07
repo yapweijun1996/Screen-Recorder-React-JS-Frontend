@@ -24,8 +24,6 @@ interface InspectorPanelProps {
     selectedFps: ExportFrameRateOption;
     onSelectFps: (fps: ExportFrameRateOption) => void;
 
-    customCrf: number;
-    onChangeCrf: (crf: number) => void;
 
     estimatedSize: string;
 
@@ -67,8 +65,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     onSelectFormat,
     selectedFps,
     onSelectFps,
-    customCrf,
-    onChangeCrf,
     estimatedSize,
     isProcessing,
     processingProgress,
@@ -151,8 +147,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                 onSelectFormat={onSelectFormat}
                                 selectedFps={selectedFps}
                                 onSelectFps={onSelectFps}
-                                customCrf={customCrf}
-                                onChangeCrf={onChangeCrf}
                                 isProcessing={isProcessing}
                             />
                         </div>

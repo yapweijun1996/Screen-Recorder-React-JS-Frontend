@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const fr: TranslationTable = {
+    "app.update.available": "Une nouvelle version est disponible. Le rechargement réinitialise les modifications non enregistrées ; téléchargez votre travail d’abord.",
+    "app.update.busy": "Mise à jour prête. Terminez l’enregistrement ou l’exportation avant de recharger.",
+    "app.update.reload": "Mettre à jour et recharger",
+    "app.update.dismiss": "Fermer",
+    'app.storage.saveFailed': "Cet enregistrement n’a pas pu être sauvegardé. Il reste disponible dans cet onglet uniquement. Téléchargez l’original avant de fermer ou de recharger.",
+    'app.storage.loadFailed': "Les enregistrements sauvegardés n’ont pas pu être restaurés. Les nouveaux pourraient aussi ne pas être sauvegardés ; téléchargez l’original comme copie de secours.",
+    'app.storage.deleteFailed': "L’enregistrement sauvegardé n’a pas pu être supprimé. Votre vidéo et vos modifications ont été conservées. Réessayez.",
+    'app.storage.downloadOriginal': "Télécharger l’original",
+    'export.audio.decodeFailed': "Impossible de décoder le son. Exportation arrêtée pour éviter sa perte. Essayez un autre fichier ou navigateur.",
+    'export.audio.noTrack': "Cette vidéo ne contient aucune piste audio. Choisissez un format vidéo.",
     'common.language': 'Langue',
     'common.processing': 'Traitement...',
 
@@ -99,12 +109,10 @@ const fr: TranslationTable = {
 
     'editor.export.title': 'Export',
     'editor.export.settings': 'Paramètres',
-    'editor.export.quickHint': 'Haute qualité rapide : CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Haute qualité rapide : 60fps / Original',
     'editor.export.quickButton': 'Appliquer le preset',
     'editor.export.estimated': 'Taille estimée',
     'editor.export.quality': 'Qualité',
-    'editor.export.crf': 'CRF (18-23 recommandé)',
-    'editor.export.crfHint': 'Plus bas = plus net, fichiers plus lourds.',
     'editor.export.resolution': 'Résolution',
     'editor.export.resolutionOriginal': 'Original',
     'editor.export.frameRate': 'Fréquence',

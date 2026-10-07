@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ExportFormat, ExportFrameRateOption, ExportResolution, VideoMetadata, VideoQualityPreset, VIDEO_QUALITY_PRESETS } from '../types';
+import { ExportFormat, VideoMetadata } from '../types';
 import { formatTime, generateFileName, formatBytes } from '../utils/format';
 import { EditorHeader } from './editor/EditorHeader';
 import { EditorPlayer } from './editor/EditorPlayer';
@@ -11,8 +11,9 @@ import { exportService } from '../services/exportService';
 import { useI18n } from '../i18n';
 import { useEditorExportController } from './editor/useEditorExportController';
 import { useSegmentsEditor } from './editor/useSegmentsEditor';
-import { useKeyboardShortcuts } from './editor/useKeyboardShortcuts';
+import { useEditorPlayback } from './editor/useEditorPlayback';
 import { ExportProgressModal } from './editor/ExportProgressModal';
+import { useEditorDraft } from './editor/EditorDraftContext';
 
 interface EditorProps {
     videoMetadata: VideoMetadata;
@@ -23,24 +24,20 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const { t } = useI18n();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
     const [playbackError, setPlaybackError] = useState<string | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
-    // Export Configuration State
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [selectedQuality, setSelectedQuality] = useState<VideoQualityPreset>('medium');
-    const [selectedResolution, setSelectedResolution] = useState<ExportResolution>('original');
-    const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('mp4');
-    const [selectedFps, setSelectedFps] = useState<ExportFrameRateOption>(30);
-    const [customCrf, setCustomCrf] = useState<number>(VIDEO_QUALITY_PRESETS['medium'].crf);
+    const {
+        currentTime, setCurrentTime, showAdvanced, setShowAdvanced,
+        selectedQuality, setSelectedQuality, selectedResolution, setSelectedResolution,
+        selectedFormat, setSelectedFormat, selectedFps, setSelectedFps,
+    } = useEditorDraft();
 
     const applyHighQualityPreset = () => {
         setSelectedQuality('high');
         setSelectedResolution('original');
         setSelectedFormat('mp4');
         setSelectedFps(60);
-        setCustomCrf(20);
     };
 
     // Track fullscreen changes
@@ -57,11 +54,6 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
             setPlaybackError(t('editor.playback.durationUnknown'));
         }
     }, [videoMetadata, t]);
-
-    // Reset CRF when quality preset changes
-    useEffect(() => {
-        setCustomCrf(VIDEO_QUALITY_PRESETS[selectedQuality].crf);
-    }, [selectedQuality]);
 
     const getSafeDuration = () => {
         const vidDur = videoRef.current?.duration;
@@ -90,7 +82,6 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         resetSegments,
         syncDurationIfUntouched,
     } = useSegmentsEditor({
-        initialDuration: videoMetadata.duration,
         maxDuration,
     });
 
@@ -114,7 +105,6 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         selectedResolution,
         selectedFormat,
         selectedFps,
-        customCrf,
         playbackError,
         setPlaybackError,
         t,
@@ -131,139 +121,13 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         }
     };
 
-    // Final Cut Pro 风格键盘快捷键
-    useKeyboardShortcuts({
-        videoRef,
-        isPlaying,
-        onTogglePlay: () => {
-            if (!videoRef.current || playbackError) return;
-            if (isPlaying) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play().catch(err =>
-                    console.warn('Editor: keyboard toggle play failed', err)
-                );
-            }
-            setIsPlaying(!isPlaying);
-        },
-        onSeek: (time: number) => {
-            if (videoRef.current) {
-                videoRef.current.currentTime = time;
-                setCurrentTime(time);
-            }
-        },
-        onSplitAtPlayhead: () => splitSelectedAt(currentTime),
-        onUndo: undo,
-        onDeleteSelected: () => {
-            // After deletion, seek to the new selected segment's start
-            const newIdx = Math.max(0, selectedIndex - 1);
-            const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
-            if (remainingSegments.length > 0 && videoRef.current) {
-                const target = remainingSegments[Math.min(newIdx, remainingSegments.length - 1)];
-                videoRef.current.currentTime = target.start;
-                setCurrentTime(target.start);
-            }
-            deleteSelectedSegment();
-        },
-        maxDuration,
-        segmentStart: selectedSegment.start,
-        segmentEnd: selectedSegment.end,
+    const { handleTimeUpdate, handleLoadedMetadata, togglePlay, handleSeek, toggleFullscreen, previewEditedResult } = useEditorPlayback({
+        videoRef, videoMetadata, isPlaying, setIsPlaying, currentTime,
+        setCurrentTime, playbackError, setPlaybackError, safeSegments,
+        selectedSegment, selectedIndex, previewIndex, setPreviewIndex,
+        setSelectedIndexDirect, splitSelectedAt, undo, deleteSelectedSegment,
+        syncDurationIfUntouched, maxDuration, t
     });
-
-    // Sync Video Time
-    const handleTimeUpdate = () => {
-        if (videoRef.current) {
-            const curr = videoRef.current.currentTime;
-            setCurrentTime(curr);
-
-            // 預覽剪輯結果：依序跳到下一段
-            if (previewIndex !== null) {
-                const seg = safeSegments[previewIndex];
-                if (seg && curr >= seg.end) {
-                    const next = previewIndex + 1;
-                    if (next < safeSegments.length) {
-                        setPreviewIndex(next);
-                        setSelectedIndexDirect(next);
-                        videoRef.current.currentTime = safeSegments[next].start;
-                    } else {
-                        setPreviewIndex(null);
-                        videoRef.current.pause();
-                        setIsPlaying(false);
-                    }
-                }
-                return;
-            }
-
-            // 一般預覽：只在「目前選到的片段」內循環
-            if (curr >= selectedSegment.end) {
-                videoRef.current.currentTime = selectedSegment.start;
-            }
-        }
-    };
-
-    const handleLoadedMetadata = () => {
-        if (videoRef.current) {
-            const dur = videoRef.current.duration;
-            if (Number.isFinite(dur) && dur > 0) {
-                setPlaybackError(null);
-                syncDurationIfUntouched(dur);
-            } else if (Number.isFinite(dur) && dur <= 0) {
-                setPlaybackError(t('editor.playback.durationZero'));
-            } else {
-                // WebM from MediaRecorder reports Infinity duration;
-                // fall back to the duration measured via timer
-                if (Number.isFinite(videoMetadata.duration) && videoMetadata.duration > 0) {
-                    setPlaybackError(null);
-                    syncDurationIfUntouched(videoMetadata.duration);
-                } else {
-                    setPlaybackError(t('editor.playback.readError'));
-                }
-            }
-        }
-    };
-
-    const togglePlay = () => {
-        if (!videoRef.current || playbackError) return;
-        if (isPlaying) {
-            videoRef.current.pause();
-            setPreviewIndex(null);
-        } else {
-            if (videoRef.current.currentTime >= selectedSegment.end) {
-                videoRef.current.currentTime = selectedSegment.start;
-            }
-            videoRef.current.play().catch(err =>
-                console.warn('Editor: togglePlay play() failed', err)
-            );
-        }
-        setIsPlaying(!isPlaying);
-    };
-
-    const handleSeek = (time: number) => {
-        if (videoRef.current) {
-            videoRef.current.currentTime = time;
-            setCurrentTime(time);
-        }
-    };
-
-    const toggleFullscreen = () => {
-        const target = videoRef.current;
-        if (!target) return;
-        if (!document.fullscreenElement) {
-            target.requestFullscreen?.().catch((err) => console.warn('Enter fullscreen failed', err));
-        } else {
-            document.exitFullscreen?.().catch((err) => console.warn('Exit fullscreen failed', err));
-        }
-    };
-
-    const previewEditedResult = () => {
-        if (playbackError || !videoRef.current || safeSegments.length === 0) return;
-        setPreviewIndex(0);
-        setSelectedIndexDirect(0);
-        videoRef.current.currentTime = safeSegments[0].start;
-        videoRef.current.play().catch(err =>
-            console.warn('Editor: previewEditedResult play() failed', err)
-        );
-    };
 
     const segmentProgressPercent = (() => {
         const seg = activeSegment;
@@ -353,8 +217,6 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onSelectFormat={handleSelectFormat}
                         selectedFps={selectedFps}
                         onSelectFps={setSelectedFps}
-                        customCrf={customCrf}
-                        onChangeCrf={setCustomCrf}
                         estimatedSize={estimatedSize}
                         isProcessing={isProcessing}
                         processingProgress={processingProgress}

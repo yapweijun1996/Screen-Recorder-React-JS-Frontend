@@ -35,7 +35,6 @@ export interface VideoQualityConfig {
     label: string;
     description: string;
     // Encoder settings (legacy fields kept for UI compatibility; WebCodecs uses videoBitsPerSecond)
-    crf: number; // Constant Rate Factor (0-51, lower = better quality) — currently UI-only
     encoderPreset: 'ultrafast' | 'superfast' | 'veryfast' | 'faster' | 'fast' | 'medium' | 'slow' | 'slower' | 'veryslow';
     audioBitrate: string; // e.g., '128k', '192k', '320k'
     // Recording settings
@@ -47,7 +46,6 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         preset: 'low',
         label: 'Low (Fast)',
         description: 'Smaller file size, faster processing',
-        crf: 28,
         encoderPreset: 'ultrafast',
         audioBitrate: '96k',
         videoBitsPerSecond: 1_500_000, // 1.5 Mbps
@@ -56,7 +54,6 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         preset: 'medium',
         label: 'Medium (Balanced)',
         description: 'Good balance of quality and size',
-        crf: 20, // default export CRF closer to visually lossless
         encoderPreset: 'fast',
         audioBitrate: '128k',
         videoBitsPerSecond: 3_000_000, // 3 Mbps
@@ -65,7 +62,6 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         preset: 'high',
         label: 'High (Quality)',
         description: 'High quality, larger file size',
-        crf: 18,
         encoderPreset: 'medium',
         audioBitrate: '192k',
         videoBitsPerSecond: 5_000_000, // 5 Mbps
@@ -74,7 +70,6 @@ export const VIDEO_QUALITY_PRESETS: Record<VideoQualityPreset, VideoQualityConfi
         preset: 'lossless',
         label: 'Lossless (Max)',
         description: 'Best quality, very large file',
-        crf: 0,
         encoderPreset: 'slow',
         audioBitrate: '320k',
         videoBitsPerSecond: 10_000_000, // 10 Mbps
@@ -89,7 +84,6 @@ export interface ExportOptions {
     resolution?: 'original' | '720p' | '1080p' | '4k';
     format?: 'mp4' | 'webm' | 'audio';
     fps?: number; // Target frame rate for export
-    crf?: number; // Optional override for Constant Rate Factor (lower = higher quality)
     /**
      * Multi-segment export (used for split/delete-middle editing).
      * - When provided, exporter will keep these segments in order and concatenate them.

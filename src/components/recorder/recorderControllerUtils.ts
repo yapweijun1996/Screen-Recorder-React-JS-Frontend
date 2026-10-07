@@ -119,8 +119,13 @@ export const createFinalStream = async (args: {
             }
         });
 
-        const finalStream = await compositor.start(screenStream, camStream, micStream);
-        return { finalStream, compositor, audioMix: null as AudioMix | null };
+        try {
+            const finalStream = await compositor.start(screenStream, camStream, micStream);
+            return { finalStream, compositor, audioMix: null as AudioMix | null };
+        } catch (error) {
+            compositor.stop();
+            throw error;
+        }
     }
 
     const { audioTracks, audioMix } = createAudioTracks(screenStream, micStream);

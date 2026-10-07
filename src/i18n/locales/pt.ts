@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const pt: TranslationTable = {
+    "app.update.available": "Há uma nova versão. Recarregar redefine edições não salvas; baixe seu trabalho primeiro.",
+    "app.update.busy": "Atualização pronta. Conclua a gravação ou exportação antes de recarregar.",
+    "app.update.reload": "Atualizar e recarregar",
+    "app.update.dismiss": "Fechar",
+    'app.storage.saveFailed': "Não foi possível guardar a gravação. Está disponível apenas neste separador. Descarregue o original antes de fechar ou recarregar.",
+    'app.storage.loadFailed': "Não foi possível restaurar as gravações guardadas. As novas também podem não ser guardadas; descarregue o original como cópia de segurança.",
+    'app.storage.deleteFailed': "Não foi possível eliminar a gravação guardada. O vídeo e as alterações atuais foram mantidos. Tente novamente.",
+    'app.storage.downloadOriginal': "Descarregar original",
+    'export.audio.decodeFailed': "Não foi possível decodificar o áudio. A exportação foi interrompida para evitar perder o som. Tente outro arquivo ou navegador.",
+    'export.audio.noTrack': "Este vídeo não tem faixa de áudio. Escolha um formato de vídeo.",
     'common.language': 'Idioma',
     'common.processing': 'Processando...',
 
@@ -99,12 +109,10 @@ const pt: TranslationTable = {
 
     'editor.export.title': 'Exportar',
     'editor.export.settings': 'Configurações',
-    'editor.export.quickHint': 'Alta qualidade rápida: CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Alta qualidade rápida: 60fps / Original',
     'editor.export.quickButton': 'Aplicar preset',
     'editor.export.estimated': 'Tamanho estimado',
     'editor.export.quality': 'Qualidade',
-    'editor.export.crf': 'CRF (18-23 recomendado)',
-    'editor.export.crfHint': 'Quanto menor, mais qualidade e maior o arquivo.',
     'editor.export.resolution': 'Resolução',
     'editor.export.resolutionOriginal': 'Original',
     'editor.export.frameRate': 'Taxa de quadros',

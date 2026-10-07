@@ -24,8 +24,6 @@ interface EditorExportPanelProps {
     selectedFps: ExportFrameRateOption;
     onSelectFps: (fps: ExportFrameRateOption) => void;
 
-    customCrf: number;
-    onChangeCrf: (crf: number) => void;
 
     estimatedSize: string;
 
@@ -62,8 +60,6 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
     onSelectFormat,
     selectedFps,
     onSelectFps,
-    customCrf,
-    onChangeCrf,
     estimatedSize,
     isProcessing,
     processingProgress,
@@ -139,8 +135,6 @@ export const EditorExportPanel: React.FC<EditorExportPanelProps> = ({
                             onSelectFormat={onSelectFormat}
                             selectedFps={selectedFps}
                             onSelectFps={onSelectFps}
-                            customCrf={customCrf}
-                            onChangeCrf={onChangeCrf}
                             isProcessing={isProcessing}
                         />
                     )}

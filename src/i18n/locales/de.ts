@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const de: TranslationTable = {
+    "app.update.available": "Eine neue Version ist verfügbar. Beim Neuladen gehen ungespeicherte Bearbeitungen verloren; lade deine Arbeit zuerst herunter.",
+    "app.update.busy": "Update bereit. Beende Aufnahme oder Export vor dem Neuladen.",
+    "app.update.reload": "Aktualisieren und neu laden",
+    "app.update.dismiss": "Schließen",
+    'app.storage.saveFailed': "Die Aufnahme konnte nicht gespeichert werden. Sie ist nur in diesem Tab verfügbar. Laden Sie das Original vor dem Schließen oder Neuladen herunter.",
+    'app.storage.loadFailed': "Gespeicherte Aufnahmen konnten nicht wiederhergestellt werden. Neue Aufnahmen können ebenfalls betroffen sein. Laden Sie das Original als Sicherung herunter.",
+    'app.storage.deleteFailed': "Die gespeicherte Aufnahme konnte nicht gelöscht werden. Video und Bearbeitungen bleiben erhalten. Versuchen Sie es erneut.",
+    'app.storage.downloadOriginal': "Original herunterladen",
+    'export.audio.decodeFailed': "Audio konnte nicht dekodiert werden. Der Export wurde gestoppt, damit kein Ton verloren geht. Versuche eine andere Datei oder einen anderen Browser.",
+    'export.audio.noTrack': "Dieses Video hat keine Audiospur. Wähle ein Videoformat.",
     'common.language': 'Sprache',
     'common.processing': 'Verarbeitung...',
 
@@ -99,12 +109,10 @@ const de: TranslationTable = {
 
     'editor.export.title': 'Export',
     'editor.export.settings': 'Einstellungen',
-    'editor.export.quickHint': 'Schnell hohe Qualität: CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Schnell hohe Qualität: 60fps / Original',
     'editor.export.quickButton': 'Preset anwenden',
     'editor.export.estimated': 'Geschätzte Größe',
     'editor.export.quality': 'Qualität',
-    'editor.export.crf': 'CRF (18-23 empfohlen)',
-    'editor.export.crfHint': 'Niedriger = besser, aber größer.',
     'editor.export.resolution': 'Auflösung',
     'editor.export.resolutionOriginal': 'Original',
     'editor.export.frameRate': 'Bildrate',

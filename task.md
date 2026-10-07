@@ -6,6 +6,56 @@ Newest first.
 
 ---
 
+## 2026-10-08 — Accurate video sampling, encoder failures and aspect-preserving export
+
+**Status:** implemented and verified locally.
+
+- Replaced 16x HTML playback sampling with lazy Mediabunny video samples at requested source timestamps. Source rotation/display aspect is respected; current samples, frames, decoder iterators and inputs are released on success, failure, timeout and cancellation, including late samples and stalled iterator cleanup.
+- Video encoding waits at four pending inputs, yields regularly, propagates every encoder/muxer error, and verifies distinct output timestamps plus complete frame output after flush. Quota errors never restart an encoder that discarded frames. MP4 duration metadata comes from the shared cut timeline.
+- Resolution presets fit the source orientation and aspect ratio, with even encoder dimensions and contain drawing. 720p examples: landscape 1280×720, portrait 720×1280, 4:3 960×720.
+- Verification: 87 regression tests, strict TypeScript, final production build and diff checks passed. Native Chromium decoded and encoded all 240 distinct source frames of a 4-second 60fps fixture, compared with only 16 captured frames before the fix. Native terminal-frame quota injection rejected with the original QuotaExceededError; the production page displayed failure without a success download. Portrait MP4/WebM retained audio and exported at 720×1280. Native VP9 MediaRecorder WebM converted successfully; cancellation rejected about 1 ms after abort. ffprobe measured two 0.501-second cuts as 1.001997 seconds (62 video frames), and the production converter produced a 180×320 H.264 video with AAC audio. Final production resources were activated through the idle PWA update flow and conversion succeeded.
+- Limits: browser/container decoder support remains required. AAC priming/padding persists (the 1-second test produced 1.066667 seconds of audio). MP4 sample-table duration inference and WebM's missing per-frame duration can differ from the final container endpoint by one frame; packet-based duration calculations may therefore differ from player/ffprobe track duration. Compressed output, deadlines and indexes still grow with duration. Actual capture devices, Firefox/Safari and native download completion remain untested. The build retains the existing stale Browserslist-data warning.
+- Reusable lesson retained in project documentation: validate source-frame content as well as output frame count, propagate asynchronous codec failures, and compare packet and container/player timing when testing partial final frames.
+
+---
+
+## 2026-10-07 — Shared cut timeline, streamed audio and safe PWA updates
+
+**Status:** implemented and verified locally.
+
+- Audio and video now use one cumulative cut timeline, clipped to source duration. Video ends each cut with its exact remaining frame duration; audio rounds cumulative sample positions once. Invalid FPS is rejected rather than entering an unbounded planner loop.
+- Replaced whole-file/whole-track audio decoding with lazy Mediabunny input and selected-range audio samples. PCM copies are limited to 4096 frames, with at most four pending encoder inputs and regular event-loop yields. Abort disposes the input, cancels reads/queues and closes native decoders. The dependency is loaded as a separate export chunk; MPL-2.0 license and a corresponding source-archive notice are included in the build and PWA precache.
+- PWA workers wait for an explicit update confirmation. Localized reload controls are disabled during permission prompts, recording, export and storage work. A controller change caused by another tab, or new work starting during activation, cannot force a busy tab to reload. Registration, visibility listeners and timers are cleaned up on unmount.
+- Verification: 61 regression tests, strict TypeScript, production build and diff checks passed. Native browser export plus ffprobe confirmed 20 × 0.501-second cuts produce exactly 10.020000 seconds of video. Single-cut and twenty-cut AAC tracks both measured 10.090667 seconds, confirming the residual is fixed codec padding rather than cumulative cut drift. A real one-hour stereo Opus source exported to AAC in about 22.4 seconds: 180001 PCM blocks, maximum copy 7680 bytes, no whole-file arrayBuffer read. A second run rejected with AbortError about 0.3 ms after cancellation. Final production UI conversion succeeded; a real waiting worker was blocked during a simulated permission wait, then activated/reloaded after idle confirmation. A subsequent built worker triggered the updatefound/waiting banner and activated the final application chunk.
+- Limits: AAC output retains platform codec priming/padding (about 71–77 ms in these samples). Compressed mux output, frame deadlines and container metadata still grow with duration. Actual capture devices and Firefox/Safari remain untested. The build retains the existing stale Browserslist-data warning. Native download completion is unverified; encoded Blob contents and download links were checked directly.
+
+---
+
+## 2026-10-07 — Draft retention, export lifecycle and committed storage
+
+**Status:** implemented and verified locally.
+
+- Retained recording-scoped segments, selection, undo history, playhead and export settings above page navigation. New recordings and successful reset start fresh drafts; refresh still restores only the original recording. Segment mutations update edit/history atomically.
+- Shared export task ownership now aborts on unmount, cancellation and replacement, isolates progress callbacks and prevents late result URLs. Media metadata/readiness/seeks and frame playback have error, abort and inactivity timeout handling. Native audio decode/encoder flush waits cancel promptly; the underlying native audio decode may still finish in the background.
+- IndexedDB operations resolve only after transaction completion and reject request/transaction errors or aborts. Failed initialization can retry. Recording finalization now awaits its metadata and save path; save failure keeps the video available with a persistent localized warning and original backup link. Failed deletion preserves the recording and draft.
+- Verification: 44 regression tests, strict TypeScript and production build passed. Browser tests with synthetic sources confirmed draft/settings/playhead/undo retention across navigation, fresh defaults for a new recording, committed storage reads, save and delete failures after request success, original Blob readability, editor cancel, converter unmount cancel, successful conversion after retry, no late result URL and complete task URL cleanup. A 17.47-second H.264 MP4 at 320×180/60fps was generated and inspected with ffprobe.
+- Limits: native download-event wait did not complete in the in-app browser; the backup Blob and filename were verified directly. Actual devices and Firefox/Safari were not tested. Build retains the existing stale Browserslist-data warning.
+
+---
+
+## 2026-10-07 — Recording cleanup and truthful export settings
+
+**Status:** implemented and verified locally.
+
+- `RecordingSession` owns raw screen/microphone/camera streams and the final stream. Completion, empty output, startup failure and unmount release all resources. Permission or composition results returned after disposal are immediately released; late finalization is ignored.
+- Audio decode failure now distinguishes confirmed silent MP4/WebM files from audio-bearing or unknown files. Unsafe silent exports are blocked with translated messages in both editor and converter.
+- Removed CRF UI, state, preset values and `ExportOptions.crf`; quality presets continue to drive bitrate.
+- Split export phases and editor playback into focused modules to keep changed source files at or below 300 lines.
+- Verification: `npm test` passed 22 tests; TypeScript and production build passed. Four generated MP4/WebM fixtures correctly distinguished audio-bearing and silent media. Browser tests with synthetic sources verified navigation/unmount cleanup, normal stop, late capture results, a 69.67-second MP4 retaining stereo audio, visible decode-failure messages in both UIs, silent-video conversion and removal of CRF controls/text.
+- Limits: actual device permission dialogs and Firefox/Safari were not tested. Build retains the existing stale Browserslist-data warning; locked muxer packages also emit upstream deprecation notices.
+
+---
+
 ## 2026-05-12 — Relicense to MIT
 
 **Status:** ✅ shipped (this commit)
@@ -109,7 +159,6 @@ Also:
 | Priority | Task | Notes |
 | --- | --- | --- |
 | 🟡 P1 | Generate PNG icons (192/512/180 apple-touch + maskable) | iOS home-screen shows blank without these |
-| 🟡 P1 | Wire CRF UI control to bitrate scale OR remove the slider | Currently UI-only; user changes have no effect |
 | 🟢 P2 | `beforeinstallprompt` install button | Big install-rate lever |
 | 🟢 P2 | Manifest `id` field | Prevents duplicate installs |
 | 🟢 P2 | Dedicated `offline.html` | Currently falls back to cached `index.html` |

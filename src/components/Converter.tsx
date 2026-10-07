@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Upload, FileVideo, Download, X, Loader2, RefreshCw, CheckCircle } from 'lucide-react';
-import { exportService } from '../services/exportService';
+import { useExportOperation } from './useExportOperation';
 import { VIDEO_QUALITY_PRESETS, VideoQualityPreset } from '../types';
 import { formatBytes, generateFileName } from '../utils/format';
 import { Button } from './Button';
@@ -13,47 +13,17 @@ export const Converter: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [quality, setQuality] = useState<VideoQualityPreset>('medium');
-    const [isConverting, setIsConverting] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const [eta, setEta] = useState<string | null>(null);
-    const [outputUrl, setOutputUrl] = useState<string | null>(null);
-    const [outputFormat, setOutputFormat] = useState<'mp4' | 'webm'>('mp4');
-    const [error, setError] = useState<string | null>(null);
-
-    const abortRef = useRef<AbortController | null>(null);
-    const startTimeRef = useRef<number | null>(null);
+    const operation = useExportOperation(t, 'converter.error');
+    const { isProcessing: isConverting, progress, eta, error } = operation;
+    const outputUrl = operation.output?.url ?? null;
+    const outputFormat = operation.output?.format ?? 'mp4';
     const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        const handler = ({ ratio }: { ratio: number }) => {
-            const clamped = Math.max(0, Math.min(1, ratio));
-            setProgress(Math.round(clamped * 100));
-            if (startTimeRef.current && clamped > 0) {
-                const elapsed = Date.now() - startTimeRef.current;
-                const etaMs = elapsed / clamped - elapsed;
-                if (Number.isFinite(etaMs) && etaMs >= 0) {
-                    const secs = Math.round(etaMs / 1000);
-                    const m = Math.floor(secs / 60);
-                    const s = Math.max(secs % 60, 0);
-                    setEta(m > 0 ? `${m}m ${s}s` : `${s}s`);
-                }
-            }
-        };
-        exportService.onProgress(handler);
-        return () => exportService.offProgress(handler);
-    }, []);
-
-    useEffect(() => {
-        return () => { if (outputUrl) URL.revokeObjectURL(outputUrl); };
-    }, [outputUrl]);
 
     const loadFile = (f: File) => {
         setFile(f);
-        setOutputUrl(null);
-        setOutputFormat('mp4');
-        setError(null);
-        setProgress(0);
-        setEta(null);
+        operation.cancel();
+        operation.clearOutput();
+        operation.clearError();
     };
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -78,70 +48,28 @@ export const Converter: React.FC = () => {
         if (f) loadFile(f);
         e.target.value = '';
     };
-
     const handleConvert = async () => {
         if (!file) return;
-        setError(null);
-        setIsConverting(true);
-        setProgress(0);
-        setEta(null);
-        setOutputUrl(null);
-        startTimeRef.current = Date.now();
-
-        abortRef.current?.abort();
-        const ctrl = new AbortController();
-        abortRef.current = ctrl;
-
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const blob = new Blob([arrayBuffer], { type: file.type || 'video/webm' });
-            const preset = VIDEO_QUALITY_PRESETS[quality];
-            const output = await exportService.processVideo(
-                blob,
-                { quality, format: 'mp4', resolution: 'original', fps: 30, crf: preset.crf },
-                ctrl.signal,
-            );
-            setOutputFormat(output.format);
-            setOutputUrl(URL.createObjectURL(output.blob));
-        } catch (err) {
-            const isAbort = err instanceof DOMException && err.name === 'AbortError';
-            if (!isAbort) {
-                console.error(err);
-                setError(t('converter.error'));
-            }
-        } finally {
-            setIsConverting(false);
-            setProgress(0);
-            setEta(null);
-            startTimeRef.current = null;
-            if (abortRef.current === ctrl) abortRef.current = null;
-        }
+        // File already extends Blob; avoid copying the whole input into memory.
+        await operation.run(file, { quality, format: 'mp4', resolution: 'original', fps: 30 }, file.name.replace(/\.[^.]+$/, ''));
     };
-
-    const handleCancel = () => { abortRef.current?.abort(); };
-
+    const handleCancel = operation.cancel;
     const handleReset = () => {
-        if (outputUrl) URL.revokeObjectURL(outputUrl);
+        operation.cancel();
+        operation.clearOutput();
+        operation.clearError();
         setFile(null);
-        setOutputUrl(null);
-        setOutputFormat('mp4');
-        setError(null);
-        setProgress(0);
     };
 
-    const outputFileName = file
-        ? generateFileName(file.name.replace(/\.[^.]+$/, ''), outputFormat)
-        : generateFileName('converted', outputFormat);
+    const outputFileName = operation.output?.fileName ?? generateFileName('converted', outputFormat);
 
     return (
         <main className="max-w-2xl mx-auto px-4 py-10 flex flex-col gap-6">
-            {/* Page header */}
             <div>
                 <h2 className="text-2xl font-bold text-th-primary">{t('converter.title')}</h2>
                 <p className="mt-1 text-sm text-th-secondary">{t('converter.subtitle')}</p>
             </div>
 
-            {/* Drop zone */}
             {!file && (
                 <div
                     onDragOver={handleDragOver}

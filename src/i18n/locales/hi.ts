@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const hi: TranslationTable = {
+    "app.update.available": "नया संस्करण उपलब्ध है। पुनः लोड करने से असहेजे संपादन हटेंगे; पहले अपना काम डाउनलोड करें।",
+    "app.update.busy": "अपडेट तैयार है। पुनः लोड करने से पहले रिकॉर्डिंग या निर्यात पूरा करें।",
+    "app.update.reload": "अपडेट और पुनः लोड",
+    "app.update.dismiss": "बंद करें",
+    'app.storage.saveFailed': "रिकॉर्डिंग सहेजी नहीं जा सकी। यह केवल इस टैब में उपलब्ध है। बंद करने या रीलोड करने से पहले मूल वीडियो डाउनलोड करें।",
+    'app.storage.loadFailed': "सहेजी गई रिकॉर्डिंग वापस नहीं लाई जा सकीं। नई रिकॉर्डिंग भी सहेजी न जा सकें; बैकअप के लिए मूल वीडियो डाउनलोड करें।",
+    'app.storage.deleteFailed': "सहेजी गई रिकॉर्डिंग हटाई नहीं जा सकी। वर्तमान वीडियो और संपादन रखे गए हैं। फिर कोशिश करें।",
+    'app.storage.downloadOriginal': "मूल वीडियो डाउनलोड करें",
+    'export.audio.decodeFailed': "ऑडियो डिकोड नहीं हो सका। ध्वनि खोने से बचाने के लिए निर्यात रोक दिया गया। कोई दूसरी फ़ाइल या ब्राउज़र आज़माएँ।",
+    'export.audio.noTrack': "इस वीडियो में ऑडियो ट्रैक नहीं है। वीडियो निर्यात फ़ॉर्मैट चुनें।",
     'common.language': 'भाषा',
     'common.processing': 'प्रोसेसिंग...',
 
@@ -99,12 +109,10 @@ const hi: TranslationTable = {
 
     'editor.export.title': 'एक्सपोर्ट',
     'editor.export.settings': 'सेटिंग्स',
-    'editor.export.quickHint': 'तेज़ उच्च गुणवत्ता: CRF 20 / 60fps / मूल रिज़ॉल्यूशन',
+    'editor.export.quickHint': 'तेज़ उच्च गुणवत्ता: 60fps / मूल रिज़ॉल्यूशन',
     'editor.export.quickButton': 'प्रिसेट लागू करें',
     'editor.export.estimated': 'अनुमानित आकार',
     'editor.export.quality': 'गुणवत्ता',
-    'editor.export.crf': 'CRF (18-23 अनुशंसित)',
-    'editor.export.crfHint': 'कम मान = अधिक गुणवत्ता, बड़ा फ़ाइल आकार।',
     'editor.export.resolution': 'रिज़ॉल्यूशन',
     'editor.export.resolutionOriginal': 'मूल',
     'editor.export.frameRate': 'फ़्रेम दर',

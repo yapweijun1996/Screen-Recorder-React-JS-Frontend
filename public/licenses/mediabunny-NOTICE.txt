@@ -1,0 +1,10 @@
+Mediabunny 1.61.3
+Author: Vanilagy
+License: Mozilla Public License 2.0 (see mediabunny-MPL-2.0.txt)
+
+This distribution bundles Mediabunny without source modifications.
+The corresponding source files are included in the public npm archive:
+https://registry.npmjs.org/mediabunny/-/mediabunny-1.61.3.tgz
+Upstream project: https://github.com/Vanilagy/mediabunny
+
+ScreenClip application source retains its MIT license.

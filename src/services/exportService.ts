@@ -2,7 +2,7 @@
  * Export Service
  *
  * Uses WebCodecs API + mp4-muxer for H.264 MP4 export.
- * License: MIT — no GPL dependencies.
+ * Application/muxers: MIT. Audio demuxer: Mediabunny (MPL-2.0).
  *
  * For browsers without WebCodecs support (~4.5%),
  * MediaRecorder WebM output is used as fallback (no export processing).
@@ -10,8 +10,9 @@
 
 import type { ExportFormat, ExportOptions, VideoQualityPreset } from '../types';
 import { VIDEO_QUALITY_PRESETS } from '../types';
-import { detectWebCodecsSupport, getCachedSupport } from './webcodecs/capability';
+import { detectWebCodecsSupport } from './webcodecs/capability';
 import { exportWithWebCodecs, type WebCodecsExportResult } from './webcodecs/webcodecExportService';
+import { awaitWithAbort, throwIfAborted } from './webcodecs/mediaWait';
 
 export type ExportEngineType = 'webcodecs' | 'none';
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -24,7 +25,6 @@ class ExportService {
     private engine: ExportEngineType = 'none';
     private status: EngineStatus = 'idle';
     private onStatusChangeCallback: ((status: EngineStatus) => void) | null = null;
-    private onProgressCallback: ((progress: EngineProgress) => void) | null = null;
     private initPromise: Promise<void> | null = null;
 
     onStatusChange(callback: (status: EngineStatus) => void) {
@@ -34,14 +34,6 @@ class ExportService {
 
     offStatusChange(callback: (status: EngineStatus) => void) {
         if (this.onStatusChangeCallback === callback) this.onStatusChangeCallback = null;
-    }
-
-    onProgress(callback: (progress: EngineProgress) => void) {
-        this.onProgressCallback = callback;
-    }
-
-    offProgress(callback: (progress: EngineProgress) => void) {
-        if (this.onProgressCallback === callback) this.onProgressCallback = null;
     }
 
     private setStatus(status: EngineStatus) {
@@ -113,8 +105,11 @@ class ExportService {
         inputBlob: Blob,
         options: ExportOptions,
         signal?: AbortSignal,
+        onProgress?: (progress: EngineProgress) => void,
     ): Promise<WebCodecsExportResult> {
-        if (this.status !== 'ready') await this.init();
+        throwIfAborted(signal);
+        if (this.status !== 'ready') await awaitWithAbort(this.init(), signal);
+        throwIfAborted(signal);
 
         if (this.engine !== 'webcodecs') {
             throw new Error(
@@ -127,7 +122,7 @@ class ExportService {
             inputBlob,
             options,
             (progress) => {
-                this.onProgressCallback?.({ ratio: progress.ratio });
+                onProgress?.({ ratio: progress.ratio });
             },
             signal,
         );

@@ -1,173 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { AppStatus, VideoMetadata } from './types';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import { AppStatus } from './types';
 import { Recorder } from './components/Recorder';
 import { Editor } from './components/Editor';
 import { EngineStatus } from './components/EngineStatus';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Layers, Loader2, RefreshCw, Video, FileVideo } from 'lucide-react';
-import { exportService } from './services/exportService';
-import { videoStorageService } from './services/videoStorageService';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
 import { Converter } from './components/Converter';
 import { setupServiceWorker, applyUpdate } from './registerSW';
+import { EditorDraftProvider } from './components/editor/EditorDraftContext';
+import { useVideoSession } from './components/useVideoSession';
+import { taskActivity } from './services/taskActivity';
+import { StorageNotice } from './components/StorageNotice';
 
 type Page = 'recorder' | 'converter';
 
 const App: React.FC = () => {
-    const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
-    const [videoData, setVideoData] = useState<VideoMetadata | null>(null);
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [isLoadingStored, setIsLoadingStored] = useState(true);
+    const { t } = useI18n();
+    const { status, videoData, errorMsg, setErrorMsg, storageIssue, isLoadingStored, handleRecordingComplete, handleReset } = useVideoSession(t);
+    const updateBusy = useSyncExternalStore(taskActivity.subscribe, taskActivity.isBusy, () => false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const [page, setPage] = useState<Page>(() => {
         const p = new URLSearchParams(window.location.search).get('page');
         return p === 'converter' ? 'converter' : 'recorder';
     });
-    const { t } = useI18n();
 
     useEffect(() => {
-        setupServiceWorker(() => setUpdateAvailable(true));
+        return setupServiceWorker(() => setUpdateAvailable(true));
     }, []);
-
-    useEffect(() => {
-        const loadStoredVideo = async () => {
-            try {
-                const stored = await videoStorageService.loadVideo();
-                if (stored && stored.blob && stored.blob.size > 0) {
-                    const url = URL.createObjectURL(stored.blob);
-                    setVideoData({
-                        blob: stored.blob,
-                        url,
-                        duration: stored.duration,
-                    });
-                    setStatus(AppStatus.REVIEWING);
-                    console.log('Restored video from IndexedDB:', stored.blob.size, 'bytes');
-                }
-            } catch (error) {
-                console.error('Failed to load stored video:', error);
-            } finally {
-                setIsLoadingStored(false);
-            }
-        };
-
-        loadStoredVideo();
-    }, []);
-
-    const handleRecordingComplete = async (blob: Blob, recordedDuration: number) => {
-        if (!blob || blob.size === 0) {
-            setErrorMsg(t('app.error.empty'));
-            setStatus(AppStatus.IDLE);
-            return;
-        }
-
-        setStatus(AppStatus.PROCESSING);
-        setErrorMsg(null);
-
-        let workingBlob = blob;
-
-        if (blob.size > 0) {
-            try {
-                workingBlob = await exportService.fixWebmDuration(blob, recordedDuration);
-            } catch (error) {
-                console.warn('Failed to fix WebM duration, using raw blob.', error);
-            }
-        }
-
-        try {
-            const url = URL.createObjectURL(workingBlob);
-
-            const tempVideo = document.createElement('video');
-            tempVideo.preload = 'metadata';
-            tempVideo.src = url;
-
-            const cleanupTempVideo = () => {
-                tempVideo.onloadedmetadata = null;
-                tempVideo.onerror = null;
-                tempVideo.src = '';
-            };
-
-            const finalize = async (duration: number) => {
-                if (!Number.isFinite(duration) || duration <= 0) {
-                    throw new Error(t('app.error.invalidDuration'));
-                }
-
-                try {
-                    await videoStorageService.saveVideo(workingBlob, duration);
-                    console.log('Video saved to IndexedDB');
-                } catch (saveError) {
-                    console.warn('Failed to save video to IndexedDB:', saveError);
-                }
-
-                setVideoData({
-                    blob: workingBlob,
-                    url,
-                    duration
-                });
-                setStatus(AppStatus.REVIEWING);
-            };
-
-            tempVideo.onloadedmetadata = () => {
-                try {
-                    const d = tempVideo.duration;
-                    const finalDuration = (Number.isFinite(d) && d > 0) ? d : recordedDuration;
-                    finalize(finalDuration);
-                } catch (err) {
-                    console.error(err);
-                    setErrorMsg(t('app.error.invalid'));
-                    setStatus(AppStatus.IDLE);
-                    URL.revokeObjectURL(url);
-                } finally {
-                    cleanupTempVideo();
-                }
-            };
-
-            tempVideo.onerror = () => {
-                try {
-                    finalize(recordedDuration);
-                } catch (err) {
-                    console.error(err);
-                    setErrorMsg(t('app.error.invalid'));
-                    setStatus(AppStatus.IDLE);
-                    URL.revokeObjectURL(url);
-                } finally {
-                    cleanupTempVideo();
-                }
-            };
-        } catch (error) {
-            console.error('Failed to finalize recording:', error);
-            setErrorMsg(t('app.error.finalize'));
-            setStatus(AppStatus.IDLE);
-        }
-    };
-
-    const handleReset = async () => {
-        if (videoData) {
-            URL.revokeObjectURL(videoData.url);
-        }
-
-        try {
-            await videoStorageService.deleteVideo();
-            console.log('Video deleted from IndexedDB');
-        } catch (error) {
-            console.warn('Failed to delete video from IndexedDB:', error);
-        }
-
-        setVideoData(null);
-        setStatus(AppStatus.IDLE);
-        setErrorMsg(null);
-    };
-
-    const handleError = (msg: string) => {
-        setErrorMsg(msg);
-    };
-
-    useEffect(() => {
-        if (errorMsg) {
-            const timer = setTimeout(() => setErrorMsg(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [errorMsg]);
 
     const isEditorMode = status === AppStatus.REVIEWING && videoData;
     // Converter tab overrides editor — user can still access it mid-session.
@@ -237,19 +98,20 @@ const App: React.FC = () => {
             {/* Update Available Banner */}
             {updateAvailable && (
                 <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-300 dark:border-indigo-500/50 text-indigo-800 dark:text-indigo-200 flex items-center justify-between gap-3 animate-fade-in flex-shrink-0">
-                    <span className="text-sm">A new version of ScreenClip is available.</span>
+                    <span className="text-sm">{t(updateBusy ? 'app.update.busy' : 'app.update.available')}</span>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
+                            disabled={updateBusy}
                             onClick={() => applyUpdate()}
-                            className="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <RefreshCw size={12} />
-                            Reload
+                            {t('app.update.reload')}
                         </button>
                         <button
                             onClick={() => setUpdateAvailable(false)}
                             className="text-indigo-400 hover:text-indigo-200 text-xl leading-none"
-                            aria-label="Dismiss"
+                            aria-label={t('app.update.dismiss')}
                         >
                             &times;
                         </button>
@@ -265,49 +127,53 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {/* Main Content — converter tab overrides editor */}
-            {page === 'converter' ? (
-                <>
-                    <Converter />
-                    <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
-                        <p>{t('app.footer.line1')}</p>
-                        <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
-                    </footer>
-                </>
-            ) : showEditor ? (
-                <Editor
-                    videoMetadata={videoData!}
-                    onReset={handleReset}
-                />
-            ) : (
-                <>
-                    <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-                        <div className="flex-1 flex flex-col">
-                            {status === AppStatus.IDLE && (
-                                <Recorder
-                                    onRecordingComplete={handleRecordingComplete}
-                                    onError={handleError}
-                                />
-                            )}
+            {storageIssue && <StorageNotice issue={storageIssue} video={videoData} />}
 
-                            {status === AppStatus.PROCESSING && (
-                                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
-                                    <Loader2 size={36} className="animate-spin text-indigo-400" />
-                                    <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
-                                    <p className="text-sm text-th-secondary text-center px-4">
-                                        {t('app.processing.desc')}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </main>
+            {/* Keep the draft owner mounted while pages change. */}
+            <EditorDraftProvider key={videoData?.url ?? 'empty'} duration={videoData?.duration ?? 0}>
+                {page === 'converter' ? (
+                    <>
+                        <Converter />
+                        <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
+                            <p>{t('app.footer.line1')}</p>
+                            <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
+                        </footer>
+                    </>
+                ) : showEditor ? (
+                    <Editor
+                        videoMetadata={videoData!}
+                        onReset={handleReset}
+                    />
+                ) : (
+                    <>
+                        <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+                            <div className="flex-1 flex flex-col">
+                                {status === AppStatus.IDLE && (
+                                    <Recorder
+                                        onRecordingComplete={handleRecordingComplete}
+                                        onError={setErrorMsg}
+                                    />
+                                )}
 
-                    <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
-                        <p>{t('app.footer.line1')}</p>
-                        <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
-                    </footer>
-                </>
-            )}
+                                {status === AppStatus.PROCESSING && (
+                                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
+                                        <Loader2 size={36} className="animate-spin text-indigo-400" />
+                                        <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
+                                        <p className="text-sm text-th-secondary text-center px-4">
+                                            {t('app.processing.desc')}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </main>
+
+                        <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
+                            <p>{t('app.footer.line1')}</p>
+                            <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
+                        </footer>
+                    </>
+                )}
+            </EditorDraftProvider>
         </div>
     );
 };

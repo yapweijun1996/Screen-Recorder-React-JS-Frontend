@@ -8,41 +8,27 @@ This document explains the streaming architecture in [`src/services/webcodecs/we
 
 ## Streaming Architecture
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                          exportWithWebCodecs                       │
-│                                                                    │
-│  ┌────────────┐    ┌────────────────────────┐    ┌──────────────┐  │
-│  │ openSource │ →  │  rVFC playback loop    │ →  │  VideoEncoder│  │
-│  │   Video    │    │  (drainDeadlinesUpTo)  │    │  (WebCodecs) │  │
-│  └────────────┘    │                        │    └──────┬───────┘  │
-│        │            └────────────┬────────────┘            │       │
-│        │                         │                         ▼       │
-│        │          ┌──────────────▼──────────┐    ┌──────────────┐  │
-│        │          │  prev+current ImageBitmap│   │   muxer      │  │
-│        │          │  (2-frame rolling buffer)│   │ (mp4 or webm)│  │
-│        │          └──────────────────────────┘   └──────┬───────┘  │
-│        │                                                 │         │
-│        │          ┌──────────────────────────┐           │         │
-│        └────────► │   decodeAudioFromBlob    │           │         │
-│                   │   → AudioEncoder         │ ─────────►│         │
-│                   └──────────────────────────┘           │         │
-│                                                          ▼         │
-│                                              MP4/WebM Blob (output)│
-└────────────────────────────────────────────────────────────────────┘
+```text
+Blob -> openSourceVideo (duration metadata only)
+     -> openVideoSource -> VideoSampleSink (requested source timestamps)
+                        -> aspect-preserving canvas -> VideoEncoder -> muxer
+     -> openAudioSource -> AudioSampleSink (selected ranges)
+                        -> bounded PCM blocks -> AudioEncoder -> muxer
+muxer.finalize() -> MP4/WebM Blob
 ```
 
 ## Key Properties
 
 | Property | Value |
 | --- | --- |
-| Memory peak | ~50 MB (2 `ImageBitmap`s + encoder/muxer buffers) regardless of clip length |
-| Decode strategy | Linear playback at `playbackRate = 16` driven by `requestVideoFrameCallback` |
+| Decoded data | Bounded decoder prefetch; one current video sample/canvas, ≤4 pending video encoder inputs; ≤4096-frame PCM copies and ≤4 pending audio encoder inputs |
+| Growing memory | Compressed muxer output, frame deadlines and container metadata grow with duration; total memory is not constant |
+| Decode strategy | Lazy Mediabunny video samples at requested source timestamps |
 | Encode strategy | One `VideoFrame` per output deadline, encoded inline and immediately closed |
 | Mux strategy | Frames flow through `addVideoChunk` as they finish encoding |
-| Fallback | Browsers without `requestVideoFrameCallback` use seek-based decode at target FPS |
+| Fallback | Unsupported containers/codecs reject visibly; no display-playback fallback |
 
-A 38-second clip exports in **~3 seconds on Chrome**, versus ~40 minutes under the previous seek-per-frame implementation.
+Export speed depends on actual source decoding, resizing and encoding. It does not depend on how quickly a hidden video can skip through displayed frames.
 
 ---
 
@@ -54,34 +40,29 @@ Creates a hidden `<video>` element, sets `src` from the input blob, waits for `l
 
 ```ts
 if (!Number.isFinite(video.duration)) {
-    // Force Chrome to scan the file and rewrite duration metadata
-    await new Promise<void>((resolve) => {
-        const onSeeked = () => {
-            video.removeEventListener('seeked', onSeeked);
-            video.currentTime = 0;
-            resolve();
-        };
-        video.addEventListener('seeked', onSeeked);
-        video.currentTime = 1e101;
-    });
+    await seekVideo(video, 1e101, signal);
+    await seekVideo(video, 0, signal);
 }
 ```
 
-### 2. `planDeadlines(segments, targetFps, frameDurationUs)`
+### 2. Shared timeline and `planDeadlines(timeline, targetFps)`
 
 Pre-computes the **full list of output frame deadlines**, each with:
 
 - `inputTime` — the source timestamp this output frame samples from (seconds)
 - `outputTimestampUs` — the position in the output stream (microseconds), gap-free across segments
+- `durationUs` — each frame interval; the final frame of a cut stops exactly at its cumulative output boundary
 - `isKeyframe` — every `targetFps * 2` frames (i.e., 2-second GOP)
 
-For multi-segment exports, deadlines are stitched back-to-back so the output never has gaps.
+`exportTimeline.ts` clamps selections to source duration and rounds cumulative boundaries once. Audio sample positions and video timestamps derive from this same timeline. Each cut may end with a shorter video frame; no independent whole-frame rounding is added per cut. Audio boundaries are rounded from cumulative positions at the source sample rate, with error bounded to half a sample.
 
-### 3. `decodeAudioFromBlob(blob)`
+### 3. `openAudioSource(blob)`
 
-Loads the full audio track into an `AudioBuffer` via `OfflineAudioContext.decodeAudioData`. Audio is small relative to video and decoded once. Failures are silently swallowed (no-audio export still succeeds).
+[`exportAudio.ts`](../src/services/webcodecs/exportAudio.ts) uses Mediabunny `Input` and `BlobSource` with an 8 MiB read cache. It inspects audio metadata and decoder support before mux setup, then `AudioSampleSink` decodes selected ranges on demand. The library is evaluated on the first export as a separate lazy chunk; PWA precaching can download that chunk in the background. No whole-file `arrayBuffer()` or whole-track PCM allocation is used.
 
-> **Known limitation:** Chrome's `decodeAudioData` can fail on some WebM containers. The output will then be muxed without audio.
+If decoding fails, [`audioTrackProbe.ts`](../src/services/webcodecs/audioTrackProbe.ts) checks MP4 handler boxes or WebM track metadata without reading media payloads. Confirmed video-only files can still export without sound. Files with audio, malformed metadata, or unrecognized containers fail with `AudioExportError('decodeFailed')`; the editor and converter show a translated message instead of silently removing sound. Audio-only export of a confirmed silent file fails with `AudioExportError('noTrack')`.
+
+Metadata inspection is bounded to 4096 header reads. An inconclusive result never authorizes silent export. Unknown or unsupported codecs remain visible failures. Actual support depends on the browser AudioDecoder and Mediabunny format support.
 
 ### 4. Muxer + Encoder setup
 
@@ -96,49 +77,23 @@ Bitrate scales with output resolution: `videoBitsPerSecond * pixelRatio` clamped
 
 ### 5. Streaming decode → encode loop
 
-```ts
-video.playbackRate = 16;
+[`exportVideo.ts`](../src/services/webcodecs/exportVideo.ts) opens a Mediabunny `Input` with an 8 MiB read cache, checks video decoder support, and exposes `VideoSampleSink.samplesAtTimestamps()`. It consumes the deadline timestamps lazily. The sink decodes real source packets, reusing sequential work and seeking only when required by selected ranges. Browser playback speed and display refresh do not determine the exported frames.
 
-const onFrame = (_now, metadata) => {
-    if (nextDeadline >= totalDeadlines) return finish();
+Sampling uses the source frame covering each requested timestamp. A one-microsecond tolerance accounts for WebCodecs timestamp rounding at frame boundaries. A short initial video gap holds the first available frame. Higher output FPS naturally repeats a source frame; missing samples or decoder failures stop export instead of fabricating a successful file. Rotation and pixel aspect ratio come from the video track's display dimensions.
 
-    ctx.drawImage(video, 0, 0, width, height);  // resize to target
-    const bitmap = canvas.transferToImageBitmap();
+[`exportHelpers.ts`](../src/services/webcodecs/exportHelpers.ts) fits each resolution preset to the source orientation and aspect ratio, then rounds dimensions to even pixels for H.264. At 720p, 16:9 exports as 1280×720, 9:16 as 720×1280, and 4:3 as 960×720. `drawWithFit({ fit: 'contain' })` preserves the exact source ratio if even rounding introduces a small border.
 
-    drainDeadlinesUpTo(bitmap, metadata.mediaTime);
+[`encodeVideoFrames.ts`](../src/services/webcodecs/encodeVideoFrames.ts) draws one decoded sample into the output canvas, timestamps the `VideoFrame` from the shared cut timeline, and closes both after submission. It waits when `encodeQueueSize` reaches four, and yields a macrotask every 16 frames for responsive cancellation. The video encoder is flushed before the audio pass.
 
-    if (prevBitmap) prevBitmap.close();
-    prevBitmap = bitmap;
-    prevInputTime = metadata.mediaTime;
+Every encoder error, including `QuotaExceededError`, rejects the export and interrupts decoder, queue and flush waits. The encoder is never restarted after discarding frames. Output timestamps must match distinct submitted deadlines, and flush must produce every requested frame. Errors raised by the muxer output callback also reach the caller.
 
-    if (video.ended) finish();
-    else video.requestVideoFrameCallback(onFrame);
-};
-video.requestVideoFrameCallback(onFrame);
-video.play();
-```
-
-`drainDeadlinesUpTo(current, inputTime)` walks pending deadlines whose `inputTime ≤ current input time` and, for each one, picks **whichever of `prev` or `current` is closer in input time** (nearest-neighbour resampling). The picked bitmap is wrapped in a `VideoFrame` with the deadline's output timestamp and handed to the encoder, then immediately closed.
-
-After the playback ends, any remaining deadlines (e.g., when output FPS is higher than input FPS) are flushed using the **last decoded bitmap** as a freeze-frame fallback.
+MP4 chunk durations are supplied from the shared timeline rather than trusting platform encoder duration metadata. The muxer's integer timescale can introduce sub-frame rounding. Its sample table can infer the final packet duration from the previous timestamp interval; container/player duration remains derived from the supplied cut endpoint. WebM muxing does not encode per-frame duration, so its final packet endpoint can differ by one frame. These are container limits, distinct from dropped source frames or cumulative per-cut drift.
 
 ### 6. Audio encode pass
 
-After video is done, audio is encoded segment-by-segment in one pass:
+After video is done, `encodeAudioTimeline.ts` consumes one decoded audio sample at a time, copies at most 4096 frames per channel into planar `AudioData`, and waits when four encoder inputs are pending. Each sample and AudioData is closed after use. A macrotask every 16 blocks keeps cancellation responsive even when decoding is fast.
 
-```ts
-for (const segment of segments) {
-    const f32 = extractPlanarSamples(audioBuffer, segment);
-    const audioData = new AudioData({
-        format: 'f32-planar',
-        sampleRate, numberOfChannels, numberOfFrames, timestamp: audioOutputUs,
-        data: f32,
-    });
-    audioEncoder.encode(audioData);
-    audioData.close();
-    audioOutputUs += (length / sampleRate) * 1_000_000;
-}
-```
+Source timestamps determine the position inside each selected cut. Leading gaps and a shorter audio track are padded with silence, preserving later cut boundaries. Audio output timestamps use cumulative sample counts rather than accumulating rounded per-block durations. AAC/Opus encoders can add fixed codec priming/padding; this is distinct from cumulative cut drift. On the tested Chrome/macOS AAC encoder, one cut and twenty cuts of the same 10.020-second total both produced a 10.090667-second audio track.
 
 ### 7. Finalize
 
@@ -158,57 +113,28 @@ Firefox writes the correct duration on `MediaRecorder.stop()` so this workaround
 
 `VideoEncoder.isConfigSupported({ codec: 'avc1.42001f' })` returns `{ supported: true }` on Firefox even though `encoder.configure()` then throws. [`capability.ts`](../src/services/webcodecs/capability.ts) performs a **real trial encode of a 64×64 black frame** before declaring support.
 
-### Chrome seek-based decode is catastrophically slow on MediaRecorder WebM
+### MediaRecorder WebM without cues
 
-`MediaRecorder`'s WebM has no cues table and sparse keyframes. Each `video.currentTime = t; await onseeked` on Chrome takes ~1-2 seconds because the decoder has to scan from the previous keyframe. 1140 seeks × 2 s = ~40 minutes. The rVFC fast path avoids seeks entirely.
+MediaRecorder WebM can lack a cues table and have sparse keyframes. Repeated HTML video seeks can rescan large ranges. Mediabunny's packet-based video sink decodes requested timestamps without driving the HTML playback clock; metadata duration probing retains the existing Chrome workaround above.
 
 ---
 
 ## Cancellation
 
-`exportWithWebCodecs()` accepts an optional `AbortSignal` so the user can cancel a long export from the progress modal. The wiring:
+`exportWithWebCodecs()` accepts an optional `AbortSignal`. The shared UI hook `useExportOperation` creates a task through `ExportTaskScope`; both the editor and converter cancel it on unmount. Cancel immediately dismisses processing UI. A replacement task invalidates old progress/results, and each `processVideo` call receives its own progress callback.
 
-```
-ExportProgressModal "Cancel" click
-        │
-        ▼
-useEditorExportController.cancelExport()
-        │
-        ▼
-abortController.abort()
-        │
-        ├──► AbortSignal listener inside the rVFC playback Promise
-        │    rejects the playback loop immediately (no need to wait
-        │    for the next frame)
-        │
-        └──► throwIfAborted(signal) checkpoints scattered through the
-             pipeline throw DOMException('Export cancelled', 'AbortError')
-```
+`mediaWait.ts` attaches listeners before setting `src` or seeking, checks already-ready media, and handles abort, load errors and a 30-second timeout. Seeking to the current position completes without waiting for an event that may never fire. Source setup releases its video element and object URL even when it fails before the coordinator starts.
 
-Checkpoint locations in [`webcodecExportService.ts`](../src/services/webcodecs/webcodecExportService.ts):
+Video sample, queue and flush waits handle abort and a 30-second inactivity timeout. The video pass returns its iterator and closes its sample/frame/encoder on every exit, including late samples delivered after an abandoned wait. The coordinator disposes both media inputs and releases metadata video resources. Decoder support or container parsing failures remain visible export failures; there is no lossy display-playback fallback.
 
-1. Immediately after the support check
-2. After `openSourceVideo`
-3. After audio decode
-4. Inside the rVFC `onFrame` callback (per frame)
-5. As an `abort` event listener on the rVFC playback Promise
-6. Inside the seek-based fallback loop (per iteration)
-7. After the playback loop completes
-8. Inside the tail flush loop (per iteration)
-9. Inside the audio segment encode loop (per segment)
-10. Before `videoEncoder.flush()`
-11. After `audioEncoder.flush()` and before muxer finalize
-
-On abort the function's `catch` block tears down resources independently — `prevBitmap.close()`, `videoEncoder.close()` (guarded by `state !== 'closed'`), `audioEncoder.close()`, and `releaseSource()` (pause `<video>`, clear `src`, revoke object URL) — then re-throws the `AbortError`. The controller catch checks `error instanceof DOMException && error.name === 'AbortError'` and dismisses the modal silently rather than showing an error banner.
-
-A fresh `AbortController` is created per export, so cancelling one export does not poison the next.
+Audio read/queue/flush waits reject promptly on abort. Disposing the Mediabunny input cancels reads, closes decoders and releases queued samples; the coordinator disposes it on success, failure and cancellation. Result object URLs are allocated only while the task is current, and are revoked on a new export, clear or unmount.
 
 ---
 
 ## When to Touch This Code
 
 - **Adding a new output format** — add a muxer + capability flags in `capability.ts`, wire codec selection in `exportWithWebCodecs`
-- **Adding a new resolution preset** — extend `RESOLUTION_MAP`
+- **Adding a new resolution preset** — extend `RESOLUTION_MAP` and the `ExportResolution` union, and test orientation, aspect ratio and even dimensions
 - **Changing keyframe interval** — change the `i % (targetFps * 2)` formula in `planDeadlines`
-- **CRF / quality slider rework** — `crf` is currently accepted in `ExportOptions` but **not used** by the WebCodecs pipeline (WebCodecs uses bitrate-mode encoding, not CRF). Either drop the UI control or map it to a bitrate scale.
+- **Quality controls** — presets select video/audio bitrates. The unused CRF field and control have been removed from the UI and `ExportOptions`.
 - **Re-introducing FFmpeg** — **don't.** It re-triggers GPL/LGPL, which our LICENSE forbids. WebCodecs is enough.

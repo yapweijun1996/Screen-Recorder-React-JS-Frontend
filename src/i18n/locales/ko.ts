@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ko: TranslationTable = {
+    "app.update.available": "새 버전이 준비되었습니다. 새로 고침하면 저장되지 않은 편집이 초기화됩니다. 먼저 작업을 다운로드하세요.",
+    "app.update.busy": "업데이트 준비 완료. 녹화나 내보내기를 마친 후 새로 고침하세요.",
+    "app.update.reload": "업데이트 및 새로 고침",
+    "app.update.dismiss": "닫기",
+    'app.storage.saveFailed': "녹화를 저장하지 못했습니다. 현재 탭에서만 사용할 수 있습니다. 닫거나 새로고침하기 전에 원본을 다운로드하세요.",
+    'app.storage.loadFailed': "저장된 녹화를 복원하지 못했습니다. 새 녹화도 저장되지 않을 수 있으므로 원본을 다운로드해 백업하세요.",
+    'app.storage.deleteFailed': "저장된 녹화를 삭제하지 못했습니다. 현재 영상과 편집 내용은 유지됩니다. 다시 시도하세요.",
+    'app.storage.downloadOriginal': "원본 다운로드",
+    'export.audio.decodeFailed': "오디오를 디코딩할 수 없어 소리 손실을 방지하기 위해 내보내기를 중지했습니다. 다른 파일이나 브라우저를 사용해 보세요.",
+    'export.audio.noTrack': "이 동영상에는 오디오 트랙이 없습니다. 동영상 형식을 선택하세요.",
     'common.language': '언어',
     'common.processing': '처리 중...',
 
@@ -99,12 +109,10 @@ const ko: TranslationTable = {
 
     'editor.export.title': '내보내기',
     'editor.export.settings': '설정',
-    'editor.export.quickHint': '고품질 빠른 설정: CRF 20 / 60fps / 원본 해상도',
+    'editor.export.quickHint': '고품질 빠른 설정: 60fps / 원본 해상도',
     'editor.export.quickButton': '프리셋 적용',
     'editor.export.estimated': '예상 크기',
     'editor.export.quality': '품질',
-    'editor.export.crf': 'CRF (18-23 권장)',
-    'editor.export.crfHint': '값이 낮을수록 선명하지만 용량이 커집니다.',
     'editor.export.resolution': '해상도',
     'editor.export.resolutionOriginal': '원본',
     'editor.export.frameRate': '프레임 레이트',

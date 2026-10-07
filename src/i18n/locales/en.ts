@@ -4,6 +4,12 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const en: TranslationTable = {
+    "app.update.available": "A new version is available. Reloading resets unsaved edits; download your work first.",
+    "app.update.busy": "Update ready. Finish recording or exporting before reloading.",
+    "app.update.reload": "Update and reload",
+    "app.update.dismiss": "Dismiss",
+    'export.audio.decodeFailed': "The audio could not be decoded. Export stopped to avoid losing sound. Try another source file or browser.",
+    'export.audio.noTrack': "This video has no audio track. Choose a video export format.",
     'common.language': 'Language',
     'common.theme.light': 'Light mode',
     'common.theme.dark': 'Dark mode',
@@ -20,6 +26,10 @@ const en: TranslationTable = {
     'app.error.invalidDuration': 'Invalid recording duration detected.',
     'app.error.invalid': 'Recording looks invalid. Please try capturing again.',
     'app.error.finalize': 'Failed to finish processing the recording. Please try again.',
+    'app.storage.saveFailed': "This recording could not be saved. It is available in this tab only. Download the original before closing or reloading.",
+    'app.storage.loadFailed': "Saved recordings could not be restored. New recordings may also fail to save; download the original as a backup.",
+    'app.storage.deleteFailed': "The saved recording could not be deleted. Your current video and edits have been kept. Try again.",
+    'app.storage.downloadOriginal': "Download original",
     'app.loading': 'Loading...',
 
     'ffmpeg.idle': 'Engine Idle',
@@ -126,12 +136,10 @@ const en: TranslationTable = {
 
     'editor.export.title': 'Export',
     'editor.export.settings': 'Settings',
-    'editor.export.quickHint': 'Quick high quality: CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Quick high quality: 60fps / Original',
     'editor.export.quickButton': 'Apply preset',
     'editor.export.estimated': 'Estimated size',
     'editor.export.quality': 'Quality',
-    'editor.export.crf': 'CRF (18-23 recommended)',
-    'editor.export.crfHint': 'Lower is clearer, but larger files.',
     'editor.export.resolution': 'Resolution',
     'editor.export.resolutionOriginal': 'Original',
     'editor.export.frameRate': 'Frame Rate',

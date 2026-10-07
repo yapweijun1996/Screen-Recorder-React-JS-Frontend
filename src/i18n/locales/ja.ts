@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ja: TranslationTable = {
+    "app.update.available": "新しいバージョンがあります。再読み込みで未保存の編集がリセットされるため、先に作品をダウンロードしてください。",
+    "app.update.busy": "更新準備完了。録画やエクスポートを終えてから再読み込みしてください。",
+    "app.update.reload": "更新して再読み込み",
+    "app.update.dismiss": "閉じる",
+    'app.storage.saveFailed': "録画を保存できませんでした。このタブでのみ利用できます。閉じたり再読み込みしたりする前に、元の動画をダウンロードしてください。",
+    'app.storage.loadFailed': "保存した録画を復元できませんでした。新しい録画も保存できない可能性があります。元の動画をダウンロードしてバックアップしてください。",
+    'app.storage.deleteFailed': "保存した録画を削除できませんでした。現在の動画と編集内容は保持されています。もう一度お試しください。",
+    'app.storage.downloadOriginal': "元の動画をダウンロード",
+    'export.audio.decodeFailed': "音声をデコードできません。音声の欠落を防ぐため書き出しを停止しました。別のファイルまたはブラウザーをお試しください。",
+    'export.audio.noTrack': "この動画には音声トラックがありません。動画形式を選択してください。",
     'common.language': '言語',
     'common.processing': '処理中...',
 
@@ -99,12 +109,10 @@ const ja: TranslationTable = {
 
     'editor.export.title': '書き出し',
     'editor.export.settings': '設定',
-    'editor.export.quickHint': '高品質クイック：CRF 20 / 60fps / 元解像度',
+    'editor.export.quickHint': '高品質クイック：60fps / 元解像度',
     'editor.export.quickButton': 'プリセット適用',
     'editor.export.estimated': '予想サイズ',
     'editor.export.quality': '品質',
-    'editor.export.crf': 'CRF (18-23 推奨)',
-    'editor.export.crfHint': '数値が低いほど高画質ですが、サイズが大きくなります。',
     'editor.export.resolution': '解像度',
     'editor.export.resolutionOriginal': 'オリジナル',
     'editor.export.frameRate': 'フレームレート',

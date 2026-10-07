@@ -4,6 +4,12 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const zh: TranslationTable = {
+    "app.update.available": "新版本已就绪。重新载入会重置未保存的剪辑，请先下载作品。",
+    "app.update.busy": "新版本已就绪，请完成录制或导出后再更新。",
+    "app.update.reload": "更新并重新载入",
+    "app.update.dismiss": "关闭",
+    'export.audio.decodeFailed': "音频无法解码。为避免丢失声音，已停止导出。请尝试其他源文件或浏览器。",
+    'export.audio.noTrack': "此视频没有音轨，请选择视频导出格式。",
     'common.language': '语言',
     'common.processing': '处理中...',
     'common.dismiss': '关闭',
@@ -18,6 +24,10 @@ const zh: TranslationTable = {
     'app.error.invalidDuration': '检测到无效的录制时长。',
     'app.error.invalid': '录制看起来异常，请重试。',
     'app.error.finalize': '录制处理失败，请重试。',
+    'app.storage.saveFailed': "录制未能保存，目前仅在此标签页可用。关闭或刷新前，请下载原始视频备份。",
+    'app.storage.loadFailed': "无法恢复已保存的录制。新录制也可能无法保存，请下载原始视频备份。",
+    'app.storage.deleteFailed': "无法删除已保存的录制，当前视频和剪辑已保留，请重试。",
+    'app.storage.downloadOriginal': "下载原始视频",
     'app.loading': '加载中...',
 
     'ffmpeg.idle': '引擎空闲',
@@ -124,12 +134,10 @@ const zh: TranslationTable = {
 
     'editor.export.title': '导出',
     'editor.export.settings': '设置',
-    'editor.export.quickHint': '高质快捷：CRF 20 / 60fps / 原始分辨率',
+    'editor.export.quickHint': '高质快捷：60fps / 原始分辨率',
     'editor.export.quickButton': '一键应用',
     'editor.export.estimated': '预计大小',
     'editor.export.quality': '质量',
-    'editor.export.crf': 'CRF（18-23 推荐）',
-    'editor.export.crfHint': '数值越低越清晰，文件越大。',
     'editor.export.resolution': '分辨率',
     'editor.export.resolutionOriginal': '原始分辨率',
     'editor.export.frameRate': '帧率',

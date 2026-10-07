@@ -1,183 +1,56 @@
-import { useEffect, useRef, useState } from 'react';
 import type { ExportFormat, ExportOptions, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
-import { exportService } from '../../services/exportService';
 import { generateFileName } from '../../utils/format';
+import { useExportOperation } from '../useExportOperation';
 
 interface UseEditorExportControllerArgs {
     videoMetadata: VideoMetadata;
     segments: TrimRange[];
-
     selectedQuality: VideoQualityPreset;
     selectedResolution: ExportResolution;
     selectedFormat: ExportFormat;
     selectedFps: ExportFrameRateOption;
-    customCrf: number;
-
     playbackError: string | null;
     setPlaybackError: (msg: string | null) => void;
-
     t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 export const useEditorExportController = ({
-    videoMetadata,
-    segments,
-    selectedQuality,
-    selectedResolution,
-    selectedFormat,
-    selectedFps,
-    customCrf,
-    playbackError,
-    setPlaybackError,
-    t,
+    videoMetadata, segments, selectedQuality, selectedResolution,
+    selectedFormat, selectedFps, playbackError, setPlaybackError, t,
 }: UseEditorExportControllerArgs) => {
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [processingProgress, setProcessingProgress] = useState(0);
-    const [processingEta, setProcessingEta] = useState<string | null>(null);
-    const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
-    const [exportUrl, setExportUrl] = useState<string | null>(null);
-    const [exportFormat, setExportFormat] = useState<ExportFormat>(selectedFormat);
-    const [exportDownloadFileName, setExportDownloadFileName] = useState(
-        () => generateFileName('screen-recording', selectedFormat === 'audio' ? 'm4a' : selectedFormat)
-    );
-    const [exportError, setExportError] = useState<string | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-
-    const getDownloadExtension = (format: ExportFormat, blobType: string) => {
-        if (format === 'audio') {
-            if (blobType.includes('audio/mp4') || blobType.includes('video/mp4')) return 'm4a';
-            if (blobType.includes('audio/webm') || blobType.includes('video/webm')) return 'webm';
-            return 'm4a';
-        }
-        return format;
-    };
-
-    // Subscribe to export progress
-    useEffect(() => {
-        const handler = ({ ratio }: { ratio: number }) => {
-            const clamped = Math.max(0, Math.min(1, ratio));
-            setProcessingProgress(Math.round(clamped * 100));
-
-            if (processingStartTime && clamped > 0) {
-                const elapsedMs = Date.now() - processingStartTime;
-                const etaMs = (elapsedMs / clamped) - elapsedMs;
-                if (Number.isFinite(etaMs) && etaMs >= 0) {
-                    setProcessingEta(formatEta(etaMs));
-                }
-            }
-        };
-
-        exportService.onProgress(handler);
-
-        return () => {
-            exportService.offProgress(handler);
-        };
-    }, [processingStartTime]);
-
-    // Revoke generated blob URLs when component unmounts or new exports are created
-    useEffect(() => {
-        return () => {
-            if (exportUrl) URL.revokeObjectURL(exportUrl);
-        };
-    }, [exportUrl]);
+    const operation = useExportOperation(t, 'editor.export.failed');
 
     const exportVideo = async (mode: 'full' | 'trimmed') => {
-        setExportError(null);
-
+        operation.clearError();
         if (playbackError || videoMetadata.duration <= 0) {
             setPlaybackError(t('editor.playback.cannotExport'));
             return;
         }
-
-        const totalSelected = segments.reduce((sum, s) => sum + Math.max(s.end - s.start, 0), 0);
+        const totalSelected = segments.reduce((sum, segment) => sum + Math.max(segment.end - segment.start, 0), 0);
         if (mode === 'trimmed' && totalSelected <= 0) {
             setPlaybackError(t('editor.playback.trimInvalid'));
             return;
         }
-
-        setIsProcessing(true);
-        setProcessingProgress(0);
-        setProcessingEta(null);
-        setProcessingStartTime(Date.now());
-        setExportUrl(null);
-        setExportFormat(selectedFormat);
-
-        // Abort any prior in-flight export and create a fresh controller.
-        abortRef.current?.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-
-        try {
-            const options: ExportOptions = {
-                quality: selectedQuality,
-                resolution: selectedResolution,
-                format: selectedFormat,
-                fps: selectedFps,
-                crf: customCrf,
-            };
-
-            if (mode === 'trimmed') {
-                if (segments.length > 1) {
-                    options.segments = segments.map((s) => ({ start: s.start, end: s.end }));
-                } else if (segments.length === 1) {
-                    options.trimStart = segments[0].start;
-                    options.trimEnd = segments[0].end;
-                }
-            }
-
-            const result = await exportService.processVideo(
-                videoMetadata.blob,
-                options,
-                controller.signal,
-            );
-            const url = URL.createObjectURL(result.blob);
-            const downloadExt = getDownloadExtension(result.format, result.blob.type);
-            setExportFormat(result.format);
-            setExportDownloadFileName(generateFileName('screen-recording', downloadExt));
-            setExportUrl(url);
-        } catch (error) {
-            // User-initiated cancel: drop the modal silently, no error banner.
-            const isAbort =
-                error instanceof DOMException && error.name === 'AbortError';
-            if (!isAbort) {
-                console.error(error);
-                setExportError(t('editor.export.failed'));
-            }
-        } finally {
-            setIsProcessing(false);
-            setProcessingProgress(0);
-            setProcessingEta(null);
-            setProcessingStartTime(null);
-            if (abortRef.current === controller) {
-                abortRef.current = null;
-            }
-        }
-    };
-
-    const cancelExport = () => {
-        abortRef.current?.abort();
+        const options: ExportOptions = {
+            quality: selectedQuality, resolution: selectedResolution,
+            format: selectedFormat, fps: selectedFps,
+        };
+        if (mode === 'trimmed') options.segments = segments.map(segment => ({ ...segment }));
+        await operation.run(videoMetadata.blob, options, 'screen-recording');
     };
 
     return {
-        isProcessing,
-        processingProgress,
-        processingEta,
-        exportUrl,
-        exportFormat,
-        exportError,
+        isProcessing: operation.isProcessing,
+        processingProgress: operation.progress,
+        processingEta: operation.eta,
+        exportUrl: operation.output?.url ?? null,
+        exportFormat: operation.output?.format ?? selectedFormat,
+        exportError: operation.error,
         exportTrimmed: () => exportVideo('trimmed'),
         exportFull: () => exportVideo('full'),
-        cancelExport,
-        clearExportUrl: () => setExportUrl(null),
-        clearExportError: () => setExportError(null),
-        exportDownloadFileName,
+        cancelExport: operation.cancel,
+        clearExportUrl: operation.clearOutput,
+        clearExportError: operation.clearError,
+        exportDownloadFileName: operation.output?.fileName ?? generateFileName('screen-recording', selectedFormat === 'audio' ? 'm4a' : selectedFormat),
     };
-};
-
-const formatEta = (ms: number) => {
-    const totalSeconds = Math.round(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = Math.max(totalSeconds % 60, 0);
-    if (minutes > 0) return `${minutes}m ${seconds}s`;
-    return `${seconds}s`;
 };

@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const es: TranslationTable = {
+    "app.update.available": "Hay una nueva versión. Recargar restablece las ediciones sin guardar; descarga primero tu trabajo.",
+    "app.update.busy": "Actualización lista. Termina la grabación o exportación antes de recargar.",
+    "app.update.reload": "Actualizar y recargar",
+    "app.update.dismiss": "Cerrar",
+    'app.storage.saveFailed': "No se pudo guardar la grabación. Solo está disponible en esta pestaña. Descarga el original antes de cerrar o recargar.",
+    'app.storage.loadFailed': "No se pudieron restaurar las grabaciones guardadas. Las nuevas también podrían no guardarse; descarga el original como copia de seguridad.",
+    'app.storage.deleteFailed': "No se pudo eliminar la grabación guardada. El vídeo y los cambios actuales se han conservado. Inténtalo de nuevo.",
+    'app.storage.downloadOriginal': "Descargar original",
+    'export.audio.decodeFailed': "No se pudo decodificar el audio. Se detuvo la exportación para evitar perder el sonido. Prueba otro archivo o navegador.",
+    'export.audio.noTrack': "Este vídeo no tiene pista de audio. Elige un formato de vídeo.",
     'common.language': 'Idioma',
     'common.processing': 'Procesando...',
 
@@ -99,12 +109,10 @@ const es: TranslationTable = {
 
     'editor.export.title': 'Exportar',
     'editor.export.settings': 'Configuración',
-    'editor.export.quickHint': 'Alta calidad rápida: CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Alta calidad rápida: 60fps / Original',
     'editor.export.quickButton': 'Aplicar preset',
     'editor.export.estimated': 'Tamaño estimado',
     'editor.export.quality': 'Calidad',
-    'editor.export.crf': 'CRF (18-23 recomendado)',
-    'editor.export.crfHint': 'Más bajo = más calidad, archivos más grandes.',
     'editor.export.resolution': 'Resolución',
     'editor.export.resolutionOriginal': 'Original',
     'editor.export.frameRate': 'Fotogramas por segundo',

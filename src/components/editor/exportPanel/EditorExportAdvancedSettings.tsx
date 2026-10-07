@@ -24,8 +24,6 @@ interface EditorExportAdvancedSettingsProps {
     selectedFps: ExportFrameRateOption;
     onSelectFps: (fps: ExportFrameRateOption) => void;
 
-    customCrf: number;
-    onChangeCrf: (crf: number) => void;
 
     isProcessing: boolean;
 }
@@ -39,8 +37,6 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
     onSelectFormat,
     selectedFps,
     onSelectFps,
-    customCrf,
-    onChangeCrf,
     isProcessing,
 }) => {
     const { t } = useI18n();
@@ -69,30 +65,6 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                     ))}
                 </div>
                 <p className="text-[11px] text-th-tertiary">{t(`quality.${selectedQuality}.description`)}</p>
-            </div>
-
-            {/* CRF */}
-            <div className="space-y-2">
-                <label className="text-xs text-th-tertiary uppercase tracking-wide">{t('editor.export.crf')}</label>
-                <div className="flex gap-2 items-center">
-                    <input
-                        type="number"
-                        min={0}
-                        max={30}
-                        step={1}
-                        value={customCrf}
-                        onChange={(e) => {
-                            const val = Number(e.target.value);
-                            if (!Number.isFinite(val)) return;
-                            onChangeCrf(Math.min(Math.max(val, 0), 30));
-                        }}
-                        className="w-24 rounded-lg border border-th-divider bg-th-card px-3 py-2 text-sm text-th-primary focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        disabled={selectedQuality === 'lossless' || isProcessing}
-                    />
-                    <span className="text-[11px] text-th-tertiary">
-                        {t('editor.export.crfHint')}
-                    </span>
-                </div>
             </div>
 
             {/* Resolution */}

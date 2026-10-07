@@ -1,49 +1,17 @@
 # PWA
 
-ScreenClip Pro is a Progressive Web App: installable, offline-capable, and configured to **force-reload open tabs when a new version is deployed**. This document explains the configuration and what's still pending for full 2026 standard compliance.
+ScreenClip Pro is installable and offline-capable. New versions install in the background and show a localized prompt. The user confirms when to reload; unsaved editor changes reset, so the prompt asks them to download their work first.
 
-## Configuration Layer
+## Configuration and Update Flow
 
-| File | Role |
-| --- | --- |
-| [`vite.config.ts`](../vite.config.ts) | `VitePWA` plugin config: manifest, workbox glob, `registerType: 'autoUpdate'`, `injectRegister: false` |
-| [`index.html`](../index.html) | `<meta>` tags: `viewport-fit=cover`, `theme-color`, `mobile-web-app-capable`, `apple-mobile-web-app-capable`, status bar style, apple-touch-icon |
-| [`src/registerSW.ts`](../src/registerSW.ts) | Custom service-worker registration with `onNeedRefresh → updateSW(true)` for force-reload |
-| [`src/index.tsx`](../src/index.tsx) | Calls `setupServiceWorker()` after React mounts |
-| [`src/index.css`](../src/index.css) | `body` padding via `env(safe-area-inset-*)` + landscape floor for home-indicator gestures |
+- `vite.config.ts`: `registerType: 'prompt'`, `injectRegister: false`, `skipWaiting: false`, `clientsClaim: true`.
+- `src/registerSW.ts`: registers only in production, returns effect cleanup, and exposes `applyUpdate()`.
+- `src/services/serviceWorkerUpdates.ts`: native registration and waiting/installing worker listeners; hourly and visibility-triggered update checks. Already-waiting workers also trigger the banner.
+- `src/App.tsx`: localized banner in all ten languages; reload is disabled while `TaskActivity` reports active work.
 
-## Auto-Update Flow (force-reload)
+A new worker remains waiting until an idle user clicks **Update and reload**. That sends `SKIP_WAITING`; the generated worker activates and claims clients. A `controllerchange` reloads only the confirming tab if it is still idle. If work starts during activation, or another tab activates the worker, this tab shows a prompt and waits for a new local confirmation. First installation never reloads the page.
 
-The user's tab gets the new code on the next visibility tick after deploy, **without manual refresh**.
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ user has tab open running old code                                  │
-│                                                                     │
-│ visibilitychange (returns to tab)                                   │
-│      OR setInterval (1 hour)                                        │
-│      OR initial registration                                        │
-│              │                                                      │
-│              ▼                                                      │
-│ registration.update() → workbox checks server for new sw.js         │
-│              │                                                      │
-│              ▼  (new SW found, installs in background)              │
-│      onNeedRefresh fires                                            │
-│              │                                                      │
-│              ▼                                                      │
-│ updateSW(true)                                                      │
-│   ├─ posts SKIP_WAITING to new SW                                   │
-│   ├─ new SW activates (skipWaiting + clientsClaim)                  │
-│   ├─ controllerchange fires in workbox-window                       │
-│   └─ window.location.reload()        ← user sees new code           │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-The registration logic ([`registerSW.ts`](../src/registerSW.ts)) sets up three triggers:
-
-1. **Initial** — `registerSW({ immediate: true })` checks on app load
-2. **Periodic** — `setInterval(() => registration.update(), 1h)` for long-lived tabs
-3. **Visibility** — `visibilitychange` to `visible` re-checks (catches "tab was backgrounded during deploy")
+Recording leases begin before permission prompts and remain through stop/finalization. Exports and IndexedDB restore/save/delete also acquire leases. Lease release is idempotent; effect cleanup removes service-worker listeners and periodic timers, including React StrictMode remounts.
 
 ## Manifest
 
@@ -72,11 +40,11 @@ Generated from `vite.config.ts → VitePWA.manifest`:
 `workbox` (via `vite-plugin-pwa`) generates `dist/sw.js`. Behaviour:
 
 - **Precache** — all build outputs matching `**/*.{js,css,html,svg,woff2}` (≤ 5 MB each)
-- **`skipWaiting()` + `clientsClaim()`** — new SW activates immediately (paired with the force-reload above, this is safe)
+- **`skipWaiting()` message + `clientsClaim()`** — activate only after confirmation; controller changes are checked against active work.
 - **`cleanupOutdatedCaches()`** — old cache entries removed on activation
 - **`NavigationRoute → index.html`** — SPA navigation requests served from the precached `index.html`
 
-Asset URLs are hashed by Vite (e.g., `index-C1kw5Y6u.js`), so old tabs running old hashes don't 404 when the new SW activates — the old chunk is still in the previous cache long enough for the open tab to finish what it's doing before the force-reload swaps it.
+Asset URLs are hashed by Vite. The waiting worker does not take control until confirmation. Another tab can activate a new worker while this tab is busy; this tab postpones reloading and asks for local confirmation.
 
 ## Safe-area Handling
 
@@ -119,7 +87,7 @@ Cross-referenced against the **KB 2026 PWA checklist** (item `ccb5ae85`, verifie
 | `env(safe-area-inset-*)` CSS | ✅ | With landscape floor |
 | SW `skipWaiting` + `clientsClaim` | ✅ | |
 | SW `cleanupOutdatedCaches` | ✅ | |
-| **Auto-update with forced reload** | ✅ | `onNeedRefresh → updateSW(true)` |
+| **Confirmed update with active-work protection** | ✅ | Waiting worker → localized prompt → idle `SKIP_WAITING` → guarded controller change |
 | Periodic update check | ✅ | 1-hour `setInterval` + `visibilitychange` |
 | Offline fallback page (`offline.html`) | ⚠️ | Currently falls back to cached `index.html`. Dedicated `offline.html` is nicer. |
 | `beforeinstallprompt` install button UI | ❌ | |
@@ -137,4 +105,4 @@ In rough priority order for full standards compliance:
 3. **`beforeinstallprompt` UI** — a single button that calls `deferredPrompt.prompt()`. Big install-rate lever.
 4. **Dedicated `offline.html`** — nicer than serving the spinner with no data.
 
-The auto-update and safe-area behavior (the parts the user asked about) are already standard-compliant.
+Update confirmation and safe-area behavior are implemented; remaining manifest/icon/install gaps are listed above.

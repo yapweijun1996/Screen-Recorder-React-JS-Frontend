@@ -4,6 +4,16 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const id: TranslationTable = {
+    "app.update.available": "Versi baru tersedia. Memuat ulang mereset edit yang belum disimpan; unduh pekerjaan Anda dahulu.",
+    "app.update.busy": "Pembaruan siap. Selesaikan rekaman atau ekspor sebelum memuat ulang.",
+    "app.update.reload": "Perbarui dan muat ulang",
+    "app.update.dismiss": "Tutup",
+    'app.storage.saveFailed': "Rekaman tidak dapat disimpan. Rekaman hanya tersedia di tab ini. Unduh video asli sebelum menutup atau memuat ulang.",
+    'app.storage.loadFailed': "Rekaman tersimpan tidak dapat dipulihkan. Rekaman baru mungkin juga gagal disimpan; unduh video asli sebagai cadangan.",
+    'app.storage.deleteFailed': "Rekaman tersimpan tidak dapat dihapus. Video dan suntingan saat ini tetap tersedia di tab ini. Coba lagi.",
+    'app.storage.downloadOriginal': "Unduh video asli",
+    'export.audio.decodeFailed': "Audio tidak dapat didekode. Ekspor dihentikan agar suara tidak hilang. Coba berkas atau browser lain.",
+    'export.audio.noTrack': "Video ini tidak memiliki trek audio. Pilih format video.",
     'common.language': 'Bahasa',
     'common.processing': 'Memproses...',
 
@@ -99,12 +109,10 @@ const id: TranslationTable = {
 
     'editor.export.title': 'Ekspor',
     'editor.export.settings': 'Pengaturan',
-    'editor.export.quickHint': 'Kualitas tinggi cepat: CRF 20 / 60fps / Original',
+    'editor.export.quickHint': 'Kualitas tinggi cepat: 60fps / Original',
     'editor.export.quickButton': 'Terapkan preset',
     'editor.export.estimated': 'Perkiraan ukuran',
     'editor.export.quality': 'Kualitas',
-    'editor.export.crf': 'CRF (18-23 disarankan)',
-    'editor.export.crfHint': 'Semakin rendah semakin jernih, file lebih besar.',
     'editor.export.resolution': 'Resolusi',
     'editor.export.resolutionOriginal': 'Asli',
     'editor.export.frameRate': 'Frame rate',
