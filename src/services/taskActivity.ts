@@ -18,3 +18,6 @@ export class TaskActivity {
 }
 
 export const taskActivity = new TaskActivity();
+
+// Only capture sessions block navigation; exports keep their cancellation flow.
+export const recordingActivity = new TaskActivity();

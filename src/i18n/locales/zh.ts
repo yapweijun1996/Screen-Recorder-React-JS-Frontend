@@ -4,6 +4,7 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const zh: TranslationTable = {
+    "app.navigation.recordingBusy": "请先完成或取消录制准备，或停止录制，再切换页面。",
     "app.update.available": "新版本已就绪。重新载入会重置未保存的剪辑，请先下载作品。",
     "app.update.busy": "新版本已就绪，请完成录制或导出后再更新。",
     "app.update.reload": "更新并重新载入",

@@ -4,6 +4,7 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const de: TranslationTable = {
+    "app.navigation.recordingBusy": "Schließe die Aufnahmevorbereitung ab oder brich sie ab, oder stoppe die Aufnahme, bevor du die Seite wechselst.",
     "app.update.available": "Eine neue Version ist verfügbar. Beim Neuladen gehen ungespeicherte Bearbeitungen verloren; lade deine Arbeit zuerst herunter.",
     "app.update.busy": "Update bereit. Beende Aufnahme oder Export vor dem Neuladen.",
     "app.update.reload": "Aktualisieren und neu laden",

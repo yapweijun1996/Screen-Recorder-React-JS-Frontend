@@ -4,6 +4,7 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ko: TranslationTable = {
+    "app.navigation.recordingBusy": "녹화 준비를 완료하거나 취소하거나, 녹화를 중지한 후 페이지를 전환하세요.",
     "app.update.available": "새 버전이 준비되었습니다. 새로 고침하면 저장되지 않은 편집이 초기화됩니다. 먼저 작업을 다운로드하세요.",
     "app.update.busy": "업데이트 준비 완료. 녹화나 내보내기를 마친 후 새로 고침하세요.",
     "app.update.reload": "업데이트 및 새로 고침",

@@ -4,6 +4,7 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const id: TranslationTable = {
+    "app.navigation.recordingBusy": "Selesaikan atau batalkan persiapan rekaman, atau hentikan rekaman, sebelum berpindah halaman.",
     "app.update.available": "Versi baru tersedia. Memuat ulang mereset edit yang belum disimpan; unduh pekerjaan Anda dahulu.",
     "app.update.busy": "Pembaruan siap. Selesaikan rekaman atau ekspor sebelum memuat ulang.",
     "app.update.reload": "Perbarui dan muat ulang",

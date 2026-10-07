@@ -10,7 +10,7 @@ export const useSegmentsEditor = ({ maxDuration }: { maxDuration: number }) => {
     const activeSegment = safeSegments[previewIndex ?? selectedIndex];
     const selectIndex = (index: number) => { dispatchSegments({ type: 'select', index }); setPreviewIndex(null); };
     const updateSelectedSegment = (start: number, end: number) => dispatchSegments({ type: 'update', start, end, duration: maxDuration });
-    const splitSelectedAt = (time: number) => { dispatchSegments({ type: 'split', time }); setPreviewIndex(null); };
+    const splitSelectedAt = (time: number, index?: number) => { dispatchSegments({ type: 'split', time, index }); setPreviewIndex(null); };
     const deleteSelectedSegment = () => { dispatchSegments({ type: 'delete', duration: maxDuration }); setPreviewIndex(null); };
     const removeInterval = (start: number, end: number) => { dispatchSegments({ type: 'remove', start, end, duration: maxDuration }); setPreviewIndex(null); };
     const undo = () => { dispatchSegments({ type: 'undo' }); setPreviewIndex(null); };

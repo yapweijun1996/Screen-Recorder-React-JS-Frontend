@@ -6,6 +6,7 @@ import { createServer } from 'vite';
 const server = await createServer({ configFile: false, server: { middlewareMode: true, hmr: false, ws: false, watch: null }, optimizeDeps: { noDiscovery: true, include: [] } });
 after(() => server.close());
 const { RecordingSession } = await server.ssrLoadModule('/src/components/recorder/RecordingSession.ts');
+const { recordingActivity, taskActivity } = await server.ssrLoadModule('/src/services/taskActivity.ts');
 const { probeAudioTrack } = await server.ssrLoadModule('/src/services/webcodecs/audioTrackProbe.ts');
 const { openAudioSource, AudioExportError } = await server.ssrLoadModule('/src/services/webcodecs/exportAudio.ts');
 const { planDeadlines: plan, createTimeline } = await server.ssrLoadModule('/src/services/webcodecs/exportTimeline.ts');
@@ -37,9 +38,38 @@ const webm = (...types) => new Blob([
     element([0x16, 0x54, 0xae, 0x6b], ...types.map(type => element([0xae], element([0x83], Buffer.from([type]))))),
 ]);
 
+test('capture blocks navigation during setup, recording, pause and pending stop', () => {
+    const session = new RecordingSession();
+    try {
+        assert.equal(recordingActivity.isBusy(), true); // Permission dialog is pending.
+        session.recorder = { state: 'recording', stop() {} };
+        assert.equal(recordingActivity.isBusy(), true);
+        session.recorder.state = 'paused';
+        assert.equal(recordingActivity.isBusy(), true);
+        session.recorder.state = 'inactive'; // Final data and onstop still pending.
+        assert.equal(recordingActivity.isBusy(), true);
+    } finally { session.release(); }
+    assert.equal(recordingActivity.isBusy(), false);
+});
+
+test('unrelated activity and released sessions do not lock navigation', () => {
+    const endExport = taskActivity.begin();
+    const first = new RecordingSession();
+    const second = new RecordingSession();
+    try {
+        first.release();
+        first.release();
+        assert.equal(recordingActivity.isBusy(), true);
+        second.release();
+        assert.equal(recordingActivity.isBusy(), false);
+        assert.equal(taskActivity.isBusy(), true);
+    } finally { first.release(); second.release(); endExport(); }
+});
+
 for (const reason of ['normal completion', 'empty recording', 'permission failure', 'unmount']) {
     test(`releases raw and derived streams on ${reason}`, () => {
         const session = new RecordingSession();
+        assert.equal(recordingActivity.isBusy(), true);
         const tracks = Array.from({ length: 5 }, track);
         tracks.slice(0, 3).forEach(item => session.ownStream(stream(item)));
         let compositorStops = 0;
@@ -53,6 +83,7 @@ for (const reason of ['normal completion', 'empty recording', 'permission failur
         session.recorder = recorder;
         session.release();
         session.release();
+        assert.equal(recordingActivity.isBusy(), false);
         assert.ok(tracks.every(item => item.stops === 1 && item.onended === null));
         assert.equal(recorder.state, 'inactive');
         assert.equal(recorder.onstop, null);

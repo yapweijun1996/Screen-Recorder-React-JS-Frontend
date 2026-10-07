@@ -11,7 +11,7 @@ import { Converter } from './components/Converter';
 import { setupServiceWorker, applyUpdate } from './registerSW';
 import { EditorDraftProvider } from './components/editor/EditorDraftContext';
 import { useVideoSession } from './components/useVideoSession';
-import { taskActivity } from './services/taskActivity';
+import { recordingActivity, taskActivity } from './services/taskActivity';
 import { StorageNotice } from './components/StorageNotice';
 
 type Page = 'recorder' | 'converter';
@@ -20,6 +20,7 @@ const App: React.FC = () => {
     const { t } = useI18n();
     const { status, videoData, errorMsg, setErrorMsg, storageIssue, isLoadingStored, handleRecordingComplete, handleReset } = useVideoSession(t);
     const updateBusy = useSyncExternalStore(taskActivity.subscribe, taskActivity.isBusy, () => false);
+    const recordingBusy = useSyncExternalStore(recordingActivity.subscribe, recordingActivity.isBusy, () => false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const [page, setPage] = useState<Page>(() => {
         const p = new URLSearchParams(window.location.search).get('page');
@@ -75,8 +76,13 @@ const App: React.FC = () => {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setPage('converter')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            disabled={recordingBusy}
+                            title={recordingBusy ? t('app.navigation.recordingBusy') : undefined}
+                            onClick={() => {
+                                // Check the live lease too: capture can begin before React rerenders.
+                                if (!recordingActivity.isBusy()) setPage('converter');
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                 page === 'converter'
                                     ? 'bg-indigo-600 text-white shadow'
                                     : 'text-th-secondary hover:text-th-primary'

@@ -4,6 +4,7 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ja: TranslationTable = {
+    "app.navigation.recordingBusy": "録画の準備を完了またはキャンセルするか、録画を停止してからページを切り替えてください。",
     "app.update.available": "新しいバージョンがあります。再読み込みで未保存の編集がリセットされるため、先に作品をダウンロードしてください。",
     "app.update.busy": "更新準備完了。録画やエクスポートを終えてから再読み込みしてください。",
     "app.update.reload": "更新して再読み込み",

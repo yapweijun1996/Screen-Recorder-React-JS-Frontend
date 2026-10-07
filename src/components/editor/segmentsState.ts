@@ -1,6 +1,6 @@
 import type { TrimRange } from '../../types';
 
-const MIN_HANDLE_GAP_SECONDS = 0.5;
+export const MIN_HANDLE_GAP_SECONDS = 0.5;
 const MIN_KEEP_SEGMENT_SECONDS = 0.1;
 const MIN_REMOVE_RANGE_SECONDS = 0.1;
 const MAX_HISTORY = 20;
@@ -15,7 +15,7 @@ export interface SegmentsState {
 export type SegmentAction =
     | { type: 'select'; index: number }
     | { type: 'undo' }
-    | { type: 'split'; time: number }
+    | { type: 'split'; time: number; index?: number }
     | { type: 'update' | 'remove'; start: number; end: number; duration: number }
     | { type: 'delete' | 'reset' | 'syncDuration'; duration: number };
 
@@ -36,7 +36,9 @@ function commit(state: SegmentsState, segments: TrimRange[], index = state.selec
 // Segment edits and undo history share one atomic state update. This also keeps
 // React's repeated updater checks from recording the same edit twice.
 export function segmentsReducer(state: SegmentsState, action: SegmentAction): SegmentsState {
-    const { segments, selectedIndex: index } = state;
+    const { segments } = state;
+    // Pointer cuts target the clicked clip atomically; keyboard cuts use selection.
+    const index = action.type === 'split' ? action.index ?? state.selectedIndex : state.selectedIndex;
     const selected = segments[index];
     switch (action.type) {
         case 'select': return { ...state, selectedIndex: clampIndex(action.index, segments) };

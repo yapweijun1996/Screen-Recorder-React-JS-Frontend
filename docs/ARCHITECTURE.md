@@ -44,8 +44,12 @@ Output of the recorder is a `Blob` (WebM/VP9 on Chrome, WebM/VP8 on Firefox), sa
 - [`src/components/editor/EditorPlayer.tsx`](../src/components/editor/EditorPlayer.tsx) — `<video>` playback, playhead sync
 - [`src/components/editor/SegmentsTimeline.tsx`](../src/components/editor/SegmentsTimeline.tsx) + [`ProTimeline.tsx`](../src/components/editor/ProTimeline.tsx) — timeline with keep/remove segments, drag-to-trim
 - [`src/components/editor/EditorTrimPanel.tsx`](../src/components/editor/EditorTrimPanel.tsx) — segment list + manual trim entry
+- [`src/components/editor/useClipTrim.ts`](../src/components/editor/useClipTrim.ts) — pointer-captured trim previews with a frozen zoom scale, adjacent-clip limits and one undo entry per completed drag; cancelled gestures discard the preview
+- [`src/components/editor/useTimelineInteraction.ts`](../src/components/editor/useTimelineInteraction.ts) — sequence/source coordinate mapping, zoom and timeline interaction; `TimelineActions.tsx` renders the timeline action buttons
 - [`src/components/editor/EditorExportPanel.tsx`](../src/components/editor/EditorExportPanel.tsx) — quality / resolution / fps / format picker
 - [`src/components/editor/useEditorExportController.ts`](../src/components/editor/useEditorExportController.ts) — drives the export: builds `ExportOptions`, calls `exportService.processVideo()`, shows progress
+
+Blade clicks convert the clicked clip rectangle to its source timestamp and pass the clip index with the split action. The reducer splits that clip atomically even when another clip is selected. Ruler clicks use the sequence/source mapping; keyboard and toolbar splits continue to use the selected clip. Blade mode hides trim handles to keep the click target unambiguous.
 
 ### Services
 
@@ -93,6 +97,8 @@ getUserMedia  ──┘   (canvas mix)         playback                    ─�
 ## Recording Lifecycle
 
 `RecordingSession` owns every acquired screen, microphone and camera stream, the derived recording stream, compositor, audio mix and MediaRecorder callbacks. Completion, empty output, startup failure and component unmount share idempotent cleanup. It rejects and releases permission/composition results arriving after disposal, preventing a page switch from retaining device capture or firing late completion callbacks.
+
+A separate `recordingActivity` lease disables navigation to the converter from the initial permission prompt through recording, pauses and stop finalization. The navigation handler also checks the live lease before changing pages. Completion or startup failure releases this protection; export activity does not block navigation.
 
 Export quality presets control bitrate. CRF is not part of the export contract or user interface.
 

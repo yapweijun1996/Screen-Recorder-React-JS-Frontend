@@ -1,11 +1,12 @@
 import type { StreamCompositor } from '../../utils/StreamCompositor';
-import { taskActivity } from '../../services/taskActivity';
+import { recordingActivity, taskActivity } from '../../services/taskActivity';
 import { closeAudioMix, stopTracks, type AudioMix } from './recorderControllerUtils';
 
 /** Owns raw device streams as well as the derived recording stream. */
 export class RecordingSession {
     private streams = new Set<MediaStream>();
     private endActivity = taskActivity.begin();
+    private endRecordingActivity = recordingActivity.begin();
     recorder: MediaRecorder | null = null;
     compositor: StreamCompositor | null = null;
     audioMix: AudioMix | null = null;
@@ -41,6 +42,7 @@ export class RecordingSession {
         if (this.disposed) return;
         this.disposed = true;
         this.endActivity();
+        this.endRecordingActivity();
         // Detach callbacks before stopping tracks, preventing late finalization
         // from replacing the page the user navigated to.
         if (this.recorder) {

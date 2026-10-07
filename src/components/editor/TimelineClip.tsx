@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { TrimRange } from '../../types';
 import { formatTime } from '../../utils/format';
+import { useClipTrim } from './useClipTrim';
 
 interface TimelineClipProps {
     segment: TrimRange;
@@ -10,6 +11,10 @@ interface TimelineClipProps {
     widthPct: number;
     onSelect: () => void;
     maxDuration: number;
+    trimBounds: TrimRange;
+    onTrim?: (start: number, end: number) => void;
+    isBlade?: boolean;
+    onBladeClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 /**
@@ -24,7 +29,15 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
     widthPct,
     onSelect,
     maxDuration,
+    trimBounds,
+    onTrim,
+    isBlade = false,
+    onBladeClick,
 }) => {
+    const { preview, handleProps } = useClipTrim({ segment, bounds: trimBounds, displayDuration: maxDuration, onTrim });
+    const displayed = preview ?? segment;
+    const previewLeft = leftPct + ((displayed.start - segment.start) / maxDuration) * 100;
+    const previewWidth = preview ? ((displayed.end - displayed.start) / maxDuration) * 100 : widthPct;
     // 生成伪波形数据 - 使用确定性种子
     const waveformBars = useMemo(() => {
         const barCount = Math.max(8, Math.min(60, Math.floor(widthPct * 1.5)));
@@ -44,7 +57,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
         return bars;
     }, [segment.start, segment.end, index, widthPct]);
 
-    const duration = segment.end - segment.start;
+    const duration = displayed.end - displayed.start;
     const durationLabel = formatTime(duration);
 
     return (
@@ -52,18 +65,22 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
             type="button"
             onClick={(e) => {
                 e.stopPropagation();
-                onSelect();
+                if (isBlade) {
+                    // Keyboard activation has no pointer position to cut at.
+                    if (e.detail > 0) onBladeClick?.(e);
+                } else onSelect();
             }}
             className={`
                 absolute top-1 bottom-1 rounded-md
                 transition-all duration-150 ease-out
                 group overflow-hidden
+                ${isBlade ? 'cursor-crosshair' : ''}
                 ${isSelected
                     ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-th-deep z-20 shadow-lg shadow-yellow-500/20'
                     : 'hover:ring-1 hover:ring-purple-400/50 z-10'
                 }
             `}
-            style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+            style={{ left: `${previewLeft}%`, width: `${previewWidth}%`, transition: preview ? 'none' : undefined }}
             title={`#${index + 1}: ${formatTime(segment.start)} - ${formatTime(segment.end)} (${durationLabel})`}
         >
             {/* 背景渐变层 */}
@@ -134,10 +151,10 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
             )}
 
             {/* Trim Handles - 仅选中时显示 */}
-            {isSelected && (
+            {isSelected && !isBlade && (
                 <>
                     {/* 左侧手柄 */}
-                    <div className="
+                    <div {...handleProps('start')} className="
                         absolute left-0 top-0 bottom-0 w-2
                         bg-gradient-to-r from-yellow-400 to-yellow-400/50
                         rounded-l-md cursor-ew-resize
@@ -149,7 +166,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
                     </div>
 
                     {/* 右侧手柄 */}
-                    <div className="
+                    <div {...handleProps('end')} className="
                         absolute right-0 top-0 bottom-0 w-2
                         bg-gradient-to-l from-yellow-400 to-yellow-400/50
                         rounded-r-md cursor-ew-resize

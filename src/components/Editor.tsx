@@ -253,7 +253,13 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                             }
                         }}
                         onSeek={handleSeek}
-                        onSplitAt={(time) => splitSelectedAt(time)}
+                        onTrimSegment={(start, end) => {
+                            videoRef.current?.pause();
+                            setPreviewIndex(null);
+                            updateSelectedSegment(start, end);
+                            handleSeek(Math.max(start, Math.min(currentTime, end)));
+                        }}
+                        onSplitAt={splitSelectedAt}
                         onDeleteSelected={() => {
                             const newIdx = Math.max(0, selectedIndex - 1);
                             const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
