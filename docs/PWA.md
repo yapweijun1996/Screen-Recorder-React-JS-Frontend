@@ -21,6 +21,7 @@ Generated from `vite.config.ts → VitePWA.manifest`:
 {
   "name": "ScreenClip Pro",
   "short_name": "ScreenClip",
+  "id": "./",
   "description": "Professional screen recording and video editing in your browser",
   "theme_color": "#0f172a",
   "background_color": "#0f172a",
@@ -29,17 +30,27 @@ Generated from `vite.config.ts → VitePWA.manifest`:
   "scope": "./",
   "start_url": "./",
   "icons": [
-    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
 ```
+
+The relative identity, start URL and scope resolve under the deployment directory, including the GitHub Pages project subpath. The HTML uses a separate 180px Apple touch icon.
+
+## Install and open offline
+
+- In Chrome on desktop, open the hosted page and use the address-bar install action when offered, or open the browser menu and choose **Install page as app**. [Chrome installation instructions](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en)
+- In Safari on iPhone, open the page's share menu, choose **Add to Home Screen**, and enable **Open as Web App** where the option is available. [Safari installation instructions](https://support.apple.com/en-ie/guide/iphone/iphea86e5236/27/ios/27)
+- Firefox for Windows offers web app installation in supported versions. [Firefox installation instructions](https://support.mozilla.org/en-US/kb/web-apps-firefox-windows)
+- Open the site online at least once and wait for the service worker to take control before reopening without a connection. An initial visit needs the origin to supply the app. Installation and offline launch are separate from screen capture and codec support.
 
 ## Service Worker Caching
 
 `workbox` (via `vite-plugin-pwa`) generates `dist/sw.js`. Behaviour:
 
-- **Precache** — all build outputs matching `**/*.{js,css,html,svg,woff2}` (≤ 5 MB each)
+- **Precache** — eligible build outputs matching `**/*.{js,css,html,svg,png,woff2,txt}` (≤ 5 MB each)
 - **`skipWaiting()` message + `clientsClaim()`** — activate only after confirmation; controller changes are checked against active work.
 - **`cleanupOutdatedCaches()`** — old cache entries removed on activation
 - **`NavigationRoute → index.html`** — SPA navigation requests served from the precached `index.html`
@@ -77,9 +88,9 @@ Cross-referenced against the **KB 2026 PWA checklist** (item `ccb5ae85`, verifie
 | Category | Status | Notes |
 | --- | --- | --- |
 | Manifest core (name/short_name/start_url/scope/display/colors) | ✅ | |
-| Manifest `id` field | ❌ | Recommended 2024+ to prevent duplicate installs |
-| Icons — PNG fallback (192 / 512 / 180 apple-touch) | ❌ | **Only SVG present.** iOS shows blank on home screen. |
-| Maskable icon — separate file with safe zone | ❌ | Uses same SVG with `purpose: 'maskable'` — should be a padded PNG |
+| Manifest `id` field | ✅ | Uses the application directory as its identity |
+| Icons — PNG fallback (192 / 512 / 180 apple-touch) | ✅ | PNG assets are packaged under `public/icons/` |
+| Maskable icon — separate file with safe zone | ✅ | Dedicated 512px asset |
 | iOS splash screens | ❌ | |
 | `viewport-fit=cover` | ✅ | |
 | `apple-mobile-web-app-capable` + `mobile-web-app-capable` | ✅ | Both present |
@@ -96,13 +107,6 @@ Cross-referenced against the **KB 2026 PWA checklist** (item `ccb5ae85`, verifie
 | Window Controls Overlay | ❌ | Desktop PWA polish |
 | Badging API | ❌ | Not applicable for this app |
 
-## What's Still Pending
+## Verification
 
-In rough priority order for full standards compliance:
-
-1. **PNG icons (192, 512, 180 apple-touch)** — biggest gap; iOS users see blank. Run favicon.svg through https://realfavicongenerator.net, drop the outputs into `public/`, and add a third entry to `manifest.icons`.
-2. **Manifest `id`** — `"id": "/"` is enough to prevent the "two installs from one origin" quirk.
-3. **`beforeinstallprompt` UI** — a single button that calls `deferredPrompt.prompt()`. Big install-rate lever.
-4. **Dedicated `offline.html`** — nicer than serving the spinner with no data.
-
-Update confirmation and safe-area behavior are implemented; remaining manifest/icon/install gaps are listed above.
+Local Chromium verification served the production build under the project subpath. It confirmed the manifest identity, launch URL, scope, all four icon dimensions, and cached navigation with the origin disconnected. A fresh profile could not load the first visit while the origin was unavailable. Browser-menu installation and launch from a system icon remain manual device checks.

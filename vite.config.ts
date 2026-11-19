@@ -17,10 +17,17 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,
-        includeAssets: ['favicon.svg'],
+        includeAssets: [
+          'favicon.svg',
+          'icons/icon-192.png',
+          'icons/icon-512.png',
+          'icons/maskable-icon-512.png',
+          'icons/apple-touch-icon.png',
+        ],
         manifest: {
           name: 'ScreenClip Pro',
           short_name: 'ScreenClip',
+          id: base,
           description: 'Professional screen recording and video editing in your browser',
           theme_color: '#0f172a',
           background_color: '#0f172a',
@@ -30,15 +37,21 @@ export default defineConfig(() => {
           start_url: base,
           icons: [
             {
-              src: 'favicon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
+              src: 'icons/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
               purpose: 'any',
             },
             {
-              src: 'favicon.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
+              src: 'icons/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: 'icons/maskable-icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
               purpose: 'maskable',
             },
           ],
@@ -46,7 +59,7 @@ export default defineConfig(() => {
         workbox: {
           skipWaiting: false,
           clientsClaim: true,
-          globPatterns: ['**/*.{js,css,html,svg,woff2,txt}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,woff2,txt}'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
       }),
