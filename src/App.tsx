@@ -4,10 +4,11 @@ import { Recorder } from './components/Recorder';
 import { Editor } from './components/Editor';
 import { EngineStatus } from './components/EngineStatus';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Layers, Loader2, RefreshCw, Video, FileVideo } from 'lucide-react';
+import { Layers, Loader2, RefreshCw, Video, FileVideo, FileAudio } from 'lucide-react';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
 import { Converter, type ConverterStatus } from './components/Converter';
+import { Mp3Transcriber } from './components/Mp3Transcriber';
 import {
     APP_BUILD_VERSION,
     applyUpdate,
@@ -21,7 +22,12 @@ import { useVideoSession } from './components/useVideoSession';
 import { recordingActivity, taskActivity } from './services/taskActivity';
 import { StorageNotice } from './components/StorageNotice';
 
-type Page = 'recorder' | 'converter';
+const navigation = [
+    { id: 'recorder', label: 'app.title', Icon: Video },
+    { id: 'converter', label: 'converter.nav', Icon: FileVideo },
+    { id: 'transcriber', label: 'converter.transcript.title', Icon: FileAudio },
+] as const;
+type Page = typeof navigation[number]['id'];
 const checkFeedback = {
     available: '',
     installing: 'app.update.installing',
@@ -70,7 +76,7 @@ const App: React.FC = () => {
     const [checkStatus, setCheckStatus] = useState<UpdateCheckResult['status'] | null>(null);
     const [page, setPage] = useState<Page>(() => {
         const p = new URLSearchParams(window.location.search).get('page');
-        return p === 'converter' ? 'converter' : 'recorder';
+        return navigation.find(({ id }) => id === p)?.id ?? 'recorder';
     });
 
     useEffect(() => {
@@ -97,14 +103,14 @@ const App: React.FC = () => {
         }
     };
 
-    const navigateToConverter = () => {
+    const navigate = (next: Page) => {
         // Check the live lease too: capture can begin before React rerenders.
-        if (!recordingActivity.isBusy()) setPage('converter');
+        if (next === 'recorder' || !recordingActivity.isBusy()) setPage(next);
     };
 
     const isEditorMode = status === AppStatus.REVIEWING && videoData;
     // Converter tab overrides editor — user can still access it mid-session.
-    const showEditor = !!isEditorMode && page !== 'converter';
+    const showEditor = !!isEditorMode && page === 'recorder';
     const converterHasUndownloadedResult = converterStatus === 'undownloaded';
     const updateBlocked = updateBusy || converterStatus === 'converting' || converterHasUndownloadedResult;
 
@@ -122,8 +128,8 @@ const App: React.FC = () => {
     return (
         <div className={`bg-th-base text-th-primary font-sans selection:bg-indigo-500 selection:text-white flex flex-col ${showEditor ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
             {/* Header */}
-            <header className={`border-b border-th-edge bg-th-surface/80 backdrop-blur-md sticky top-0 z-50 flex-shrink-0 ${showEditor ? 'h-12' : 'h-16'}`}>
-                <div className={`${showEditor ? 'px-4' : 'max-w-7xl mx-auto px-4'} h-full flex items-center justify-between`}>
+            <header className={`border-b border-th-edge bg-th-surface/80 backdrop-blur-md sticky top-0 z-50 flex-shrink-0 ${showEditor ? 'lg:h-12' : 'lg:h-16'}`}>
+                <div className={`${showEditor ? 'px-4' : 'max-w-7xl mx-auto px-4'} flex flex-wrap items-center justify-between gap-y-2 py-2 lg:h-full lg:flex-nowrap lg:gap-x-4 lg:py-0`}>
                     <div className="flex items-center gap-2">
                         <div className={`bg-gradient-to-br from-indigo-500 to-purple-600 ${showEditor ? 'p-1.5' : 'p-2'} rounded-lg shadow-lg shadow-indigo-500/20`}>
                             <Layers size={showEditor ? 18 : 24} className="text-white" />
@@ -134,37 +140,30 @@ const App: React.FC = () => {
                     </div>
 
                     {/* Page nav tabs — always visible */}
-                    <nav className="flex items-center gap-1 bg-th-card border border-th-edge rounded-xl p-1">
-                        <button
-                            type="button"
-                            onClick={() => setPage('recorder')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                page === 'recorder'
-                                    ? 'bg-indigo-600 text-white shadow'
-                                    : 'text-th-secondary hover:text-th-primary'
-                            }`}
-                        >
-                            <Video size={13} />
-                            {t('app.title')}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={recordingBusy}
-                            title={recordingBusy ? t('app.navigation.recordingBusy') : undefined}
-                            onClick={navigateToConverter}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                                page === 'converter'
-                                    ? 'bg-indigo-600 text-white shadow'
-                                    : 'text-th-secondary hover:text-th-primary'
-                            }`}
-                        >
-                            <FileVideo size={13} />
-                            {t('converter.nav')}
-                        </button>
+                    <nav className="order-last flex w-full flex-wrap items-center justify-center gap-1 rounded-xl border border-th-edge bg-th-card p-1 lg:order-none lg:w-auto">
+                        {navigation.map(({ id, Icon, label }) => {
+                            const disabled = recordingBusy && id !== 'recorder';
+                            return (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    disabled={disabled}
+                                    title={disabled ? t('app.navigation.recordingBusy') : undefined}
+                                    aria-current={page === id ? 'page' : undefined}
+                                    onClick={() => navigate(id)}
+                                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 ${
+                                        page === id ? 'bg-indigo-600 text-white shadow' : 'text-th-secondary hover:text-th-primary'
+                                    }`}
+                                >
+                                    <Icon size={13} aria-hidden="true" />
+                                    {t(label)}
+                                </button>
+                            );
+                        })}
                     </nav>
 
-                    <div className="flex items-center gap-3">
-                        <EngineStatus />
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="hidden sm:block"><EngineStatus /></div>
                         <ThemeToggle />
                         <LanguageSelector />
                     </div>
@@ -219,16 +218,13 @@ const App: React.FC = () => {
             {/* Keep the converter mounted while pages and recording drafts change. */}
             <section className={`${page === 'converter' ? 'flex' : 'hidden'} flex-1 flex-col`}>
                 <Converter onStatusChange={setConverterStatus} />
-                <AppFooter
-                    t={t}
-                    releaseVersion={currentReleaseVersion}
-                    checkingUpdates={checkingUpdates}
-                    onCheckForUpdates={handleCheckForUpdates}
-                    checkStatus={checkStatus}
-                />
             </section>
 
-            <section className={`${page === 'converter' ? 'hidden' : 'flex'} flex-1 flex-col min-h-0`}>
+            <section className={`${page === 'transcriber' ? 'flex' : 'hidden'} flex-1 flex-col`}>
+                <Mp3Transcriber />
+            </section>
+
+            <section className={`${page === 'recorder' ? 'flex' : 'hidden'} flex-1 flex-col min-h-0`}>
                 {/* Keep the draft owner mounted while recorder/editor pages change. */}
                 <EditorDraftProvider
                     key={videoData?.recordingId ?? videoData?.url ?? 'empty'}
@@ -236,13 +232,12 @@ const App: React.FC = () => {
                     recordingId={videoData?.recordingId}
                 >
                     <TranscriptionProvider blob={videoData?.blob ?? null}>
-                        {page !== 'converter' && (showEditor ? (
+                        {page === 'recorder' && (showEditor ? (
                             <Editor
                                 videoMetadata={videoData!}
                                 onReset={handleReset}
                             />
                         ) : (
-                            <>
                                 <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
                                     <div className="flex-1 flex flex-col">
                                         {status === AppStatus.IDLE && (
@@ -263,19 +258,17 @@ const App: React.FC = () => {
                                         )}
                                     </div>
                                 </main>
-
-                                <AppFooter
-                                    t={t}
-                                    releaseVersion={currentReleaseVersion}
-                                    checkingUpdates={checkingUpdates}
-                                    onCheckForUpdates={handleCheckForUpdates}
-                                    checkStatus={checkStatus}
-                                />
-                            </>
                         ))}
                     </TranscriptionProvider>
                 </EditorDraftProvider>
             </section>
+            {!showEditor && <AppFooter
+                t={t}
+                releaseVersion={currentReleaseVersion}
+                checkingUpdates={checkingUpdates}
+                onCheckForUpdates={handleCheckForUpdates}
+                checkStatus={checkStatus}
+            />}
         </div>
     );
 };

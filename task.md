@@ -6,6 +6,14 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Add a top-level MP3 to Text tab
+
+- The new tab accepts a local MP3 directly and opens the existing on-device transcription dialog. An active job and undownloaded text stay with the selected file across app tab switches.
+- The converter retains its MP3 result shortcut. Both tools are available from the responsive top navigation. [Feature map](FEATURES_MAP.md#converter-and-app-controls)
+- Chromium verified direct bilingual MP3 transcription, edited TXT download, tab switching, and the reload and discard guards. Its recording and conversion regression suite also passed, alongside TypeScript, 147 Node tests, and the production build.
+
+---
+
 ## 2026-11-19 — Add MP3 to Text to conversion results
 
 - Added **MP3 to Text** to the converter's MP3 result card. The existing local speech model processes the audio already in memory. Users can choose a language, edit the transcript, and download TXT or SRT.

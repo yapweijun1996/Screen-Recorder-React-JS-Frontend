@@ -11,7 +11,7 @@ This index maps user actions to the screens and code that implement them. Paths 
 
 ## Navigation
 
-[App.tsx](src/App.tsx#L25) opens the recording surface by default and accepts `?page=converter` on initial load. Use the **ScreenClip Pro** and **WebM Converter** tabs in the header to switch surfaces. The **ScreenClip Pro** tab shows **Edit & Export** when a finished recording is loaded. The converter tab is disabled during capture setup, recording, pause, and capture finalization. Local files selected in the converter go through the conversion workflow. The editor opens a newly completed recording or the saved original. [Navigation controls](src/App.tsx#L63) · [Editor and converter branches](src/App.tsx#L139)
+Use the **ScreenClip Pro**, **WebM Converter**, and **MP3 to Text** tabs in the header. The app opens the recording surface by default. Open the converter or standalone transcriber directly with `?page=converter` or `?page=transcriber` when loading the app. The recorder tab shows **Edit & Export** when a finished recording is loaded. Both other tabs are disabled during capture setup, recording, pause, and capture finalization. [Navigation and page selection](src/App.tsx)
 
 ## Capture and local recordings
 
@@ -47,6 +47,8 @@ Use **Generate captions** to transcribe the original recording in the browser. C
 | `editor.download-original` | **Edit & Export → Export → Download Original (WebM)** | A current recording. Downloads the original WebM without encoding, including when the playback check fails. After a processed result is ready, use **Export another version** to return to the original download action. | The action is unavailable when no recording is loaded because the editor is hidden. | [Original download](src/components/editor/exportPanel/EditorExportFooterActions.tsx#L25), [Export result](src/components/editor/exportPanel/EditorExportStatus.tsx), [Editor visibility](src/App.tsx#L35) |
 
 ## Converter and app controls
+
+**MP3 to Text** is also a top-level tab. Choose or drop a local MP3 to create editable text and download TXT or SRT. The converted-audio shortcut remains available on the MP3 result card. [Standalone transcription](src/components/Mp3Transcriber.tsx) · [Result actions](src/components/ConverterResult.tsx)
 
 | Feature ID | User entry | Prerequisites and expected result | Negative case | Source |
 | --- | --- | --- | --- | --- |

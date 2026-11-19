@@ -134,7 +134,7 @@ def convert_fixture(page, fixture, audio, drop=False):
             }""", {"encoded": encoded, "name": fixture.name},
         )
     else:
-        page.locator('input[type="file"]').set_input_files(fixture)
+        page.get_by_role('main').locator('input[type="file"]').set_input_files(fixture)
     page.get_by_role("button", name="Convert to MP4").click()
     download = page.locator("a[download]")
     retry = page.get_by_role("button", name="Convert to MP4")
@@ -190,7 +190,7 @@ def converter_and_offline(browser, url, fixtures, offline):
     try:
         page = context.new_page()
         page.goto(url + "?page=converter")
-        expect(page.locator('input[type="file"]')).to_be_attached()
+        expect(page.get_by_role('main').locator('input[type="file"]')).to_be_attached()
         codec = page.get_by_text("H.264 Ready", exact=True).or_(
             page.get_by_text("VP8 Ready", exact=True)
         ).or_(page.get_by_text("Engine Error", exact=True))
@@ -211,7 +211,7 @@ def converter_and_offline(browser, url, fixtures, offline):
         offline.set()
         try:
             page.reload()
-            expect(page.locator('input[type="file"]')).to_be_attached()
+            expect(page.get_by_role('main').locator('input[type="file"]')).to_be_attached()
             fresh = browser.new_context()
             try:
                 try:

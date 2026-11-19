@@ -15,7 +15,7 @@ const code = ts.transpileModule(readFileSync(new URL('../src/App.tsx', import.me
 
 // Exercise App's actual button handlers with an isolated render and real leases.
 // Device APIs and persistence are outside this navigation regression's scope.
-function renderNavigation() {
+function renderNavigation(label = 'converter.nav', search = '') {
     let page = 'recorder';
     const react = {
         createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
@@ -32,7 +32,7 @@ function renderNavigation() {
     };
     const exports = {};
     vm.runInNewContext(code, {
-        exports, URLSearchParams, window: { location: { search: '' } },
+        exports, URLSearchParams, window: { location: { search } },
         require: name => dependencies[name] ?? new Proxy({}, { get: () => () => null }),
     });
     const nodes = [];
@@ -41,7 +41,7 @@ function renderNavigation() {
         else if (value && typeof value === 'object') { nodes.push(value); visit(value.props?.children); }
     };
     visit(exports.default());
-    return { button: nodes.find(node => node.type === 'button' && node.props.children.includes('converter.nav')), page: () => page };
+    return { button: nodes.find(node => node.type === 'button' && node.props.children.includes(label)), page: () => page };
 }
 
 test('converter navigation remains blocked until capture releases its session', () => {
@@ -69,4 +69,18 @@ test('export activity does not disable converter navigation', () => {
         view.button.props.onClick();
         assert.equal(view.page(), 'converter');
     } finally { endExport(); }
+});
+
+test('MP3 transcription is a direct page and respects the recording guard', () => {
+    const label = 'converter.transcript.title';
+    const idle = renderNavigation(label);
+    assert.equal(renderNavigation(label, '?page=transcriber').button.props['aria-current'], 'page');
+    const session = new RecordingSession();
+    try {
+        assert.equal(renderNavigation(label).button.props.disabled, true);
+        idle.button.props.onClick();
+        assert.equal(idle.page(), 'recorder');
+    } finally { session.release(); }
+    idle.button.props.onClick();
+    assert.equal(idle.page(), 'transcriber');
 });

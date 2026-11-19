@@ -12,7 +12,7 @@ def check_mp3(browser, url, with_audio, silent):
     try:
         page = context.new_page()
         page.goto(url + "?page=converter")
-        page.locator('input[type="file"]').set_input_files(with_audio)
+        page.get_by_role('main').locator('input[type="file"]').set_input_files(with_audio)
         mp3 = page.get_by_role("radio", name="MP3 Audio only")
         page.get_by_role("radio", name="MP4 Video").press("ArrowRight")
         expect(mp3).to_be_checked()
@@ -24,7 +24,7 @@ def check_mp3(browser, url, with_audio, silent):
             link.click()
         output = inspect_mp3(ready.value)
         page.get_by_role("button", name="Convert another file").click()
-        page.locator('input[type="file"]').set_input_files(silent)
+        page.get_by_role('main').locator('input[type="file"]').set_input_files(silent)
         expect(mp3).to_be_checked()
         convert.click()
         expect(page.get_by_role("alert")).to_contain_text("This video has no audio track")
@@ -47,7 +47,7 @@ def check_converter_lifetime(browser, url, fixture):
     try:
         page = context.new_page()
         page.goto(url + "?page=converter")
-        page.locator('input[type="file"]').set_input_files(fixture)
+        page.get_by_role('main').locator('input[type="file"]').set_input_files(fixture)
         page.get_by_role("button", name="Convert to MP4").click()
         cancel = page.get_by_role("button", name="Cancel", exact=True)
         expect(cancel).to_be_visible()
@@ -80,7 +80,7 @@ def check_converter_lifetime(browser, url, fixture):
         result = inspect_download(ready.value, audio=True)
         expect(page.get_by_text("Download the result before closing", exact=False)).to_be_hidden()
         page.reload(wait_until="domcontentloaded")
-        expect(page.locator('input[type="file"]')).to_be_attached()
+        expect(page.get_by_role('main').locator('input[type="file"]')).to_be_attached()
         return {"conversion_across_surfaces": result, "discard_and_reload_guards": "passed"}
     finally:
         context.close()

@@ -9,13 +9,14 @@ export interface TranscriptPanelProps {
     /** Move the editor player to a caption's start time. */
     onSeek?: (seconds: number) => void;
     titleKey?: string;
+    initiallyOpen?: boolean;
 }
 
 /** Entry point for the local caption generator. The dialog owns its workflow UI. */
-export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({ onSeek, titleKey = 'editor.transcript.title' }) => {
+export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({ onSeek, titleKey = 'editor.transcript.title', initiallyOpen = false }) => {
     const { t } = useI18n();
     const transcription = useTranscription();
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(initiallyOpen);
     const [language, setLanguage] = useState<Language>('auto');
     const triggerRef = useRef<HTMLButtonElement>(null);
     const close = useCallback(() => {

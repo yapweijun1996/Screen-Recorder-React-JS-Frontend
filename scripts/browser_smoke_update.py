@@ -40,7 +40,7 @@ def check_versions(browser, url, site, next_build, fixtures, current, target):
         check.click()
         expect(page.get_by_text(re.compile(r"up to date", re.I))).to_be_visible()
 
-        page.locator('input[type="file"]').set_input_files(fixtures)
+        page.get_by_role('main').locator('input[type="file"]').set_input_files(fixtures)
         page.get_by_role("button", name="Convert to MP4").click()
         download = page.get_by_role("link", name="Download MP4")
         expect(download).to_be_visible(timeout=30_000)
