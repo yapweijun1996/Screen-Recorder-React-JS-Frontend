@@ -1,4 +1,10 @@
 import { PIPConfig, PIPPosition } from '../types';
+import { resumeAudioContext } from './audioContext';
+import { calculatePIPCoords } from './pipCoordinates';
+
+export class StreamCompositorError extends Error {
+    name = 'StreamCompositorError';
+}
 
 export interface CompositionOptions {
     width: number;
@@ -101,7 +107,8 @@ export class StreamCompositor {
         try {
             await this.screenVideo.play();
         } catch (err) {
-            console.warn('StreamCompositor: screenVideo.play() failed', err);
+            this.stop();
+            throw new StreamCompositorError('Screen capture video could not start', { cause: err });
         }
 
         if (cameraStream) {
@@ -110,7 +117,8 @@ export class StreamCompositor {
             try {
                 await this.cameraVideo.play();
             } catch (err) {
-                console.warn('StreamCompositor: cameraVideo.play() failed', err);
+                this.stop();
+                throw new StreamCompositorError('Camera preview video could not start', { cause: err });
             }
         }
 
@@ -127,6 +135,15 @@ export class StreamCompositor {
             const micSource = this.audioContext.createMediaStreamSource(micStream);
             micSource.connect(this.audioDestination);
             this.audioSourceNodes.push(micSource);
+        }
+
+        if (this.audioSourceNodes.length > 0) {
+            try {
+                await resumeAudioContext(this.audioContext);
+            } catch (err) {
+                this.stop();
+                throw new StreamCompositorError('Capture audio could not start', { cause: err });
+            }
         }
 
         // 3. Start Draw Loop
@@ -146,52 +163,6 @@ export class StreamCompositor {
         return finalStream;
     }
 
-    /**
-     * Calculate PIP coordinates based on configuration
-     */
-    private calculatePIPCoords(): { x: number; y: number; width: number; height: number } {
-        if (!this.cameraVideo) {
-            return { x: 0, y: 0, width: 0, height: 0 };
-        }
-
-        const pipWidth = this.width * this.pipConfig.size;
-        const aspectRatio = this.cameraVideo.videoHeight / this.cameraVideo.videoWidth || 0.5625; // Default 16:9
-        const pipHeight = pipWidth * aspectRatio;
-        const padding = 20;
-
-        let x: number;
-        let y: number;
-
-        if (this.pipConfig.position === 'custom' && this.pipConfig.x !== undefined && this.pipConfig.y !== undefined) {
-            // Custom position (normalized 0-1 coordinates, clamped to stay on screen)
-            x = this.pipConfig.x * (this.width - pipWidth);
-            y = this.pipConfig.y * (this.height - pipHeight);
-        } else {
-            // Preset positions
-            switch (this.pipConfig.position) {
-                case 'top-left':
-                    x = padding;
-                    y = padding;
-                    break;
-                case 'top-right':
-                    x = this.width - pipWidth - padding;
-                    y = padding;
-                    break;
-                case 'bottom-left':
-                    x = padding;
-                    y = this.height - pipHeight - padding;
-                    break;
-                case 'bottom-right':
-                default:
-                    x = this.width - pipWidth - padding;
-                    y = this.height - pipHeight - padding;
-                    break;
-            }
-        }
-
-        return { x, y, width: pipWidth, height: pipHeight };
-    }
-
     private draw = () => {
         if (!this.isActive) return;
 
@@ -202,7 +173,7 @@ export class StreamCompositor {
 
             // Draw PIP (Camera) if exists
             if (this.cameraVideo && this.cameraVideo.readyState === 4) {
-                const pip = this.calculatePIPCoords();
+                const pip = calculatePIPCoords(this.width, this.height, this.cameraVideo, this.pipConfig);
 
                 // Draw rounded rectangle with border for pro look
                 this.ctx.save();
@@ -250,7 +221,7 @@ export class StreamCompositor {
         this.isPaused = false;
         // Resume audio context
         if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume().catch(err =>
+            await resumeAudioContext(this.audioContext).catch(err =>
                 console.warn('StreamCompositor: audioContext.resume() failed', err)
             );
         }

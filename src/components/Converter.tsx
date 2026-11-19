@@ -184,6 +184,12 @@ export const Converter: React.FC = () => {
                         </div>
                     )}
 
+                    {!isConverting && (
+                        <p className="text-xs text-amber-200">
+                            {t('converter.fallback.notice')}
+                        </p>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-2">
                         {isConverting ? (
@@ -208,6 +214,11 @@ export const Converter: React.FC = () => {
                     <div>
                         <p className="font-semibold text-emerald-300">{t('converter.done.title')}</p>
                         <p className="text-xs text-th-tertiary mt-0.5">{outputFileName}</p>
+                        {outputFormat !== 'mp4' && (
+                            <p className="text-xs text-amber-200 mt-2">
+                                {t('converter.done.fallback', { format: outputFormat.toUpperCase() })}
+                            </p>
+                        )}
                     </div>
                     <a
                         href={outputUrl}
@@ -215,7 +226,7 @@ export const Converter: React.FC = () => {
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
                     >
                         <Download size={18} />
-                        {t('converter.btn.download')}
+                        {t('converter.btn.download', { format: outputFormat.toUpperCase() })}
                     </a>
                     <button
                         onClick={handleReset}

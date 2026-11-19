@@ -11,7 +11,30 @@ const { readRecordingDuration } = await server.ssrLoadModule('/src/services/read
 const { ExportTaskScope } = await server.ssrLoadModule('/src/components/ExportTaskScope.ts');
 const { VideoStorageService } = await server.ssrLoadModule('/src/services/videoStorageService.ts');
 const { createSegmentsState, segmentsReducer } = await server.ssrLoadModule('/src/components/editor/segmentsState.ts');
+const { readPreference, writePreference } = await server.ssrLoadModule('/src/services/preferenceStorage.ts');
 const tick = () => new Promise(resolve => setImmediate(resolve));
+
+test('preference storage is optional when access or an individual operation fails', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const denied = () => { throw new DOMException('Storage denied', 'SecurityError'); };
+    try {
+        const values = new Map();
+        globalThis.window = {
+            localStorage: { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) },
+        };
+        writePreference('screenclip.theme', 'light');
+        assert.equal(readPreference('screenclip.theme'), 'light');
+        globalThis.window = { localStorage: { getItem: denied, setItem: denied } };
+        assert.equal(readPreference('screenclip.theme'), null);
+        assert.doesNotThrow(() => writePreference('screenclip.language', 'fr'));
+        globalThis.window = { get localStorage() { return denied(); } };
+        assert.equal(readPreference('screenclip.language'), null);
+        assert.doesNotThrow(() => writePreference('screenclip.theme', 'dark'));
+    } finally {
+        if (original) Object.defineProperty(globalThis, 'window', original);
+        else delete globalThis.window;
+    }
+});
 
 class FakeVideo extends EventTarget {
     readyState = 0; duration = 10; videoWidth = 160; videoHeight = 90;

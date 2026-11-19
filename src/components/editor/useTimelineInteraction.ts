@@ -1,11 +1,11 @@
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import type React from 'react';
 import type { TrimRange } from '../../types';
 import { formatTime } from '../../utils/format';
 import type { TimelineToolMode } from './TimelineToolbar';
+import { sequenceTimeFromPixels } from './timelineCoordinates';
 
 interface InteractionArgs {
-    maxDuration: number;
     segments: TrimRange[];
     totalSelectedDuration: number;
     skimmingEnabled: boolean;
@@ -13,14 +13,17 @@ interface InteractionArgs {
     onSplitAt?: (time: number, index?: number) => void;
 }
 
-export function useTimelineInteraction({ maxDuration, segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt }: InteractionArgs) {
-    const containerRef = useRef<HTMLDivElement>(null);
+export function calculateHandScrollLeft(startScrollLeft: number, deltaPixels: number, maxScrollLeft: number) {
+    return Math.max(0, Math.min(maxScrollLeft, startScrollLeft - deltaPixels));
+}
+
+export function useTimelineInteraction({ segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt }: InteractionArgs) {
+    const scrollableRef = useRef<HTMLDivElement>(null);
     const [zoomLevel, setZoomLevel] = useState(1);
     const [activeTool, setActiveTool] = useState<TimelineToolMode>('select');
     const [skimTime, setSkimTime] = useState<number | null>(null);
-    const [scrollLeft, setScrollLeft] = useState(0);
-
-    const safeMax = Math.max(maxDuration, 0.0001);
+    const [isHandDragging, setIsHandDragging] = useState(false);
+    const handDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
 
     // Collapsed timeline: display segments sequentially from 0 (ripple mode)
     const displayDuration = Math.max(totalSelectedDuration, 0.0001);
@@ -85,8 +88,66 @@ export function useTimelineInteraction({ maxDuration, segments, totalSelectedDur
         return 100 * zoomLevel;
     }, [zoomLevel]);
 
+    useEffect(() => {
+        const handleShortcut = (event: KeyboardEvent) => {
+            const target = event.target as HTMLElement | null;
+            const tagName = target?.tagName;
+            if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return;
+            if (event.code !== 'KeyH' && event.code !== 'KeyA') return;
+            event.preventDefault();
+            setActiveTool(event.code === 'KeyH' ? 'hand' : 'select');
+        };
+
+        window.addEventListener('keydown', handleShortcut);
+        return () => window.removeEventListener('keydown', handleShortcut);
+    }, []);
+
+    const handleHandPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        if (activeTool !== 'hand' || event.button !== 0 || handDragRef.current) return;
+        const scrollable = scrollableRef.current;
+        if (!scrollable || scrollable.scrollWidth <= scrollable.clientWidth) return;
+        handDragRef.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startScrollLeft: scrollable.scrollLeft,
+        };
+        setIsHandDragging(true);
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    }, [activeTool]);
+
+    const handleHandPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const drag = handDragRef.current;
+        const scrollable = scrollableRef.current;
+        if (!drag || drag.pointerId !== event.pointerId || !scrollable) return;
+        const maxScrollLeft = Math.max(0, scrollable.scrollWidth - scrollable.clientWidth);
+        scrollable.scrollLeft = calculateHandScrollLeft(
+            drag.startScrollLeft,
+            event.clientX - drag.startX,
+            maxScrollLeft,
+        );
+        event.preventDefault();
+    }, []);
+
+    const handleHandPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+        const drag = handDragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        handDragRef.current = null;
+        setIsHandDragging(false);
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    }, []);
+
     const toPct = useCallback((time: number) => {
         return Math.min(100, Math.max(0, (time / displayDuration) * 100));
+    }, [displayDuration]);
+
+    const pointerTime = useCallback((clientX: number) => {
+        const timeline = scrollableRef.current;
+        if (!timeline) return null;
+        const offset = clientX - timeline.getBoundingClientRect().left + timeline.scrollLeft;
+        return sequenceTimeFromPixels(offset, timeline.scrollWidth, displayDuration);
     }, [displayDuration]);
 
     // Hover indicator
@@ -96,21 +157,8 @@ export function useTimelineInteraction({ maxDuration, segments, totalSelectedDur
             return;
         }
 
-        const container = containerRef.current;
-        if (!container) return;
-
-        const scrollableArea = container.querySelector('.timeline-scrollable');
-        if (!scrollableArea) return;
-
-        const rect = scrollableArea.getBoundingClientRect();
-        const scrollOffset = scrollableArea.scrollLeft;
-        const x = e.clientX - rect.left + scrollOffset;
-        const totalWidth = scrollableArea.scrollWidth;
-        const timePct = x / totalWidth;
-        const time = timePct * displayDuration;
-
-        setSkimTime(Math.max(0, Math.min(displayDuration, time)));
-    }, [skimmingEnabled, activeTool, displayDuration]);
+        setSkimTime(pointerTime(e.clientX));
+    }, [skimmingEnabled, activeTool, pointerTime]);
 
     const handleMouseLeave = useCallback(() => {
         setSkimTime(null);
@@ -118,18 +166,9 @@ export function useTimelineInteraction({ maxDuration, segments, totalSelectedDur
 
     // Seek or split at the clicked sequence position.
     const handleTimelineClick = useCallback((e: React.MouseEvent) => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const scrollableArea = container.querySelector('.timeline-scrollable');
-        if (!scrollableArea) return;
-
-        const rect = scrollableArea.getBoundingClientRect();
-        const scrollOffset = scrollableArea.scrollLeft;
-        const x = e.clientX - rect.left + scrollOffset;
-        const totalWidth = scrollableArea.scrollWidth;
-        const timePct = x / totalWidth;
-        const seqTime = Math.max(0, Math.min(displayDuration, timePct * displayDuration));
+        if (activeTool === 'hand') return;
+        const seqTime = pointerTime(e.clientX);
+        if (seqTime === null) return;
         const sourceTime = sequenceToSource(seqTime);
 
         if (activeTool === 'blade') {
@@ -140,7 +179,7 @@ export function useTimelineInteraction({ maxDuration, segments, totalSelectedDur
             // Selection tool
             onSeek(sourceTime);
         }
-    }, [activeTool, displayDuration, sequenceToSource, segments, onSeek, onSplitAt]);
+    }, [activeTool, pointerTime, sequenceToSource, segments, onSeek, onSplitAt]);
 
     // Ruler ticks
     const ticks = useMemo(() => {
@@ -162,5 +201,28 @@ export function useTimelineInteraction({ maxDuration, segments, totalSelectedDur
         return result;
     }, [displayDuration, zoomLevel]);
 
-    return { containerRef, zoomLevel, activeTool, setActiveTool, skimTime, setScrollLeft, displayDuration, collapsedSegments, sourceToSequence, sequenceToSource, handleZoomIn, handleZoomOut, handleZoomReset, timelineWidthPct, toPct, handleMouseMove, handleMouseLeave, handleTimelineClick, ticks };
+    return {
+        scrollableRef,
+        zoomLevel,
+        activeTool,
+        setActiveTool,
+        isHandDragging,
+        skimTime,
+        handleHandPointerDown,
+        handleHandPointerMove,
+        handleHandPointerEnd,
+        displayDuration,
+        collapsedSegments,
+        sourceToSequence,
+        sequenceToSource,
+        handleZoomIn,
+        handleZoomOut,
+        handleZoomReset,
+        timelineWidthPct,
+        toPct,
+        handleMouseMove,
+        handleMouseLeave,
+        handleTimelineClick,
+        ticks,
+    };
 }

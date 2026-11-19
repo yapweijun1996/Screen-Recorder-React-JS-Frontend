@@ -14,6 +14,7 @@ interface TimelineClipProps {
     trimBounds: TrimRange;
     onTrim?: (start: number, end: number) => void;
     isBlade?: boolean;
+    showTrimHandles?: boolean;
     onBladeClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
@@ -32,6 +33,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
     trimBounds,
     onTrim,
     isBlade = false,
+    showTrimHandles = !isBlade,
     onBladeClick,
 }) => {
     const { preview, handleProps } = useClipTrim({ segment, bounds: trimBounds, displayDuration: maxDuration, onTrim });
@@ -151,7 +153,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
             )}
 
             {/* Trim Handles - 仅选中时显示 */}
-            {isSelected && !isBlade && (
+            {isSelected && showTrimHandles && (
                 <>
                     {/* 左侧手柄 */}
                     <div {...handleProps('start')} className="

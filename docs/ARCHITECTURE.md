@@ -32,7 +32,7 @@ ScreenClip Pro is a single-page React app that runs **entirely in the browser**.
 - [`src/components/recorder/RecorderSidebar.tsx`](../src/components/recorder/RecorderSidebar.tsx) — source toggles (mic, cam, quality preset, FPS, bitrate)
 - [`src/components/recorder/RecorderPreview.tsx`](../src/components/recorder/RecorderPreview.tsx) — live preview of the composited stream
 - [`src/components/recorder/useRecorderController.ts`](../src/components/recorder/useRecorderController.ts) — recording orchestration: requests permissions, wires `StreamCompositor`, runs `MediaRecorder`, finalizes on stop
-- [`src/utils/StreamCompositor.ts`](../src/utils/StreamCompositor.ts) — `<canvas>`-based mixer: draws screen video + draggable PIP cam, mixes screen audio + mic via `AudioContext`, then `canvas.captureStream(fps)` gives one combined `MediaStream` to `MediaRecorder`
+- [`src/utils/StreamCompositor.ts`](../src/utils/StreamCompositor.ts) — `<canvas>`-based mixer: draws screen video and the camera overlay at a preset corner, mixes screen audio and microphone through `AudioContext`, and passes a combined `MediaStream` to `MediaRecorder`
 - [`src/utils/AudioVisualizer.ts`](../src/utils/AudioVisualizer.ts) — mic level meter via `AnalyserNode`
 
 Output of the recorder is a `Blob` (WebM/VP9 on Chrome, WebM/VP8 on Firefox), saved to IndexedDB via [`videoStorageService.ts`](../src/services/videoStorageService.ts) and passed to the editor.
@@ -42,11 +42,10 @@ Output of the recorder is a `Blob` (WebM/VP9 on Chrome, WebM/VP8 on Firefox), sa
 - [`src/components/Editor.tsx`](../src/components/Editor.tsx) — root: layout grid (preview + sidebar + timeline + bottom bar)
 - [`src/components/editor/EditorLayout.tsx`](../src/components/editor/EditorLayout.tsx) — responsive grid scaffold
 - [`src/components/editor/EditorPlayer.tsx`](../src/components/editor/EditorPlayer.tsx) — `<video>` playback, playhead sync
-- [`src/components/editor/SegmentsTimeline.tsx`](../src/components/editor/SegmentsTimeline.tsx) + [`ProTimeline.tsx`](../src/components/editor/ProTimeline.tsx) — timeline with keep/remove segments, drag-to-trim
-- [`src/components/editor/EditorTrimPanel.tsx`](../src/components/editor/EditorTrimPanel.tsx) — segment list + manual trim entry
+- [`src/components/editor/ProTimeline.tsx`](../src/components/editor/ProTimeline.tsx) — active timeline for clip splitting, removal, and drag-to-trim
 - [`src/components/editor/useClipTrim.ts`](../src/components/editor/useClipTrim.ts) — pointer-captured trim previews with a frozen zoom scale, adjacent-clip limits and one undo entry per completed drag; cancelled gestures discard the preview
 - [`src/components/editor/useTimelineInteraction.ts`](../src/components/editor/useTimelineInteraction.ts) — sequence/source coordinate mapping, zoom and timeline interaction; `TimelineActions.tsx` renders the timeline action buttons
-- [`src/components/editor/EditorExportPanel.tsx`](../src/components/editor/EditorExportPanel.tsx) — quality / resolution / fps / format picker
+- [`src/components/editor/InspectorPanel.tsx`](../src/components/editor/InspectorPanel.tsx) — active quality, resolution, frame-rate, and format controls
 - [`src/components/editor/useEditorExportController.ts`](../src/components/editor/useEditorExportController.ts) — drives the export: builds `ExportOptions`, calls `exportService.processVideo()`, shows progress
 
 Blade clicks convert the clicked clip rectangle to its source timestamp and pass the clip index with the split action. The reducer splits that clip atomically even when another clip is selected. Ruler clicks use the sequence/source mapping; keyboard and toolbar splits continue to use the selected clip. Blade mode hides trim handles to keep the click target unambiguous.
@@ -96,7 +95,7 @@ getUserMedia  ──┘   (canvas mix)         playback                    ─�
 
 ## Recording Lifecycle
 
-`RecordingSession` owns every acquired screen, microphone and camera stream, the derived recording stream, compositor, audio mix and MediaRecorder callbacks. Completion, empty output, startup failure and component unmount share idempotent cleanup. It rejects and releases permission/composition results arriving after disposal, preventing a page switch from retaining device capture or firing late completion callbacks.
+`RecordingSession` owns every acquired screen, microphone and camera stream, the derived recording stream, compositor, audio mix and MediaRecorder callbacks. Completion, recorder interruption, empty output, startup failure and component unmount share idempotent cleanup. The stop request locks the controls while the final MediaRecorder events settle. A recorder error prevents partial chunks from reaching the ordinary recording-complete path. The session rejects and releases permission or composition results arriving after disposal.
 
 A separate `recordingActivity` lease disables navigation to the converter from the initial permission prompt through recording, pauses and stop finalization. The navigation handler also checks the live lease before changing pages. Completion or startup failure releases this protection; export activity does not block navigation.
 

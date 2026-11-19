@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { readPreference, writePreference } from '../services/preferenceStorage';
 
 export type Theme = 'light' | 'dark';
 
@@ -15,7 +16,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export const ThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [theme, setThemeState] = useState<Theme>(() => {
         if (typeof window === 'undefined') return 'dark';
-        const saved = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+        const saved = readPreference(THEME_STORAGE_KEY);
         if (saved === 'light' || saved === 'dark') return saved;
         return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     });
@@ -27,7 +28,7 @@ export const ThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) =
         } else {
             root.classList.remove('dark');
         }
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        writePreference(THEME_STORAGE_KEY, theme);
     }, [theme]);
 
     const toggleTheme = () => setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));

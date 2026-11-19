@@ -1,10 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { formatTime } from '../../utils/format';
+import { sequenceTimeFromPixels } from './timelineCoordinates';
 
 interface DraggablePlayheadProps {
     currentTime: number;
     maxDuration: number;
-    containerRef: React.RefObject<HTMLElement>;
+    timelineRef: React.RefObject<HTMLElement | null>;
+    interactive?: boolean;
     onSeek: (time: number) => void;
     trackHeight?: number;
     className?: string;
@@ -19,48 +21,57 @@ interface DraggablePlayheadProps {
 export const DraggablePlayhead: React.FC<DraggablePlayheadProps> = ({
     currentTime,
     maxDuration,
-    containerRef,
+    timelineRef,
+    interactive = true,
     onSeek,
     trackHeight = 80,
     className = '',
 }) => {
     const [isDragging, setIsDragging] = useState(false);
+    const pointerIdRef = useRef<number | null>(null);
     const dragStartXRef = useRef(0);
     const dragStartTimeRef = useRef(0);
+    const dragStartScrollLeftRef = useRef(0);
+    const dragStartTrackWidthRef = useRef(0);
 
     const safeMax = Math.max(maxDuration, 0.0001);
     const leftPct = Math.min(100, Math.max(0, (currentTime / safeMax) * 100));
 
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
+        const timeline = timelineRef.current;
+        if (!interactive || !timeline || e.button !== 0 || pointerIdRef.current !== null) return;
         e.preventDefault();
         e.stopPropagation();
+        pointerIdRef.current = e.pointerId;
         setIsDragging(true);
         dragStartXRef.current = e.clientX;
         dragStartTimeRef.current = currentTime;
-
-        // 捕获指针
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    }, [currentTime]);
+        dragStartScrollLeftRef.current = timeline.scrollLeft;
+        dragStartTrackWidthRef.current = timeline.scrollWidth;
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }, [currentTime, interactive, timelineRef]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
-        if (!isDragging || !containerRef.current) return;
+        if (pointerIdRef.current !== e.pointerId || !timelineRef.current) return;
 
-        const container = containerRef.current;
-        const rect = container.getBoundingClientRect();
-        const containerWidth = rect.width;
+        const timeline = timelineRef.current;
+        const trackWidth = dragStartTrackWidthRef.current;
 
         // 计算新的时间位置
-        const deltaX = e.clientX - dragStartXRef.current;
-        const deltaPct = deltaX / containerWidth;
-        const deltaTime = deltaPct * safeMax;
-        const newTime = Math.max(0, Math.min(safeMax, dragStartTimeRef.current + deltaTime));
+        const scrollDelta = timeline.scrollLeft - dragStartScrollLeftRef.current;
+        const deltaX = e.clientX - dragStartXRef.current + scrollDelta;
+        const newTime = sequenceTimeFromPixels(deltaX, trackWidth, safeMax, dragStartTimeRef.current);
 
         onSeek(newTime);
-    }, [isDragging, containerRef, safeMax, onSeek]);
+    }, [timelineRef, safeMax, onSeek]);
 
     const handlePointerUp = useCallback((e: React.PointerEvent) => {
+        if (pointerIdRef.current !== e.pointerId) return;
+        pointerIdRef.current = null;
         setIsDragging(false);
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
     }, []);
 
     return (
@@ -83,6 +94,7 @@ export const DraggablePlayhead: React.FC<DraggablePlayheadProps> = ({
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
+                onLostPointerCapture={handlePointerUp}
             >
                 {/* 时间标签 */}
                 <div className={`

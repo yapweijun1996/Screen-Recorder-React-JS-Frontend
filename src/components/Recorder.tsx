@@ -37,6 +37,7 @@ export const Recorder: React.FC<RecorderProps> = ({ onRecordingComplete, onError
                         videoRef={rc.videoRef}
                         isRecording={rc.isRecording}
                         isPaused={rc.isPaused}
+                        isStopping={rc.isStopping}
                         recordingTimeLabel={rc.recordingTimeLabel}
                         activeStream={rc.activeStream}
                         micStream={rc.micStream}

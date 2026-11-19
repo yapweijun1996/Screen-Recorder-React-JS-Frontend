@@ -19,6 +19,26 @@ export function awaitWithAbort<T>(operation: Promise<T>, signal?: AbortSignal): 
     });
 }
 
+/**
+ * Bound native media operations that cannot be cancelled directly.
+ * The original promise still has rejection handlers through awaitWithAbort,
+ * so a late native completion cannot become an unhandled rejection.
+ */
+export function awaitWithTimeout<T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string,
+    signal?: AbortSignal,
+): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    });
+
+    return awaitWithAbort(Promise.race([operation, timeout]), signal)
+        .finally(() => clearTimeout(timer));
+}
+
 interface MediaWaitOptions {
     signal?: AbortSignal;
     ready?: () => boolean;

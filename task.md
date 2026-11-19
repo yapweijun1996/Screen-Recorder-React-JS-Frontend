@@ -6,6 +6,29 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Fix capture, timeline, export, and preference reliability
+
+**Status:** implemented and verified locally. [Bug register](bug.md) · [Feature map](FEATURES_MAP.md)
+
+- Fixed all ten registered bugs. The editor protects the last retained clip, shares its delete command and timeline coordinates, adds Hand panning with H and Select with A, and keeps reverse shuttle inside the selected clip.
+- Capture locks controls during stop, reports MediaRecorder interruption, and rejects failed screen or camera playback. Suspended audio startup has a bounded resume wait. Localized footer copy describes camera picture-in-picture.
+- Converter output labels reflect the actual MP4 or WebM result. Exceptional codec probes can retry, audio flush has an abortable inactivity deadline, and theme and language can be used when browser storage is denied.
+- Verification included 124 passing Node tests, strict TypeScript, a production PWA build and Chromium UI checks. Browser checks covered capture cleanup and editor handoff, camera startup rejection, audible synthetic PIP recording, timeline deletion, zoom and pan, reverse shuttle bounds, preference storage denial, MP4 and WebM container bytes and downloads, transient codec retry, and stalled audio flush.
+- Limits include physical capture devices and system share pickers, Firefox and Safari. The production build reports outdated Browserslist data and a main chunk just above the 500 kB warning threshold.
+
+---
+
+## 2026-11-19 — Parallel audit of capture, editor, and export
+
+**Status:** audit complete. Findings and proposed repairs are tracked in [bug.md](bug.md).
+
+- Three parallel reviews covered the capture and storage lifecycle, timeline editing, and Converter and WebCodecs paths at `c378c1e`. The consolidated register contains 10 open bugs, five scoped refactoring candidates, and two follow-up verification items.
+- Highest priority: prevent Delete or Backspace from restoring excluded footage when one clip remains, and distinguish interrupted recording from successful capture. The prior **Delete selection** route refers to an unmounted panel. The active shortcut route was reproduced.
+- The baseline suite passed 108 tests and TypeScript checks in an isolated checkout during the initial review. Focused harnesses exercised the active deletion shortcut, the zoomed playhead, partial recorder output, preference-storage denial, audio flush stalling, and capability retry. The stop/pause API behavior was checked in Chromium. Full app browser flows and real capture devices remain unverified.
+- Suggested implementation order: fix the last-clip command and recording terminal handling, then make timeline coordinates consistent and bound audio flush waits. Apply localized refactoring with each fix and verify the affected user path.
+
+---
+
 ## 2026-10-08 — Accurate video sampling, encoder failures and aspect-preserving export
 
 **Status:** implemented and verified locally.

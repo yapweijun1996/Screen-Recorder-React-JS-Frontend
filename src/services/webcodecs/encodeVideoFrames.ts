@@ -4,7 +4,7 @@ import type { ExportProgress } from './webcodecExportService';
 import type { VideoSource } from './exportVideo';
 import { getAvcCodecString, getVideoBitrate, throwIfAborted } from './exportHelpers';
 import type { Deadline } from './exportTimeline';
-import { awaitWithAbort, MEDIA_WAIT_TIMEOUT_MS } from './mediaWait';
+import { awaitWithTimeout, MEDIA_WAIT_TIMEOUT_MS } from './mediaWait';
 
 export const VIDEO_QUEUE_LIMIT = 4;
 
@@ -21,32 +21,20 @@ interface VideoEncodingArgs {
     signal?: AbortSignal;
 }
 
-async function waitForVideoOperation<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-        return await awaitWithAbort(Promise.race([
-            operation,
-            new Promise<never>((_, reject) => {
-                timer = setTimeout(() => reject(new Error('Video decoder or encoder timed out')), MEDIA_WAIT_TIMEOUT_MS);
-            }),
-        ]), signal);
-    } finally { clearTimeout(timer); }
-}
-
 async function waitForQueue(encoder: VideoEncoder, signal: AbortSignal) {
     throwIfAborted(signal);
     if (encoder.state === 'closed') throw new Error('Video encoder closed unexpectedly');
     if (encoder.encodeQueueSize < VIDEO_QUEUE_LIMIT) return;
     let check: () => void = () => {};
     try {
-        await waitForVideoOperation(new Promise<void>((resolve, reject) => {
+        await awaitWithTimeout(new Promise<void>((resolve, reject) => {
             check = () => {
                 if (encoder.state === 'closed') reject(new Error('Video encoder closed unexpectedly'));
                 else if (encoder.encodeQueueSize < VIDEO_QUEUE_LIMIT) resolve();
             };
             encoder.addEventListener('dequeue', check);
             check();
-        }), signal);
+        }), MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', signal);
     } finally { encoder.removeEventListener('dequeue', check); }
 }
 
@@ -111,7 +99,7 @@ export async function encodeVideoFrames({
                     }
                     return result;
                 });
-                const result = await waitForVideoOperation(pending, operation.signal);
+                const result = await awaitWithTimeout(pending, MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', operation.signal);
                 if (result.done || !result.value) throw new Error('Missing decoded video frame');
                 await waitForQueue(encoder, operation.signal);
                 context.fillStyle = '#000';
@@ -124,10 +112,12 @@ export async function encodeVideoFrames({
                 finally { frame.close(); }
             } finally { sampleRef.current?.close(); }
             // Give cancellation clicks a turn even with synchronous decoders.
-            if ((index + 1) % 16 === 0) await waitForVideoOperation(new Promise<void>(resolve => setTimeout(resolve, 0)), operation.signal);
+            if ((index + 1) % 16 === 0) {
+                await awaitWithTimeout(new Promise<void>(resolve => setTimeout(resolve, 0)), MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', operation.signal);
+            }
         }
         throwIfAborted(operation.signal);
-        await waitForVideoOperation(encoder.flush(), operation.signal);
+        await awaitWithTimeout(encoder.flush(), MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', operation.signal);
         throwIfAborted(operation.signal);
         if (encodedFrames !== deadlines.length || pendingDeadlines.size) throw new Error('Video encoder did not output every requested frame');
     } catch (error) {
@@ -140,7 +130,7 @@ export async function encodeVideoFrames({
             if (iterator) {
                 const returned = iterator.return();
                 if (operation.signal.aborted) void returned.catch(() => {});
-                else await waitForVideoOperation(returned, operation.signal);
+                else await awaitWithTimeout(returned, MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', operation.signal);
             }
         } finally { signal?.removeEventListener('abort', onAbort); }
     }

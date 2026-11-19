@@ -19,7 +19,8 @@
     <script>
       // Apply saved theme before first paint to prevent flash
       (function() {
-        var t = localStorage.getItem('screenclip.theme');
+        var t;
+        try { t = localStorage.getItem('screenclip.theme'); } catch {}
         if (t === 'light') document.documentElement.classList.remove('dark');
         else if (t === 'dark') document.documentElement.classList.add('dark');
         else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.classList.remove('dark');

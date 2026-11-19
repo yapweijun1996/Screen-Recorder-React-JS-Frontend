@@ -10,7 +10,7 @@
 
 import type { ExportFormat, ExportOptions, VideoQualityPreset } from '../types';
 import { VIDEO_QUALITY_PRESETS } from '../types';
-import { detectWebCodecsSupport } from './webcodecs/capability';
+import { detectWebCodecsSupport, getCachedSupport } from './webcodecs/capability';
 import { exportWithWebCodecs, type WebCodecsExportResult } from './webcodecs/webcodecExportService';
 import { awaitWithAbort, throwIfAborted } from './webcodecs/mediaWait';
 
@@ -21,7 +21,11 @@ interface EngineProgress {
     ratio: number; // 0-1
 }
 
-class ExportService {
+type SupportDetector = () => ReturnType<typeof detectWebCodecsSupport>;
+
+export class ExportService {
+    constructor(private readonly detectSupport: SupportDetector = detectWebCodecsSupport) {}
+
     private engine: ExportEngineType = 'none';
     private status: EngineStatus = 'idle';
     private onStatusChangeCallback: ((status: EngineStatus) => void) | null = null;
@@ -55,16 +59,24 @@ class ExportService {
      */
     async init(): Promise<void> {
         if (this.status === 'ready') return;
+        // A cached unsupported probe is definitive for this page. An
+        // exceptional probe failure leaves the cache empty and can be retried.
+        if (this.status === 'error' && getCachedSupport()?.supported === false) return;
         if (this.initPromise) return this.initPromise;
-        this.initPromise = this._init();
-        return this.initPromise;
+        const attempt = this._init();
+        this.initPromise = attempt;
+        try {
+            await attempt;
+        } finally {
+            if (this.initPromise === attempt) this.initPromise = null;
+        }
     }
 
     private async _init(): Promise<void> {
         this.setStatus('loading');
 
         try {
-            const support = await detectWebCodecsSupport();
+            const support = await this.detectSupport();
             if (support.supported) {
                 this.engine = 'webcodecs';
                 this.setStatus('ready');

@@ -2,20 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RecordingSession } from './RecordingSession';
 import { PIPPosition, RecordingQuality } from '../../types';
 import { useI18n } from '../../i18n';
-import { createFinalStream, formatRecordingTimeLabel, getChosenRecordingPreset } from './recorderControllerUtils';
-
+import { createFinalStream, formatRecordingTimeLabel, getChosenRecordingPreset, getRecorderErrorMessage } from './recorderControllerUtils';
 interface UseRecorderControllerArgs {
     onRecordingComplete: (blob: Blob, duration: number) => void;
     onError: (msg: string) => void;
 }
-
 export const useRecorderController = ({ onRecordingComplete, onError }: UseRecorderControllerArgs) => {
     const { t } = useI18n();
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [isPreparing, setIsPreparing] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
-
     // Settings
     const [enableMic, setEnableMic] = useState(false);
     const [enableCam, setEnableCam] = useState(false);
@@ -23,12 +21,12 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     const [recordingQuality, setRecordingQuality] = useState<RecordingQuality>('high');
     const [customFps, setCustomFps] = useState<number>(60);
     const [customBitrateMbps, setCustomBitrateMbps] = useState<number>(12);
-
     // Refs
     const videoRef = useRef<HTMLVideoElement>(null);
     const sessionRef = useRef<RecordingSession | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const hasFinalizedRef = useRef(false);
+    const finalizeRef = useRef<(() => void) | null>(null);
     const startTimeRef = useRef<number>(0);
     const pausedTimeRef = useRef<number>(0);
     const pauseStartedRef = useRef<number | null>(null);
@@ -56,14 +54,21 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
     }, [isRecording, isPaused]);
 
     const stopAction = useCallback(() => {
-        const mr = sessionRef.current?.recorder;
-        if (mr && mr.state !== 'inactive') {
-            try {
-                mr.requestData();
-            } catch (err) {
-                console.warn('stopAction: requestData() failed', err);
-            }
+        const session = sessionRef.current;
+        const mr = session?.recorder;
+        if (!session || !mr || session.disposed || mr.state === 'inactive' || !session.requestStop()) return;
+
+        setIsStopping(true);
+        try {
+            mr.requestData();
+        } catch (err) {
+            console.warn('stopAction: requestData() failed', err);
+        }
+        try {
             mr.stop();
+        } catch (error) {
+            session.recordError(error);
+            finalizeRef.current?.();
         }
     }, []);
 
@@ -72,6 +77,7 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         const session = new RecordingSession();
         sessionRef.current = session;
         setIsPreparing(true);
+        setIsStopping(false);
         let screenStream: MediaStream | undefined;
         let micStreamLocal: MediaStream | undefined;
         let camStream: MediaStream | undefined;
@@ -131,9 +137,14 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 }
             };
 
+            mediaRecorder.onerror = (event) => {
+                session.recordError(event);
+            };
+
             const finalizeRecording = () => {
                 if (session.disposed || hasFinalizedRef.current) return;
                 hasFinalizedRef.current = true;
+                finalizeRef.current = null;
 
                 const endTime = Date.now();
                 if (pauseStartedRef.current) {
@@ -147,14 +158,20 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 );
 
                 const fullBlob = new Blob(chunksRef.current, { type: 'video/webm' });
+                const recorderError = session.recorderError;
 
                 session.release();
 
                 setIsRecording(false);
                 setIsPaused(false);
+                setIsStopping(false);
                 setActiveStream(null);
                 setMicStream(null);
                 setRecordingTime(0);
+                if (recorderError) {
+                    onError(t('app.error.finalize'));
+                    return;
+                }
                 if (!fullBlob.size) {
                     onError(t('recorder.errors.empty'));
                     return;
@@ -162,9 +179,8 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
                 onRecordingComplete(fullBlob, durationInSeconds);
             };
 
-            mediaRecorder.onstop = () => {
-                setTimeout(finalizeRecording, 50);
-            };
+            finalizeRef.current = finalizeRecording;
+            mediaRecorder.onstop = finalizeRecording;
 
             mediaRecorder.start(1000);
             startTimeRef.current = Date.now();
@@ -175,36 +191,30 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         } catch (err: unknown) {
             const wasDisposed = session.disposed;
             session.release();
+            finalizeRef.current = null;
             if (wasDisposed) return;
             console.error(err);
             setActiveStream(null);
             setMicStream(null);
             setIsRecording(false);
             setIsPaused(false);
-            const name = err instanceof Error ? err.name : undefined;
-            if (name === 'NotAllowedError') {
-                onError(t('recorder.errors.permission'));
-            } else if (name === 'NotFoundError') {
-                onError(t('recorder.errors.notFound'));
-            } else if (name === 'NotReadableError') {
-                onError(t('recorder.errors.notReadable'));
-            } else if (name === 'OverconstrainedError') {
-                onError(t('recorder.errors.overconstrained'));
-            } else {
-                onError(err instanceof Error ? err.message : t('recorder.errors.startFailed'));
-            }
+            setIsStopping(false);
+            onError(getRecorderErrorMessage(err, t));
         } finally {
             if (sessionRef.current === session) setIsPreparing(false);
         }
     };
 
     const pauseResume = useCallback(() => {
-        if (!sessionRef.current?.recorder) return;
+        const session = sessionRef.current;
+        const recorder = session?.recorder;
+        if (!session || session.disposed || session.stopRequested || !recorder) return;
 
         if (isPaused) {
-            sessionRef.current?.recorder?.resume();
-            if (sessionRef.current?.compositor) {
-                sessionRef.current?.compositor.resume();
+            if (recorder.state !== 'paused') return;
+            recorder.resume();
+            if (session.compositor) {
+                void session.compositor.resume();
             }
             if (pauseStartedRef.current) {
                 pausedTimeRef.current += Date.now() - pauseStartedRef.current;
@@ -212,9 +222,10 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
             pauseStartedRef.current = null;
             setIsPaused(false);
         } else {
-            sessionRef.current?.recorder?.pause();
-            if (sessionRef.current?.compositor) {
-                sessionRef.current?.compositor.pause();
+            if (recorder.state !== 'recording') return;
+            recorder.pause();
+            if (session.compositor) {
+                void session.compositor.pause();
             }
             pauseStartedRef.current = Date.now();
             setIsPaused(true);
@@ -245,6 +256,7 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         return () => {
             sessionRef.current?.release();
             sessionRef.current = null;
+            finalizeRef.current = null;
             if (timerRef.current) clearInterval(timerRef.current);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,6 +267,7 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         isRecording,
         isPaused,
         isPreparing,
+        isStopping,
         recordingTime,
         recordingTimeLabel: formatRecordingTimeLabel(recordingTime),
 

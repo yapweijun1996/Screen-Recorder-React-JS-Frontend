@@ -13,6 +13,11 @@ export interface WebCodecsSupport {
 
 let cachedSupport: WebCodecsSupport | null = null;
 
+interface ProbeResult {
+    supported: boolean;
+    retryable: boolean;
+}
+
 /**
  * Detect WebCodecs support with trial encode to avoid Firefox H.264 false positives.
  */
@@ -33,20 +38,25 @@ export async function detectWebCodecsSupport(): Promise<WebCodecsSupport> {
     }
 
     // Trial-encode a tiny frame to verify real support (Firefox reports H.264 supported but throws)
-    result.h264 = await trialVideoEncode('avc1.42001f');
-    result.vp8 = await trialVideoEncode('vp8');
+    const h264 = await trialVideoEncode('avc1.42001f');
+    const vp8 = await trialVideoEncode('vp8');
+    result.h264 = h264.supported;
+    result.vp8 = vp8.supported;
 
     // Check audio encoders
-    result.aac = await probeAudioEncoder('mp4a.40.2');
-    result.opus = await probeAudioEncoder('opus');
+    const aac = await probeAudioEncoder('mp4a.40.2');
+    const opus = await probeAudioEncoder('opus');
+    result.aac = aac.supported;
+    result.opus = opus.supported;
 
     result.supported = result.h264 || result.vp8;
-    cachedSupport = result;
+    const retryableFailure = [h264, vp8, aac, opus].some(probe => probe.retryable);
+    cachedSupport = result.supported || !retryableFailure ? result : null;
     return result;
 }
 
 /** Trial-encode a single frame to verify the codec actually works */
-async function trialVideoEncode(codec: string): Promise<boolean> {
+async function trialVideoEncode(codec: string): Promise<ProbeResult> {
     try {
         const config = await VideoEncoder.isConfigSupported({
             codec,
@@ -54,19 +64,26 @@ async function trialVideoEncode(codec: string): Promise<boolean> {
             height: 64,
             bitrate: 100_000,
         });
-        if (!config.supported) return false;
+        if (!config.supported) return { supported: false, retryable: false };
 
         // Actually try encoding a frame
-        return new Promise<boolean>((resolve) => {
-            let resolved = false;
+        return new Promise<ProbeResult>((resolve) => {
+            let finished = false;
+            let producedOutput = false;
             const encoder = new VideoEncoder({
-                output: () => {
-                    if (!resolved) { resolved = true; resolve(true); }
-                },
-                error: () => {
-                    if (!resolved) { resolved = true; resolve(false); }
-                },
+                output: () => { producedOutput = true; },
+                error: () => { finish(false); },
             });
+            const timer = setTimeout(() => finish(false), 3000);
+            function finish(supported: boolean) {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timer);
+                if (encoder.state !== 'closed') {
+                    try { encoder.close(); } catch { /* Already closed by the browser. */ }
+                }
+                resolve({ supported, retryable: !supported });
+            }
 
             try {
                 encoder.configure({
@@ -83,41 +100,30 @@ async function trialVideoEncode(codec: string): Promise<boolean> {
                 ctx.fillRect(0, 0, 64, 64);
 
                 const frame = new VideoFrame(canvas, { timestamp: 0 });
-                encoder.encode(frame, { keyFrame: true });
-                frame.close();
-
-                encoder.flush().then(() => {
-                    encoder.close();
-                    if (!resolved) { resolved = true; resolve(true); }
-                }).catch(() => {
-                    if (!resolved) { resolved = true; resolve(false); }
-                });
+                try { encoder.encode(frame, { keyFrame: true }); }
+                finally { frame.close(); }
+                void encoder.flush().then(() => finish(producedOutput), () => finish(false));
             } catch {
-                if (!resolved) { resolved = true; resolve(false); }
+                finish(false);
             }
-
-            // Timeout after 3s
-            setTimeout(() => {
-                if (!resolved) { resolved = true; resolve(false); }
-            }, 3000);
         });
     } catch {
-        return false;
+        return { supported: false, retryable: true };
     }
 }
 
-async function probeAudioEncoder(codec: string): Promise<boolean> {
+async function probeAudioEncoder(codec: string): Promise<ProbeResult> {
     try {
-        if (typeof AudioEncoder === 'undefined') return false;
+        if (typeof AudioEncoder === 'undefined') return { supported: false, retryable: false };
         const config = await AudioEncoder.isConfigSupported({
             codec,
             numberOfChannels: 2,
             sampleRate: 48000,
             bitrate: 128000,
         });
-        return !!config.supported;
+        return { supported: !!config.supported, retryable: false };
     } catch {
-        return false;
+        return { supported: false, retryable: true };
     }
 }
 

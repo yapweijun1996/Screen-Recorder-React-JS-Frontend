@@ -127,7 +127,7 @@ MediaRecorder WebM can lack a cues table and have sparse keyframes. Repeated HTM
 
 Video sample, queue and flush waits handle abort and a 30-second inactivity timeout. The video pass returns its iterator and closes its sample/frame/encoder on every exit, including late samples delivered after an abandoned wait. The coordinator disposes both media inputs and releases metadata video resources. Decoder support or container parsing failures remain visible export failures; there is no lossy display-playback fallback.
 
-Audio read/queue/flush waits reject promptly on abort. Disposing the Mediabunny input cancels reads, closes decoders and releases queued samples; the coordinator disposes it on success, failure and cancellation. Result object URLs are allocated only while the task is current, and are revoked on a new export, clear or unmount.
+Audio read, queue and flush waits reject promptly on abort. Audio queue and flush waits also have a 30-second inactivity timeout. Disposing the Mediabunny input cancels reads, closes decoders and releases queued samples. The coordinator disposes it on success, failure and cancellation. Result object URLs are allocated only while the task is current, and are revoked on a new export, clear or unmount.
 
 ---
 

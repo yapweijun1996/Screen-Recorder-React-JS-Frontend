@@ -13,13 +13,12 @@ interface PlaybackArgs {
     setPlaybackError: (value: string | null) => void;
     safeSegments: TrimRange[];
     selectedSegment: TrimRange;
-    selectedIndex: number;
     previewIndex: number | null;
     setPreviewIndex: (value: number | null) => void;
     setSelectedIndexDirect: (value: number) => void;
     splitSelectedAt: (value: number) => void;
     undo: () => void;
-    deleteSelectedSegment: () => void;
+    onDeleteSelected: () => void;
     syncDurationIfUntouched: (value: number) => void;
     maxDuration: number;
     t: (key: string) => string;
@@ -35,13 +34,12 @@ export const useEditorPlayback = ({
     setPlaybackError,
     safeSegments,
     selectedSegment,
-    selectedIndex,
     previewIndex,
     setPreviewIndex,
     setSelectedIndexDirect,
     splitSelectedAt,
     undo,
-    deleteSelectedSegment,
+    onDeleteSelected,
     syncDurationIfUntouched,
     maxDuration,
     t
@@ -69,17 +67,7 @@ export const useEditorPlayback = ({
         },
         onSplitAtPlayhead: () => splitSelectedAt(currentTime),
         onUndo: undo,
-        onDeleteSelected: () => {
-            // After deletion, seek to the new selected segment's start
-            const newIdx = Math.max(0, selectedIndex - 1);
-            const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
-            if (remainingSegments.length > 0 && videoRef.current) {
-                const target = remainingSegments[Math.min(newIdx, remainingSegments.length - 1)];
-                videoRef.current.currentTime = target.start;
-                setCurrentTime(target.start);
-            }
-            deleteSelectedSegment();
-        },
+        onDeleteSelected,
         maxDuration,
         segmentStart: selectedSegment.start,
         segmentEnd: selectedSegment.end,

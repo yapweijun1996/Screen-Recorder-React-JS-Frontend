@@ -54,13 +54,36 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     skimmingEnabled = true,
     className = '',
 }) => {
-    const { containerRef, zoomLevel, activeTool, setActiveTool, skimTime, setScrollLeft, displayDuration, collapsedSegments, sourceToSequence, sequenceToSource, handleZoomIn, handleZoomOut, handleZoomReset, timelineWidthPct, toPct, handleMouseMove, handleMouseLeave, handleTimelineClick, ticks } = useTimelineInteraction({ maxDuration, segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt });
+    const {
+        scrollableRef,
+        zoomLevel,
+        activeTool,
+        setActiveTool,
+        isHandDragging,
+        skimTime,
+        handleHandPointerDown,
+        handleHandPointerMove,
+        handleHandPointerEnd,
+        displayDuration,
+        collapsedSegments,
+        sourceToSequence,
+        sequenceToSource,
+        handleZoomIn,
+        handleZoomOut,
+        handleZoomReset,
+        timelineWidthPct,
+        toPct,
+        handleMouseMove,
+        handleMouseLeave,
+        handleTimelineClick,
+        ticks,
+    } = useTimelineInteraction({ segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt });
 
     // 光标样式
     const cursorClass = activeTool === 'blade'
         ? 'cursor-crosshair'
         : activeTool === 'hand'
-            ? 'cursor-grab'
+            ? isHandDragging ? 'cursor-grabbing' : 'cursor-grab'
             : 'cursor-pointer';
     const { t } = useI18n();
 
@@ -69,7 +92,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         && currentTime < (segments[selectedIndex]?.end || maxDuration) - 0.5;
 
     return (
-        <div ref={containerRef} className={`bg-th-deep h-full flex flex-col overflow-hidden ${className}`}>
+        <div className={`bg-th-deep h-full flex flex-col overflow-hidden ${className}`}>
             {/* 工具栏 - 包含工具选择和操作按钮 */}
             <div className="flex-shrink-0 px-3 py-1.5 border-b border-th-edge bg-th-surface">
                 <div className="flex items-center justify-between gap-2">
@@ -97,10 +120,15 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
 
             {/* 可滚动的时间轴区域 */}
             <div
+                ref={scrollableRef}
                 className={`timeline-scrollable flex-1 min-h-0 overflow-x-auto overflow-y-hidden ${cursorClass}`}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+                onPointerDown={handleHandPointerDown}
+                onPointerMove={handleHandPointerMove}
+                onPointerUp={handleHandPointerEnd}
+                onPointerCancel={handleHandPointerEnd}
+                onLostPointerCapture={handleHandPointerEnd}
             >
                 <div
                     className="relative h-full min-h-[70px] flex flex-col"
@@ -156,11 +184,14 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                     isSelected={isSelected}
                                     leftPct={leftPct}
                                     widthPct={widthPct}
-                                    onSelect={() => onSelectSegment(idx)}
+                                    onSelect={() => {
+                                        if (activeTool === 'select') onSelectSegment(idx);
+                                    }}
                                     maxDuration={displayDuration}
                                     trimBounds={{ start: idx > 0 ? segments[idx - 1].end : 0, end: idx < segments.length - 1 ? segments[idx + 1].start : maxDuration }}
                                     onTrim={onTrimSegment}
                                     isBlade={activeTool === 'blade'}
+                                    showTrimHandles={activeTool === 'select'}
                                     onBladeClick={(event) => {
                                         const rect = event.currentTarget.getBoundingClientRect();
                                         if (rect.width <= 0) return;
@@ -177,7 +208,8 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         <DraggablePlayhead
                             currentTime={sourceToSequence(currentTime)}
                             maxDuration={displayDuration}
-                            containerRef={containerRef as React.RefObject<HTMLElement>}
+                            timelineRef={scrollableRef as React.RefObject<HTMLElement | null>}
+                            interactive={activeTool === 'select'}
                             onSeek={(seqTime) => onSeek(sequenceToSource(seqTime))}
                             trackHeight={70}
                         />

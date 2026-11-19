@@ -13,6 +13,10 @@ interface KeyboardShortcutsConfig {
     segmentEnd: number;
 }
 
+export function clampToSegment(time: number, segmentStart: number, segmentEnd: number) {
+    return Math.min(segmentEnd, Math.max(segmentStart, time));
+}
+
 /**
  * Final Cut Pro 风格的键盘快捷键
  * 
@@ -116,10 +120,10 @@ export function useKeyboardShortcuts({
                 e.preventDefault();
                 if (jklModeRef.current === 'backward') {
                     // 实际上浏览器不支持反向播放，这里用跳帧模拟
-                    onSeek(Math.max(0, currentTime - 0.5));
+                    onSeek(clampToSegment(currentTime - 0.5, segmentStart, segmentEnd));
                 } else {
                     jklModeRef.current = 'backward';
-                    onSeek(Math.max(0, currentTime - 0.1));
+                    onSeek(clampToSegment(currentTime - 0.1, segmentStart, segmentEnd));
                 }
                 break;
 
@@ -128,10 +132,10 @@ export function useKeyboardShortcuts({
                 e.preventDefault();
                 if (e.shiftKey) {
                     // Shift + ← = 大步后退
-                    onSeek(Math.max(segmentStart, currentTime - bigStep));
+                    onSeek(clampToSegment(currentTime - bigStep, segmentStart, segmentEnd));
                 } else {
                     // ← = 帧后退
-                    onSeek(Math.max(segmentStart, currentTime - frameStep));
+                    onSeek(clampToSegment(currentTime - frameStep, segmentStart, segmentEnd));
                 }
                 break;
 
@@ -139,10 +143,10 @@ export function useKeyboardShortcuts({
                 e.preventDefault();
                 if (e.shiftKey) {
                     // Shift + → = 大步前进
-                    onSeek(Math.min(segmentEnd, currentTime + bigStep));
+                    onSeek(clampToSegment(currentTime + bigStep, segmentStart, segmentEnd));
                 } else {
                     // → = 帧前进
-                    onSeek(Math.min(segmentEnd, currentTime + frameStep));
+                    onSeek(clampToSegment(currentTime + frameStep, segmentStart, segmentEnd));
                 }
                 break;
 

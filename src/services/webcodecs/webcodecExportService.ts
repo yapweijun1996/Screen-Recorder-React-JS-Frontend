@@ -20,7 +20,7 @@ import { getExportDimensions, getAudioBitrate, normalizeSegments, openSourceVide
 import type { AudioSource } from './exportAudio';
 import type { VideoSource } from './exportVideo';
 import { AudioExportError } from './AudioExportError';
-import { awaitWithAbort } from './mediaWait';
+import { awaitWithAbort, awaitWithTimeout, MEDIA_WAIT_TIMEOUT_MS } from './mediaWait';
 import { createTimeline, planDeadlines, type Deadline } from './exportTimeline';
 import { encodeAudioTimeline } from './encodeAudioTimeline';
 import { encodeVideoFrames } from './encodeVideoFrames';
@@ -222,7 +222,7 @@ export async function exportWithWebCodecs(
         // ─── 10. Flush audio and finalize ───
         throwIfAborted(signal);
         if (audioEncoder) {
-            await awaitWithAbort(audioEncoder.flush(), signal);
+            await awaitWithTimeout(audioEncoder.flush(), MEDIA_WAIT_TIMEOUT_MS, 'Audio encoder timed out', signal);
             if (audioError) throw new AudioExportError('decodeFailed');
             audioEncoder.close();
             audioEncoderRef = null;

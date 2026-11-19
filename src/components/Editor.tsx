@@ -85,6 +85,17 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         maxDuration,
     });
 
+    const handleDeleteSelected = () => {
+        if (safeSegments.length <= 1) return;
+
+        const target = safeSegments[selectedIndex === 0 ? 1 : selectedIndex - 1];
+        deleteSelectedSegment();
+        if (target && videoRef.current) {
+            videoRef.current.currentTime = target.start;
+            setCurrentTime(target.start);
+        }
+    };
+
     const {
         isProcessing,
         processingProgress,
@@ -124,8 +135,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     const { handleTimeUpdate, handleLoadedMetadata, togglePlay, handleSeek, toggleFullscreen, previewEditedResult } = useEditorPlayback({
         videoRef, videoMetadata, isPlaying, setIsPlaying, currentTime,
         setCurrentTime, playbackError, setPlaybackError, safeSegments,
-        selectedSegment, selectedIndex, previewIndex, setPreviewIndex,
-        setSelectedIndexDirect, splitSelectedAt, undo, deleteSelectedSegment,
+        selectedSegment, previewIndex, setPreviewIndex,
+        setSelectedIndexDirect, splitSelectedAt, undo, onDeleteSelected: handleDeleteSelected,
         syncDurationIfUntouched, maxDuration, t
     });
 
@@ -260,16 +271,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                             handleSeek(Math.max(start, Math.min(currentTime, end)));
                         }}
                         onSplitAt={splitSelectedAt}
-                        onDeleteSelected={() => {
-                            const newIdx = Math.max(0, selectedIndex - 1);
-                            const remainingSegments = safeSegments.filter((_, i) => i !== selectedIndex);
-                            if (remainingSegments.length > 0 && videoRef.current) {
-                                const target = remainingSegments[Math.min(newIdx, remainingSegments.length - 1)];
-                                videoRef.current.currentTime = target.start;
-                                setCurrentTime(target.start);
-                            }
-                            deleteSelectedSegment();
-                        }}
+                        onDeleteSelected={handleDeleteSelected}
                         onUndo={undo}
                         onPreviewEdited={previewEditedResult}
                         onResetTrim={() => {

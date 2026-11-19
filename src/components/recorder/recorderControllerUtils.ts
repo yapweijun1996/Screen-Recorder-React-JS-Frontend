@@ -1,4 +1,5 @@
 import { StreamCompositor } from '../../utils/StreamCompositor';
+import { resumeAudioContext } from '../../utils/audioContext';
 import { RECORDING_PRESETS, type PIPPosition, type RecordingQuality } from '../../types';
 
 export type AudioMix = { context: AudioContext; destination: MediaStreamAudioDestinationNode };
@@ -13,6 +14,16 @@ export const formatRecordingTimeLabel = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const getRecorderErrorMessage = (error: unknown, translate: (key: string) => string): string => {
+    const name = error instanceof Error ? error.name : undefined;
+    if (name === 'NotAllowedError') return translate('recorder.errors.permission');
+    if (name === 'NotFoundError') return translate('recorder.errors.notFound');
+    if (name === 'NotReadableError') return translate('recorder.errors.notReadable');
+    if (name === 'OverconstrainedError') return translate('recorder.errors.overconstrained');
+    if (name === 'StreamCompositorError') return translate('recorder.errors.startFailed');
+    return error instanceof Error ? error.message : translate('recorder.errors.startFailed');
 };
 
 /**
@@ -66,7 +77,7 @@ const getVideoSizeFromStream = (screenStream: MediaStream) => {
     return { width, height };
 };
 
-const createAudioTracks = (screenStream: MediaStream, micStream?: MediaStream) => {
+const createAudioTracks = async (screenStream: MediaStream, micStream?: MediaStream) => {
     const screenAudioTracks = screenStream.getAudioTracks();
     const hasScreenAudio = screenAudioTracks.length > 0;
     const hasMicAudio = !!(micStream && micStream.getAudioTracks().length);
@@ -87,6 +98,13 @@ const createAudioTracks = (screenStream: MediaStream, micStream?: MediaStream) =
     if (hasMicAudio && micStream) {
         const micSource = audioContext.createMediaStreamSource(micStream);
         micSource.connect(destination);
+    }
+
+    try {
+        await resumeAudioContext(audioContext);
+    } catch (error) {
+        await closeAudioMix({ context: audioContext, destination });
+        throw error;
     }
 
     return { audioTracks: destination.stream.getAudioTracks(), audioMix: { context: audioContext, destination } };
@@ -128,7 +146,7 @@ export const createFinalStream = async (args: {
         }
     }
 
-    const { audioTracks, audioMix } = createAudioTracks(screenStream, micStream);
+    const { audioTracks, audioMix } = await createAudioTracks(screenStream, micStream);
     const finalStream = new MediaStream([
         ...screenStream.getVideoTracks(),
         ...audioTracks

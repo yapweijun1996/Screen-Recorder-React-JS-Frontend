@@ -61,7 +61,13 @@ export function segmentsReducer(state: SegmentsState, action: SegmentAction): Se
             if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return state;
             return commit(state, segments.map((segment, i) => i === index ? { start, end } : segment));
         }
-        case 'delete': return commit(state, segments.length > 1 ? segments.filter((_, i) => i !== index) : [{ start: 0, end: action.duration }], index - 1);
+        case 'delete': {
+            // The last retained clip is the user's complete selection. Deleting it
+            // would silently restore discarded media, so this action is a no-op
+            // when there is no surviving clip to select.
+            if (segments.length <= 1) return state;
+            return commit(state, segments.filter((_, i) => i !== index), index - 1);
+        }
         case 'reset': return commit(state, [{ start: 0, end: action.duration }], 0);
         case 'syncDuration': {
             if (state.history.length || segments.length !== 1 || selected.start !== 0 || !Number.isFinite(action.duration) || action.duration <= 0) return state;
@@ -88,7 +94,7 @@ export function segmentsReducer(state: SegmentsState, action: SegmentAction): Se
                 if (last && segment.start <= last.end + MERGE_EPSILON) last.end = Math.max(last.end, segment.end);
                 else merged.push(segment);
             }
-            return commit(state, merged.length ? merged : [{ start: 0, end: action.duration }]);
+            return merged.length ? commit(state, merged) : state;
         }
     }
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { LanguageCode, LanguageOption, TranslationTable } from './types';
+import { readPreference, writePreference } from '../services/preferenceStorage';
 
 import de from './locales/de';
 import en from './locales/en';
@@ -75,19 +76,16 @@ export const I18nProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const [language, setLanguageState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
-        if (saved && translations[saved]) {
+        const saved = readPreference(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
+        if (saved && Object.prototype.hasOwnProperty.call(translations, saved)) {
             setLanguageState(saved);
         }
     }, []);
 
     const setLanguage = (code: LanguageCode) => {
-        if (!translations[code]) return;
+        if (!Object.prototype.hasOwnProperty.call(translations, code)) return;
         setLanguageState(code);
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
-        }
+        writePreference(LANGUAGE_STORAGE_KEY, code);
     };
 
     const value = useMemo<I18nContextValue>(() => ({

@@ -11,6 +11,18 @@ export class RecordingSession {
     compositor: StreamCompositor | null = null;
     audioMix: AudioMix | null = null;
     disposed = false;
+    stopRequested = false;
+    recorderError: unknown = null;
+
+    requestStop(): boolean {
+        if (this.disposed || this.stopRequested) return false;
+        this.stopRequested = true;
+        return true;
+    }
+
+    recordError(error: unknown): void {
+        if (!this.recorderError) this.recorderError = error;
+    }
 
     ownStream(stream: MediaStream): MediaStream {
         // A permission dialog can finish after its component has unmounted.

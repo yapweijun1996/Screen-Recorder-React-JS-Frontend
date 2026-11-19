@@ -9,6 +9,7 @@ interface RecorderPreviewProps {
 
     isRecording: boolean;
     isPaused: boolean;
+    isStopping: boolean;
     recordingTimeLabel: string;
 
     activeStream: MediaStream | null;
@@ -25,6 +26,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
     videoRef,
     isRecording,
     isPaused,
+    isStopping,
     recordingTimeLabel,
     activeStream,
     micStream,
@@ -97,6 +99,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                                     <Button
                                         variant={isPaused ? 'success' : 'warning'}
                                         onClick={onPauseResume}
+                                        disabled={isStopping}
                                         className="px-4"
                                     >
                                         {isPaused ? <Play size={18} /> : <Pause size={18} />}
@@ -107,6 +110,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                                         <Button
                                             variant="secondary"
                                             onClick={onCyclePipPosition}
+                                            disabled={isStopping}
                                             className="px-3"
                                             title={t('preview.changePosition')}
                                         >
@@ -115,7 +119,7 @@ export const RecorderPreview: React.FC<RecorderPreviewProps> = ({
                                     )}
                                 </div>
 
-                                <Button variant="danger" onClick={onStop} className="px-6">
+                                <Button variant="danger" onClick={onStop} className="px-6" disabled={isStopping}>
                                     <StopCircle className="w-5 h-5 mr-2" />
                                     {t('preview.stop')}
                                 </Button>
