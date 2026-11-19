@@ -7,11 +7,17 @@ ScreenClip Pro supports installation through compatible browsers and can reopen 
 - `vite.config.ts`: `registerType: 'prompt'`, `injectRegister: false`, `skipWaiting: false`, `clientsClaim: true`.
 - `src/registerSW.ts`: registers only in production, returns effect cleanup, and exposes `applyUpdate()`.
 - `src/services/serviceWorkerUpdates.ts`: native registration and waiting/installing worker listeners; hourly and visibility-triggered update checks. Already-waiting workers also trigger the banner.
-- `src/App.tsx`: localized banner in all ten languages; reload is disabled while `TaskActivity` reports active work.
+- `src/App.tsx`: localized banner and manual **Check for updates** in the recorder and converter footer. The footer displays the build ID of the running page, and the update button shows the waiting worker's build ID when available.
 
 A new worker remains waiting until an idle user clicks **Update and reload**. That sends `SKIP_WAITING`; the generated worker activates and claims clients. A `controllerchange` reloads only the confirming tab if it is still idle. If work starts during activation, or another tab activates the worker, this tab shows a prompt and waits for a new local confirmation. First installation never reloads the page.
 
 Recording leases begin before permission prompts and remain through stop/finalization. Exports and IndexedDB restore/save/delete also acquire leases. Lease release is idempotent; effect cleanup removes service-worker listeners and periodic timers, including React StrictMode remounts.
+
+The converter holds a separate update-protection lease on a finished result until the user requests its download or confirms discarding it. Closing or reloading the browser page during this period or during conversion triggers the browser's leave warning where supported. The conversion and its pending output stay in the current document while users switch app surfaces.
+
+## Build identity
+
+GitHub releases use the build's commit SHA. The build embeds the ID in the page bundle and in a build-specific service-worker script. The page asks the waiting worker for its own ID over a message channel. Workers from older releases can still provide the standard update prompt. On the next successful reload, the footer displays the newly loaded build.
 
 ## Manifest
 

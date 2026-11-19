@@ -6,6 +6,15 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Add MP3 selection, protect conversions and show PWA build versions
+
+- The converter offers MP4 video and MP3 audio. In-app surface switches retain the active job, selected file and pending output. Cancelling a job or discarding a result before download requires confirmation. An undownloaded result blocks app-controlled reload.
+- FFprobe identified an audio-only MP3 from the original recorded WebM. The browser smoke suite checks real MP3 downloads and a missing-audio error from silent input.
+- The recorder and converter footers sit at the viewport bottom when content is short. They display the running build and provide **Check for updates**. The waiting worker supplies the target build ID shown on **Update and reload**.
+- Chromium verified an update between two independently built versions, including the blocked state until a conversion download was requested. [Browser checks](docs/BROWSER_VERIFICATION.md)
+
+---
+
 ## 2026-11-19 — Repair streamed WebM conversion and refine editor controls
 
 - Reproduced a converter failure on a screen recording with VP9 video, Opus audio and no declared WebM duration. Sparse lookup missed target timestamps that presentation-order decoding could read. The streaming path now samples real decoded frames with bounded lookahead, preserving the audio tail and explicit decoder failures. The original recording stayed local and was excluded from the repository.

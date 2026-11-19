@@ -109,6 +109,6 @@ Export quality presets control bitrate. CRF is not part of the export contract o
 
 The current recording slot is shared per origin. Each saved recording has its own identity, and an existing record receives one the first time it is restored. **Record New** compares that identity with the current slot in the same transaction as deletion. A stale editor keeps its draft and original download while displaying the conflict. Legacy recordings remain viewable and downloadable if the identity write fails.
 
-`useExportOperation` and `ExportTaskScope` own each UI export. Unmount, cancellation, file replacement and a new export invalidate the previous task; late progress/results cannot update the current UI or allocate a result URL. Completed result URLs are revoked on replacement and unmount.
+`useExportOperation` and `ExportTaskScope` own each UI export. Unmount, cancellation, file replacement and a new export invalidate the previous task. Late results cannot allocate a URL for a stale operation. The converter stays mounted outside the recording-keyed draft provider. A completed converter output holds an update-protection lease until download is requested or the result is discarded.
 
 `TaskActivity` leases span permission prompts, recording, exports and storage operations. PWA reload confirmation is disabled while any lease is active, and the service-worker controller checks the same state at activation. Activation by another tab only prompts this tab; it never forces an active job to reload.

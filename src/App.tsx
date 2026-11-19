@@ -8,13 +8,53 @@ import { Layers, Loader2, RefreshCw, Video, FileVideo } from 'lucide-react';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
 import { Converter, type ConverterStatus } from './components/Converter';
-import { setupServiceWorker, applyUpdate } from './registerSW';
+import {
+    APP_BUILD_VERSION,
+    applyUpdate,
+    checkForUpdates,
+    setupServiceWorker,
+    type UpdateCheckResult,
+} from './registerSW';
 import { EditorDraftProvider } from './components/editor/EditorDraftContext';
 import { useVideoSession } from './components/useVideoSession';
 import { recordingActivity, taskActivity } from './services/taskActivity';
 import { StorageNotice } from './components/StorageNotice';
 
 type Page = 'recorder' | 'converter';
+const checkFeedback = {
+    available: '',
+    installing: 'app.update.installing',
+    'up-to-date': 'app.update.current',
+    'no-worker': 'app.update.unavailable',
+    failed: 'app.update.checkFailed',
+};
+
+interface AppFooterProps {
+    t: (key: string, params?: Record<string, string | number>) => string;
+    releaseVersion: string;
+    checkingUpdates: boolean;
+    onCheckForUpdates: () => void;
+    checkStatus: UpdateCheckResult['status'] | null;
+}
+
+const AppFooter: React.FC<AppFooterProps> = ({ t, releaseVersion, checkingUpdates, onCheckForUpdates, checkStatus }) => (
+    <footer className="mt-auto py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
+        <p>{t('app.footer.line1')}</p>
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-th-secondary">
+            <span title={releaseVersion}>{t('app.footer.build', { version: releaseVersion.slice(0, 8) })}</span>
+            <span aria-hidden="true">•</span>
+            <button
+                type="button"
+                onClick={onCheckForUpdates}
+                disabled={checkingUpdates}
+                className="font-medium text-indigo-600 dark:text-indigo-300 underline underline-offset-2 disabled:opacity-60 disabled:cursor-wait"
+            >
+                {t(checkingUpdates ? 'app.update.checking' : 'app.update.check')}
+            </button>
+        </div>
+        {checkStatus && checkFeedback[checkStatus] && <p role="status" className="mt-1 text-xs text-th-secondary">{t(checkFeedback[checkStatus])}</p>}
+    </footer>
+);
 
 const App: React.FC = () => {
     const { t } = useI18n();
@@ -23,18 +63,49 @@ const App: React.FC = () => {
     const recordingBusy = useSyncExternalStore(recordingActivity.subscribe, recordingActivity.isBusy, () => false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
     const [converterStatus, setConverterStatus] = useState<ConverterStatus>('idle');
+    const currentReleaseVersion = APP_BUILD_VERSION;
+    const [targetReleaseVersion, setTargetReleaseVersion] = useState<string | undefined>();
+    const [checkingUpdates, setCheckingUpdates] = useState(false);
+    const [checkStatus, setCheckStatus] = useState<UpdateCheckResult['status'] | null>(null);
     const [page, setPage] = useState<Page>(() => {
         const p = new URLSearchParams(window.location.search).get('page');
         return p === 'converter' ? 'converter' : 'recorder';
     });
 
     useEffect(() => {
-        return setupServiceWorker(() => setUpdateAvailable(true));
+        const notifyUpdate = (targetVersion?: string | null) => {
+            setTargetReleaseVersion(targetVersion ?? undefined);
+            setUpdateAvailable(true);
+            setCheckStatus(null);
+        };
+        return setupServiceWorker(notifyUpdate);
     }, []);
+
+    const handleCheckForUpdates = async () => {
+        if (checkingUpdates) return;
+        setCheckingUpdates(true);
+        setCheckStatus(null);
+        try {
+            const result = await checkForUpdates();
+            if (result.status === 'available') {
+                setTargetReleaseVersion(result.waitingVersion ?? undefined);
+                setUpdateAvailable(true);
+            } else setCheckStatus(result.status);
+        } finally {
+            setCheckingUpdates(false);
+        }
+    };
+
+    const navigateToConverter = () => {
+        // Check the live lease too: capture can begin before React rerenders.
+        if (!recordingActivity.isBusy()) setPage('converter');
+    };
 
     const isEditorMode = status === AppStatus.REVIEWING && videoData;
     // Converter tab overrides editor — user can still access it mid-session.
     const showEditor = !!isEditorMode && page !== 'converter';
+    const converterHasUndownloadedResult = converterStatus === 'undownloaded';
+    const updateBlocked = updateBusy || converterStatus === 'converting' || converterHasUndownloadedResult;
 
     if (isLoadingStored) {
         return (
@@ -79,10 +150,7 @@ const App: React.FC = () => {
                             type="button"
                             disabled={recordingBusy}
                             title={recordingBusy ? t('app.navigation.recordingBusy') : undefined}
-                            onClick={() => {
-                                // Check the live lease too: capture can begin before React rerenders.
-                                if (!recordingActivity.isBusy()) setPage('converter');
-                            }}
+                            onClick={navigateToConverter}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                 page === 'converter'
                                     ? 'bg-indigo-600 text-white shadow'
@@ -105,15 +173,19 @@ const App: React.FC = () => {
             {/* Update Available Banner */}
             {updateAvailable && (
                 <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-300 dark:border-indigo-500/50 text-indigo-800 dark:text-indigo-200 flex items-center justify-between gap-3 animate-fade-in flex-shrink-0">
-                    <span className="text-sm">{t(converterStatus === 'undownloaded' ? 'app.update.converterUnsaved' : updateBusy ? 'app.update.busy' : 'app.update.available')}</span>
+                    <span className="text-sm">
+                        {t(converterHasUndownloadedResult ? 'app.update.converterUnsaved' : updateBusy ? 'app.update.busy' : 'app.update.available')}
+                    </span>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
-                            disabled={updateBusy}
-                            onClick={() => applyUpdate()}
+                            disabled={updateBlocked}
+                            onClick={() => { if (!updateBlocked) applyUpdate(); }}
                             className="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <RefreshCw size={12} />
-                            {t('app.update.reload')}
+                            {targetReleaseVersion
+                                ? t('app.update.reloadVersion', { version: targetReleaseVersion.slice(0, 8) })
+                                : t('app.update.reload')}
                         </button>
                         <button
                             onClick={() => setUpdateAvailable(false)}
@@ -123,6 +195,13 @@ const App: React.FC = () => {
                             &times;
                         </button>
                     </div>
+                </div>
+            )}
+
+            {page !== 'converter' && converterStatus !== 'idle' && (
+                <div role="status" className="px-4 py-1.5 bg-th-card border-b border-th-edge text-th-secondary flex items-center justify-center gap-2 text-xs flex-shrink-0">
+                    <FileVideo size={13} className="text-indigo-500" aria-hidden="true" />
+                    <span>{t(converterStatus === 'converting' ? 'converter.progress.label' : 'converter.done.title')}</span>
                 </div>
             )}
 
@@ -136,63 +215,64 @@ const App: React.FC = () => {
 
             {storageIssue && <StorageNotice issue={storageIssue} video={videoData} />}
 
-            {page !== 'converter' && converterStatus !== 'idle' && (
-                <div role="status" className="px-4 py-1.5 bg-th-card border-b border-th-edge text-th-secondary flex items-center justify-center gap-2 text-xs flex-shrink-0">
-                    <FileVideo size={13} className="text-indigo-500" aria-hidden="true" />
-                    <span>{t(converterStatus === 'converting' ? 'converter.progress.label' : 'converter.done.title')}</span>
-                </div>
-            )}
-
-            {/* The converter owns its file and result for this document. */}
-            <div hidden={page !== 'converter'}>
+            {/* Keep the converter mounted while pages and recording drafts change. */}
+            <section className={`${page === 'converter' ? 'flex' : 'hidden'} flex-1 flex-col`}>
                 <Converter onStatusChange={setConverterStatus} />
-                <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
-                    <p>{t('app.footer.line1')}</p>
-                    <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
-                </footer>
-            </div>
+                <AppFooter
+                    t={t}
+                    releaseVersion={currentReleaseVersion}
+                    checkingUpdates={checkingUpdates}
+                    onCheckForUpdates={handleCheckForUpdates}
+                    checkStatus={checkStatus}
+                />
+            </section>
 
-            {/* Keep the draft owner mounted while pages change. */}
-            <EditorDraftProvider
-                key={videoData?.recordingId ?? videoData?.url ?? 'empty'}
-                duration={videoData?.duration ?? 0}
-                recordingId={videoData?.recordingId}
-            >
-                {page === 'converter' ? null : showEditor ? (
-                    <Editor
-                        videoMetadata={videoData!}
-                        onReset={handleReset}
-                    />
-                ) : (
-                    <>
-                        <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-                            <div className="flex-1 flex flex-col">
-                                {status === AppStatus.IDLE && (
-                                    <Recorder
-                                        onRecordingComplete={handleRecordingComplete}
-                                        onError={setErrorMsg}
-                                    />
-                                )}
+            <section className={`${page === 'converter' ? 'hidden' : 'flex'} flex-1 flex-col min-h-0`}>
+                {/* Keep the draft owner mounted while recorder/editor pages change. */}
+                <EditorDraftProvider
+                    key={videoData?.recordingId ?? videoData?.url ?? 'empty'}
+                    duration={videoData?.duration ?? 0}
+                    recordingId={videoData?.recordingId}
+                >
+                    {page !== 'converter' && (showEditor ? (
+                        <Editor
+                            videoMetadata={videoData!}
+                            onReset={handleReset}
+                        />
+                    ) : (
+                        <>
+                            <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+                                <div className="flex-1 flex flex-col">
+                                    {status === AppStatus.IDLE && (
+                                        <Recorder
+                                            onRecordingComplete={handleRecordingComplete}
+                                            onError={setErrorMsg}
+                                        />
+                                    )}
 
-                                {status === AppStatus.PROCESSING && (
-                                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
-                                        <Loader2 size={36} className="animate-spin text-indigo-400" />
-                                        <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
-                                        <p className="text-sm text-th-secondary text-center px-4">
-                                            {t('app.processing.desc')}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </main>
+                                    {status === AppStatus.PROCESSING && (
+                                        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
+                                            <Loader2 size={36} className="animate-spin text-indigo-400" />
+                                            <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
+                                            <p className="text-sm text-th-secondary text-center px-4">
+                                                {t('app.processing.desc')}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </main>
 
-                        <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
-                            <p>{t('app.footer.line1')}</p>
-                            <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
-                        </footer>
-                    </>
-                )}
-            </EditorDraftProvider>
+                            <AppFooter
+                                t={t}
+                                releaseVersion={currentReleaseVersion}
+                                checkingUpdates={checkingUpdates}
+                                onCheckForUpdates={handleCheckForUpdates}
+                                checkStatus={checkStatus}
+                            />
+                        </>
+                    ))}
+                </EditorDraftProvider>
+            </section>
         </div>
     );
 };
