@@ -1,4 +1,4 @@
-import { ALL_FORMATS, BlobSource, Input, VideoSampleSink, type VideoSample } from 'mediabunny';
+import { ALL_FORMATS, WEBM, BlobSource, Input, VideoSampleSink, type VideoSample } from 'mediabunny';
 import { awaitWithAbort, throwIfAborted } from './mediaWait';
 
 export interface VideoSource {
@@ -6,6 +6,46 @@ export interface VideoSource {
     height: number;
     samples: (timestamps: Iterable<number>) => AsyncGenerator<VideoSample | null, void, unknown>;
     dispose: () => void;
+}
+
+/** Sample a streaming recording in presentation order without relying on timestamp seeks. */
+export async function* sampleSequentialVideo(
+    openSamples: (start: number) => AsyncGenerator<VideoSample, void, unknown>,
+    timestamps: Iterable<number>,
+): AsyncGenerator<VideoSample | null, void, unknown> {
+    const requests = timestamps[Symbol.iterator]();
+    let request = requests.next();
+    while (!request.done) {
+        const decoder = openSamples(request.value);
+        let current: VideoSample | null = null;
+        let next: VideoSample | null = null;
+        try {
+            const first = await decoder.next();
+            if (first.done) return;
+            current = first.value;
+            const following = await decoder.next();
+            next = following.done ? null : following.value;
+            while (!request.done) {
+                const timestamp = request.value;
+                while (next && next.timestamp <= timestamp) {
+                    current.close();
+                    current = next;
+                    next = null;
+                    const decoded = await decoder.next();
+                    if (!decoded.done) next = decoded.value;
+                }
+                // Hold the previous picture between frames and under an audio tail.
+                yield current.timestamp <= timestamp ? current.clone() : null;
+                request = requests.next();
+                // Overlapping export ranges can rewind source time between cuts.
+                if (!request.done && request.value < timestamp) break;
+            }
+        } finally {
+            current?.close();
+            next?.close();
+            await decoder.return();
+        }
+    }
 }
 
 export async function openVideoSource(blob: Blob, signal?: AbortSignal): Promise<VideoSource> {
@@ -25,17 +65,25 @@ export async function openVideoSource(blob: Blob, signal?: AbortSignal): Promise
         const width = await awaitWithAbort(track.getDisplayWidth(), signal);
         const height = await awaitWithAbort(track.getDisplayHeight(), signal);
         const firstTimestamp = await awaitWithAbort(track.getFirstTimestamp(), signal);
+        const format = await awaitWithAbort(input.getFormat(), signal);
+        // MediaRecorder WebM can omit a declared duration and fail timestamp
+        // lookups between clusters even though sequential decoding is valid.
+        const sequential = format === WEBM && await awaitWithAbort(track.getDurationFromMetadata(), signal) === null;
         const sink = new VideoSampleSink(track);
         throwIfAborted(signal);
         return {
             width, height, dispose,
-            samples: timestamps => sink.samplesAtTimestamps((function* () {
-                for (const timestamp of timestamps) {
-                    // Allow microsecond rounding at frame boundaries. Hold the
-                    // first frame when a recording starts with a video gap.
-                    yield Math.max(firstTimestamp, timestamp + 1 / 1_000_000);
-                }
-            })()),
+            samples: timestamps => {
+                const normalized = (function* () {
+                    for (const timestamp of timestamps) {
+                        // Allow microsecond rounding and hold the first frame across a leading gap.
+                        yield Math.max(firstTimestamp, timestamp + 1 / 1_000_000);
+                    }
+                })();
+                return sequential
+                    ? sampleSequentialVideo(start => sink.samples(start), normalized)
+                    : sink.samplesAtTimestamps(normalized);
+            },
         };
     } catch (error) {
         dispose();

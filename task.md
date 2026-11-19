@@ -6,6 +6,16 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Repair streamed WebM conversion and refine editor controls
+
+- Reproduced a converter failure on a screen recording with VP9 video, Opus audio and no declared WebM duration. Sparse lookup missed target timestamps that presentation-order decoding could read. The streaming path now samples real decoded frames with bounded lookahead, preserving the audio tail and explicit decoder failures. The original recording stayed local and was excluded from the repository.
+- In Chromium, the original failure case produced a 1920×1080 MP4 with 8,600 H.264 frames, AAC audio and a 286.656-second duration. FFprobe verified the downloaded file.
+- TypeScript, 140 Node tests and the production build passed. The streamed WebM fixture produced H.264/AAC in Chromium and VP8/Opus in Firefox. Bundled Windows WebKit retained its unsupported-conversion result.
+- The Play/Pause action moved next to the timecode beneath the video. **Record New** uses the shared red danger treatment. Converter feedback uses semantic theme colors. Chromium validated playback with Space and Enter, reset protection across tabs, and error and warning contrast in both themes.
+- The six-viewport UI review and deferred tasks are recorded in the [UI/UX backlog](improvement.md#uiux-audit-and-parallel-backlog).
+
+---
+
 ## 2026-11-19 — Ship recording protection, draft recovery and verified export
 
 **Status.** Code shipped to `main`. Device verification and full long-export profiling remain open in the [improvement roadmap](improvement.md).

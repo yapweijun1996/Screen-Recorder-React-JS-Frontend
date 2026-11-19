@@ -22,6 +22,7 @@ See [task.md](task.md) for current verification results.
 | A stale editor could delete the replacement recording saved by another tab. | `293b8ee` compares the recording identity and deletes within one IndexedDB transaction. Chromium preserved the replacement and kept the stale original available for download. |
 | Manual timeline seeking during selection preview could snap to the next clip boundary. | `293b8ee` exits sequence preview before the seek. Chromium and Firefox retained the clicked source position and selected the later clip. |
 | Firefox could report a successful WebM conversion with no recognized audio track. | `dc49d1f` supplies `A_OPUS` to the muxer and guards audio output. FFprobe confirmed VP8 and Opus in downloads created from both Opus and AAC inputs. |
+| A streamed WebM from screen recording failed conversion with `Missing decoded video frame`. | The container lacked declared duration, and sparse timestamp lookup returned no sample from the first affected target at 1.133 seconds. Sequential decoding read all 1,510 source frames. In Chromium, the corrected download contained 8,600 H.264 frames and AAC audio at approximately the original 286.6-second duration. [Decoder path](src/services/webcodecs/exportVideo.ts) |
 
 ## Findings
 

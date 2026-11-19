@@ -12,7 +12,7 @@ npm run build
 python -B scripts/browser_smoke.py
 ```
 
-Pass `--browser chromium`, `--browser firefox`, or `--browser webkit` to isolate a failure. The script reports one JSON result per browser. It compares the stated output format with the actual downloaded container and checks the video and audio tracks with FFprobe. Synthetic capture exercises permission denial, native MediaRecorder stop and pause/resume, track cleanup and session restore. Editor checks cover restored trims, rejection and explicit reset of a corrupt draft, and seeking into a later clip during preview. The local server then disconnects the origin to verify that a cached converter can reopen, while a fresh profile cannot make an initial offline visit.
+Pass `--browser chromium`, `--browser firefox`, or `--browser webkit` to isolate a failure. The script reports one JSON result per browser. It compares the stated output format with the actual downloaded container and checks the video and audio tracks with FFprobe. Conversion fixtures include a streamed WebM with uneven video frame times and Opus audio. Synthetic capture exercises permission denial, native MediaRecorder stop and pause/resume, track cleanup and session restore. Editor checks cover restored trims, rejection and explicit reset of a corrupt draft, and seeking into a later clip during preview. The local server then disconnects the origin to verify that a cached converter can reopen, while a fresh profile cannot make an initial offline visit.
 
 ## Verified production build
 

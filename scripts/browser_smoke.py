@@ -198,7 +198,7 @@ def converter_and_offline(browser, url, fixtures, offline):
         outcomes = {}
         for name, fixture in fixtures.items():
             page.reload()
-            has_audio = name in {"with_audio", "aac"}
+            has_audio = name in {"with_audio", "aac", "streaming"}
             outcomes[name] = convert_fixture(page, fixture, audio=has_audio, drop=name == "with_audio")
             must_download = (name == "silent" and status != "Engine Error") or (has_audio and status == "H.264 Ready")
             if must_download:
@@ -245,6 +245,7 @@ def main():
             "silent": make_fixture(directory, "silent.webm", False),
             "with_audio": make_fixture(directory, "with-audio.webm", True),
             "aac": make_fixture(directory, "with-aac.mp4", True),
+            "streaming": make_fixture(directory, "streaming.webm", True, streaming=True),
         }
         damaged = directory / "damaged.webm"
         damaged.write_bytes(b"Invalid WebM fixture")

@@ -77,9 +77,9 @@ Bitrate scales with output resolution: `videoBitsPerSecond * pixelRatio` clamped
 
 ### 5. Streaming decode → encode loop
 
-[`exportVideo.ts`](../src/services/webcodecs/exportVideo.ts) opens a Mediabunny `Input` with an 8 MiB read cache, checks video decoder support, and exposes `VideoSampleSink.samplesAtTimestamps()`. It consumes the deadline timestamps lazily. The sink decodes real source packets, reusing sequential work and seeking only when required by selected ranges. Browser playback speed and display refresh do not determine the exported frames.
+[`exportVideo.ts`](../src/services/webcodecs/exportVideo.ts) opens a Mediabunny `Input` with an 8 MiB read cache and checks video decoder support. WebM without declared duration uses presentation-order decoding with one-frame lookahead to avoid unreliable timestamp seeks. Other sources use `VideoSampleSink.samplesAtTimestamps()`. Both paths consume deadlines lazily. Browser playback speed and display refresh do not determine the exported frames.
 
-Sampling uses the source frame covering each requested timestamp. A one-microsecond tolerance accounts for WebCodecs timestamp rounding at frame boundaries. A short initial video gap holds the first available frame. Higher output FPS naturally repeats a source frame; missing samples or decoder failures stop export instead of fabricating a successful file. Rotation and pixel aspect ratio come from the video track's display dimensions.
+Sampling uses the source frame covering each requested timestamp. A one-microsecond tolerance accounts for WebCodecs timestamp rounding at frame boundaries. A short initial video gap holds the first available frame. The sequential path holds the preceding decoded picture between frames and during an audio tail. Missing required samples or decoder failures stop export. Rotation and pixel aspect ratio come from the video track's display dimensions.
 
 [`exportHelpers.ts`](../src/services/webcodecs/exportHelpers.ts) fits each resolution preset to the source orientation and aspect ratio, then rounds dimensions to even pixels for H.264. At 720p, 16:9 exports as 1280×720, 9:16 as 720×1280, and 4:3 as 960×720. `drawWithFit({ fit: 'contain' })` preserves the exact source ratio if even rounding introduces a small border.
 
@@ -117,7 +117,7 @@ Firefox writes the correct duration on `MediaRecorder.stop()` so this workaround
 
 ### MediaRecorder WebM without cues
 
-MediaRecorder WebM can lack a cues table and have sparse keyframes. Repeated HTML video seeks can rescan large ranges. Mediabunny's packet-based video sink decodes requested timestamps without driving the HTML playback clock; metadata duration probing retains the existing Chrome workaround above.
+MediaRecorder WebM can lack a cues table and have sparse keyframes. A streaming recording produced no usable samples for many timestamp seeks despite decoding in presentation order. The sequential path avoids that lookup failure and retains the original audio timeline. Metadata duration probing retains the existing Chrome workaround above.
 
 ---
 

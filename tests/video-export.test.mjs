@@ -7,7 +7,55 @@ after(() => server.close());
 const { encodeVideoFrames, VIDEO_QUEUE_LIMIT } = await server.ssrLoadModule('/src/services/webcodecs/encodeVideoFrames.ts');
 const { createTimeline, planDeadlines } = await server.ssrLoadModule('/src/services/webcodecs/exportTimeline.ts');
 const { getExportDimensions } = await server.ssrLoadModule('/src/services/webcodecs/exportHelpers.ts');
-const { openVideoSource } = await server.ssrLoadModule('/src/services/webcodecs/exportVideo.ts');
+const { openVideoSource, sampleSequentialVideo } = await server.ssrLoadModule('/src/services/webcodecs/exportVideo.ts');
+
+test('sequential WebM samples hold the preceding frame through uneven gaps and the audio tail', async () => {
+    const closed = [];
+    const frame = timestamp => ({ timestamp, clone: () => ({ timestamp }), close: () => closed.push(timestamp) });
+    const samples = sampleSequentialVideo(async function* (start) {
+        assert.equal(start, 0);
+        yield frame(0);
+        yield frame(0.2);
+        yield frame(0.75);
+    }, [0, 0.1, 0.2, 0.7, 0.75, 1.1]);
+    const actual = [];
+    for await (const sample of samples) actual.push(sample.timestamp);
+    assert.deepEqual(actual, [0, 0, 0.2, 0.2, 0.75, 0.75]);
+    assert.deepEqual(closed, [0, 0.2, 0.75]);
+});
+
+test('sequential WebM sampling releases prefetched frames on consumer stop', async () => {
+    const closed = [];
+    let returned = false;
+    const frame = timestamp => ({ timestamp, clone: () => ({ timestamp }), close: () => closed.push(timestamp) });
+    const samples = sampleSequentialVideo(async function* () {
+        try {
+            yield frame(0);
+            yield frame(1);
+            assert.fail('The stopped consumer must not request additional decoded frames');
+        } finally { returned = true; }
+    }, [0, 0.5, 1]);
+    for await (const sample of samples) {
+        assert.equal(sample.timestamp, 0);
+        break;
+    }
+    assert.deepEqual(closed, [0, 1]);
+    assert.equal(returned, true);
+});
+
+test('overlapping export cuts reopen the sequential decoder after rewinding', async () => {
+    const starts = [];
+    const frame = timestamp => ({ timestamp, clone: () => ({ timestamp }), close() {} });
+    const samples = sampleSequentialVideo(async function* (start) {
+        starts.push(start);
+        yield frame(0);
+        yield frame(1);
+    }, [0, 1, 0.5, 1]);
+    const actual = [];
+    for await (const sample of samples) actual.push(sample.timestamp);
+    assert.deepEqual(starts, [0, 0.5]);
+    assert.deepEqual(actual, [0, 1, 0, 1]);
+});
 
 async function withVideoRuntime(mode, operation) {
     const originals = Object.fromEntries(['VideoEncoder', 'VideoFrame', 'OffscreenCanvas'].map(key => [key, globalThis[key]]));

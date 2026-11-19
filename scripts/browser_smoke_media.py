@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 
 
-def make_fixture(directory, name, audio):
+def make_fixture(directory, name, audio, *, streaming=False):
     path = directory / name
     command = [
         "ffmpeg", "-hide_banner", "-loglevel", "error",
@@ -16,6 +16,9 @@ def make_fixture(directory, name, audio):
     mp4 = path.suffix == ".mp4"
     command += ["-t", "3", "-c:v", "libx264" if mp4 else "libvpx"]
     command += ["-c:a", "aac" if mp4 else "libopus"] if audio else ["-an"]
+    if streaming:
+        command += ["-vf", "select='not(between(t,1,1.6))'", "-fps_mode", "vfr",
+                    "-live", "1", "-cluster_time_limit", "100"]
     subprocess.run([*command, str(path)], check=True)
     assert_tracks(path, audio, name)
     return path
