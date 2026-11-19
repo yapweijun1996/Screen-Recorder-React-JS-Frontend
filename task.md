@@ -13,7 +13,7 @@ Newest first.
 - `945fdbf` added typecheck and tests to the Pages build gate. `6212c70` added the stable PWA identity and platform icons.
 - `293b8ee` added the recording identity check, keyboard and preview changes, and validated editor drafts. `dc49d1f` completed the converter keyboard flow and added codec-aware selection, sound-preserving WebM fallback and lazy frame planning.
 - Verified 137 Node tests, TypeScript and the production build. The [browser smoke suite](docs/BROWSER_VERIFICATION.md) checked Chromium and Firefox capture and editor paths, downloaded media tracks, Windows WebKit's unsupported export response, and cached reload on all three engines.
-- A planner-only run retained 0.04 MiB after GC while iterating 216,000 deadlines, compared with 22.75 MiB for the baseline eager planner. Compressed export output remains in memory.
+- A planner-only run retained 0.04 MiB after GC while iterating 216,000 deadlines, compared with 22.75 MiB for the baseline eager planner. Chromium and Firefox matched the baseline frame counts on the 30- and 60-second fixtures, with browser-dependent memory results. Compressed export output remains in memory. [Performance sample](docs/BROWSER_VERIFICATION.md#export-timing-and-memory-sample)
 
 ---
 

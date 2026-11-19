@@ -90,7 +90,7 @@ Effort is relative to this repository and includes verification. Items 1, 2 and 
 
 ## 8. Measure and bound long exports
 
-**Status.** Partially implemented in `dc49d1f`. The production encoder consumes frame deadlines lazily. The timing and frame bounds match the baseline planner. In a Node planner-only comparison for 216,000 deadlines, post-GC retained heap dropped from 22.75 MiB to 0.04 MiB and iteration plus planning took about 102 ms versus 18 ms. The sampled heap increase during this run was 35.78 MiB versus 31.90 MiB. These figures exclude decoders, encoders and muxers. Full media exports across longer runs, resolutions and browsers still need end-to-end memory, timing and cancellation measurements. Encoded output remains in memory.
+**Status.** Partially implemented in `dc49d1f`. The production encoder consumes frame deadlines lazily. The timing and frame bounds match the baseline planner. In a Node planner-only comparison for 216,000 deadlines, post-GC retained heap dropped from 22.75 MiB to 0.04 MiB and iteration plus planning took about 102 ms versus 18 ms. The sampled heap increase during this run was 35.78 MiB versus 31.90 MiB. These figures exclude decoders, encoders and muxers. A production comparison also verified exact frame counts and responsive cancellation with 30- and 60-second silent fixtures on Chromium and Firefox. Process memory results varied by browser and input. Encoded output remains in memory. [End-to-end results](docs/BROWSER_VERIFICATION.md#export-timing-and-memory-sample)
 
 **Evidence.** The video planner allocates an entry for each output frame. MP4 and WebM muxing use in-memory targets, and video MP4 enables in-memory fast start. Existing tests protect decoded-block and encoder-queue bounds. They provide no general bound for deadline objects or complete output bytes. [Frame plan](src/services/webcodecs/exportTimeline.ts#L29) · [Mux targets](src/services/webcodecs/webcodecExportService.ts) · [Current limits](docs/EXPORT_PIPELINE.md)
 
@@ -100,7 +100,7 @@ Effort is relative to this repository and includes verification. Items 1, 2 and 
 
 ## 9. Clarify installability and offline behavior
 
-**Status.** Manifest identity, platform icons and offline guidance shipped in `6212c70`. The browser smoke suite verified the project subpath and cached reload in three engines. Chromium verified update blocking during capture. Launch from an installed system icon on supported devices remains pending.
+**Status.** Manifest identity, platform icons and offline guidance shipped in `6212c70`. The browser smoke suite verified the project subpath and cached reload in three engines. The published Pages manifest and its three icons responded successfully under the hosted project subpath. Chromium verified update blocking during capture. Launch from an installed system icon on supported devices remains pending.
 
 **Evidence.** The manifest and HTML reference SVG icons and the app relies on the browser's installation controls. The app precaches built assets and implements a guarded update flow. The project PWA notes list installation and icon gaps. [Manifest and precache](vite.config.ts#L17) · [Apple touch icon](index.html) · [PWA checklist](docs/PWA.md)
 

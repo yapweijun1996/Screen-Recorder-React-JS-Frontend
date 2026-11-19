@@ -26,6 +26,19 @@ Results below are from the local Windows smoke suite for the production code at 
 
 The Firefox fixture originally exposed a download that appeared successful in the UI but lacked a recognized audio stream. The corrected WebM output uses the Opus codec identifier specified by the muxer. FFprobe identified Opus in both audio-bearing download cases. [Muxer format documentation](https://github.com/Vanilagy/webm-muxer/blob/main/MIGRATION-GUIDE.md)
 
+## Export timing and memory sample
+
+Local Windows comparison of `293b8ee` and `dc49d1f`, one run per configuration. Both used the same silent moving VP8 input and the default 30 fps converter output. FFprobe confirmed the dimensions, container, duration within 100 ms, and exact output frame count. Memory is the increase from the pre-conversion reading to the highest sum of browser process working sets sampled every 40 ms. It includes shared pages, so interpret it as a coarse process-level measure.
+
+| Engine and source | Frames | Time, baseline → current | Working set increase, baseline → current |
+| --- | --- | --- | --- |
+| Chromium, 30 s at 360p/24 fps | 900 | 2.45 s → 2.41 s | 541.9 MiB → 538.2 MiB |
+| Chromium, 60 s at 720p/30 fps | 1,800 | 12.24 s → 12.25 s | 563.1 MiB → 587.0 MiB |
+| Firefox, 30 s at 360p/24 fps | 900 | 3.82 s → 3.90 s | 224.4 MiB → 214.1 MiB |
+| Firefox, 60 s at 720p/30 fps | 1,800 | 16.21 s → 15.76 s | 292.0 MiB → 267.3 MiB |
+
+On the 60-second fixture, the retry action reappeared within 132 ms in Chromium and 241 ms in Firefox after clicking Cancel on the current release. Neither browser published a download during the 300 ms observation window after cancellation. Longer exports, audio-bearing stress fixtures and file-backed output need separate evaluation.
+
 ## Physical device checks
 
 Record the browser version, operating system, capture source and output bytes for each manual result. Use test content and disposable recordings.
