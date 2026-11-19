@@ -1,0 +1,75 @@
+/* Shared semantic feedback colors for status surfaces and controls. */
+:root {
+    --status-error-bg: 254 242 242;
+    --status-error-border: 252 165 165;
+    --status-error-text: 153 27 27;
+    --status-error-action-bg: 220 38 38;
+    --status-error-action-hover: 185 28 28;
+    --status-action-text: 255 255 255;
+    --status-warning-bg: 255 251 235;
+    --status-warning-border: 252 211 77;
+    --status-warning-text: 146 64 14;
+    --status-success-bg: 236 253 245;
+    --status-success-border: 110 231 183;
+    --status-success-text: 6 95 70;
+    --status-success-icon: 4 120 87;
+    --status-success-action-bg: 4 120 87;
+    --status-success-action-hover: 6 95 70;
+}
+
+.dark {
+    --status-error-bg: 69 10 10;
+    --status-error-border: 248 113 113;
+    --status-error-text: 254 202 202;
+    --status-warning-bg: 69 26 3;
+    --status-warning-border: 245 158 11;
+    --status-warning-text: 253 230 138;
+    --status-success-bg: 2 44 34;
+    --status-success-border: 52 211 153;
+    --status-success-text: 167 243 208;
+    --status-success-icon: 110 231 183;
+}
+
+.status-error {
+    background-color: rgb(var(--status-error-bg));
+    border-color: rgb(var(--status-error-border));
+    color: rgb(var(--status-error-text));
+}
+
+.status-error-text { color: rgb(var(--status-error-text)); }
+
+.status-error-action {
+    background-color: rgb(var(--status-error-action-bg));
+    color: rgb(var(--status-action-text));
+}
+
+.status-error-action:hover {
+    background-color: rgb(var(--status-error-action-hover));
+}
+
+.status-warning {
+    background-color: rgb(var(--status-warning-bg));
+    border-color: rgb(var(--status-warning-border));
+    color: rgb(var(--status-warning-text));
+}
+
+.status-warning-text { color: rgb(var(--status-warning-text)); }
+
+.status-success {
+    background-color: rgb(var(--status-success-bg));
+    border-color: rgb(var(--status-success-border));
+    color: rgb(var(--status-success-text));
+}
+
+.status-success-text { color: rgb(var(--status-success-text)); }
+
+.status-success-icon { color: rgb(var(--status-success-icon)); }
+
+.status-success-action {
+    background-color: rgb(var(--status-success-action-bg));
+    color: rgb(var(--status-action-text));
+}
+
+.status-success-action:hover {
+    background-color: rgb(var(--status-success-action-hover));
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Maximize, Minimize } from 'lucide-react';
+import { Maximize, Minimize, Pause, Play } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 interface EditorPlayerProps {
@@ -82,17 +82,6 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                         </button>
                     )}
 
-                    {!isPlaying && !playbackError && (
-                        <div
-                            className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer hover:bg-black/30 transition-colors"
-                            onClick={onTogglePlay}
-                        >
-                            <div className="p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-xl hover:scale-105 transition-transform">
-                                <Play size={40} className="fill-white text-white translate-x-1" />
-                            </div>
-                        </div>
-                    )}
-
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-th-card">
                         <div
                             className="relative h-full"
@@ -113,11 +102,23 @@ export const EditorPlayer: React.FC<EditorPlayerProps> = ({
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-th-secondary text-xs border-t border-th-edge">
-                    <div className="flex items-center gap-2 font-mono">
-                        <span className="text-indigo-400">{currentTimeLabel}</span>
-                        <span>/</span>
-                        <span>{endTimeLabel}</span>
+                <div className="flex-shrink-0 px-3 py-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-th-surface text-th-secondary text-xs border-t border-th-edge">
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onTogglePlay}
+                            disabled={!!playbackError}
+                            aria-label={isPlaying ? t('preview.pause') : t('editor.timeline.play')}
+                            title={isPlaying ? t('preview.pause') : t('editor.timeline.play')}
+                            className="flex items-center justify-center w-11 h-11 rounded-md text-th-primary hover:bg-th-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isPlaying ? <Pause size={14} /> : <Play size={14} className="fill-current" />}
+                        </button>
+                        <div className="flex items-center gap-2 font-mono">
+                            <span className="font-semibold text-th-primary">{currentTimeLabel}</span>
+                            <span>/</span>
+                            <span>{endTimeLabel}</span>
+                        </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <span>{t('editor.player.total')}: {totalTimeLabel}</span>

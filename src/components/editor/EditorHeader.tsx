@@ -34,7 +34,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onReset }) => {
                     <ExternalLink size={13} />
                     {t('converter.nav')}
                 </a>
-                <Button variant="ghost" onClick={onReset}>
+                <Button variant="danger" onClick={onReset}>
                     <RotateCcw size={16} />
                     {t('editor.header.recordNew')}
                 </Button>

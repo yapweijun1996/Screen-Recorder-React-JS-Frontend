@@ -115,7 +115,7 @@ export const Converter: React.FC = () => {
                             <span id="converter-file-hint" className="block text-xs text-th-tertiary mt-1">{t('converter.drop.hint')}</span>
                         </span>
                     </button>
-                    {inputError && <p role="alert" className="text-xs text-red-300 text-center mt-2">{inputError}</p>}
+                    {inputError && <p role="alert" className="status-error-text text-xs text-center mt-2">{inputError}</p>}
                 </>
             )}
 
@@ -194,13 +194,13 @@ export const Converter: React.FC = () => {
 
                     {/* Error */}
                     {error && (
-                        <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-3 text-red-200 text-xs">
+                        <div role="alert" className="status-error border rounded-xl p-3 text-xs">
                             {error}
                         </div>
                     )}
 
-                    {!isConverting && (
-                        <p className="text-xs text-amber-200">
+                    {!isConverting && !error && (
+                        <p role="status" className="status-warning border rounded-xl p-3 text-xs">
                             {t('converter.fallback.notice')}
                         </p>
                     )}
@@ -224,13 +224,13 @@ export const Converter: React.FC = () => {
 
             {/* Done card */}
             {outputUrl && (
-                <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-2xl p-6 flex flex-col items-center gap-4 text-center animate-fade-in">
-                    <CheckCircle size={36} className="text-emerald-400" />
+                <div className="status-success border rounded-2xl p-6 flex flex-col items-center gap-4 text-center animate-fade-in">
+                    <CheckCircle aria-hidden="true" size={36} className="status-success-icon" />
                     <div>
-                        <p className="font-semibold text-emerald-300">{t('converter.done.title')}</p>
+                        <p role="status" className="status-success-text font-semibold">{t('converter.done.title')}</p>
                         <p className="text-xs text-th-tertiary mt-0.5">{outputFileName}</p>
                         {outputFormat !== 'mp4' && (
-                            <p className="text-xs text-amber-200 mt-2">
+                            <p role="status" className="status-warning-text text-xs mt-2">
                                 {t('converter.done.fallback', { format: outputFormat.toUpperCase() })}
                             </p>
                         )}
@@ -238,7 +238,7 @@ export const Converter: React.FC = () => {
                     <a
                         href={outputUrl}
                         download={outputFileName}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
+                        className="status-success-action flex items-center gap-2 px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
                     >
                         <Download size={18} />
                         {t('converter.btn.download', { format: outputFormat.toUpperCase() })}

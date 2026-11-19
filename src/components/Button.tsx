@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
 
     const variants = {
         primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 focus:ring-indigo-500",
-        danger: "bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-500/30 focus:ring-red-500",
+        danger: "status-error-action focus:ring-[rgb(var(--status-error-text))]",
         secondary: "bg-th-input hover:bg-th-input text-th-primary focus:ring-slate-500",
         ghost: "bg-transparent hover:bg-th-card text-th-secondary focus:ring-slate-500",
         success: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 focus:ring-emerald-500",
