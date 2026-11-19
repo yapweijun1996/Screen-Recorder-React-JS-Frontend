@@ -1,32 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ExportOptions } from '../types';
 import { exportService } from '../services/exportService';
 import { getExportErrorMessage } from '../services/webcodecs/exportErrors';
 import type { WebCodecsExportResult } from '../services/webcodecs/webcodecExportService';
 import { generateFileName } from '../utils/format';
 import { ExportTaskScope } from './ExportTaskScope';
+import { taskActivity } from '../services/taskActivity';
 
-type Output = WebCodecsExportResult & { url: string; fileName: string };
+type ResultFormat = WebCodecsExportResult['format'] | 'mp3';
+type Result<Format extends ResultFormat> = { blob: Blob; format: Format };
+type Output<Format extends ResultFormat> = Result<Format> & { url: string; fileName: string };
+type RunExport<Options, Format extends ResultFormat> = (
+    blob: Blob,
+    options: Options,
+    signal: AbortSignal,
+    onProgress: (progress: { ratio: number }) => void,
+) => Promise<Result<Format>>;
 
-export function useExportOperation(t: (key: string) => string, errorKey: string) {
+export function useExportJob<Options, Format extends ResultFormat>(
+    t: (key: string) => string,
+    errorKey: string,
+    process: RunExport<Options, Format>,
+    protectResult = false,
+) {
     const [scope] = useState(() => new ExportTaskScope());
-    const [output, setOutput] = useState<Output | null>(null);
+    const [output, setOutput] = useState<Output<Format> | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [eta, setEta] = useState<string | null>(null);
+    const [awaitingDownload, setAwaitingDownload] = useState(false);
+    const releaseDownloadProtection = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         scope.activate();
-        return () => scope.dispose();
+        return () => {
+            releaseDownloadProtection.current?.();
+            releaseDownloadProtection.current = null;
+            scope.dispose();
+        };
     }, [scope]);
 
     const resetProgress = () => { setIsProcessing(false); setProgress(0); setEta(null); };
-    const clearOutput = () => { scope.clearOutput(); setOutput(null); };
+    const acknowledgeDownload = () => {
+        releaseDownloadProtection.current?.();
+        releaseDownloadProtection.current = null;
+        setAwaitingDownload(false);
+    };
+    const clearOutput = () => { scope.clearOutput(); acknowledgeDownload(); setOutput(null); };
     const cancel = () => { scope.cancel(); resetProgress(); };
 
-    const run = async (blob: Blob, options: ExportOptions, baseName: string) => {
+    const run = async (blob: Blob, options: Options, baseName: string) => {
         const controller = scope.start();
+        acknowledgeDownload();
         const startedAt = Date.now();
         setError(null);
         setOutput(null);
@@ -34,7 +60,7 @@ export function useExportOperation(t: (key: string) => string, errorKey: string)
         setProgress(0);
         setEta(null);
         try {
-            const result = await exportService.processVideo(blob, options, controller.signal, ({ ratio }) => {
+            const result = await process(blob, options, controller.signal, ({ ratio }) => {
                 if (!scope.isCurrent(controller)) return;
                 const clamped = Math.max(0, Math.min(1, ratio));
                 setProgress(Math.round(clamped * 100));
@@ -46,6 +72,12 @@ export function useExportOperation(t: (key: string) => string, errorKey: string)
             });
             const url = scope.publish(controller, result.blob);
             if (!url) return;
+            // Acquire before finish releases the export lease, so a waiting
+            // application update cannot slip between conversion and download.
+            if (protectResult) {
+                releaseDownloadProtection.current = taskActivity.begin();
+                setAwaitingDownload(true);
+            }
             const extension = result.format === 'audio' ? (result.blob.type.includes('webm') ? 'webm' : 'm4a') : result.format;
             setOutput({ ...result, url, fileName: generateFileName(baseName, extension) });
         } catch (failure) {
@@ -60,5 +92,12 @@ export function useExportOperation(t: (key: string) => string, errorKey: string)
             }
         }
     };
-    return { output, error, isProcessing, progress, eta, run, cancel, clearOutput, clearError: () => setError(null) };
+    return { output, error, isProcessing, progress, eta, awaitingDownload, acknowledgeDownload, run, cancel, clearOutput, clearError: () => setError(null) };
+}
+
+const processVideo: RunExport<ExportOptions, WebCodecsExportResult['format']> =
+    (blob, options, signal, onProgress) => exportService.processVideo(blob, options, signal, onProgress);
+
+export function useExportOperation(t: (key: string) => string, errorKey: string) {
+    return useExportJob(t, errorKey, processVideo);
 }

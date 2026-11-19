@@ -5,16 +5,16 @@ import pathlib
 import subprocess
 
 
-def make_fixture(directory, name, audio, *, streaming=False):
+def make_fixture(directory, name, audio, *, streaming=False, seconds=3, size="160x90"):
     path = directory / name
     command = [
         "ffmpeg", "-hide_banner", "-loglevel", "error",
-        "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=30",
+        "-f", "lavfi", "-i", f"testsrc2=size={size}:rate=30",
     ]
     if audio:
         command += ["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000"]
     mp4 = path.suffix == ".mp4"
-    command += ["-t", "3", "-c:v", "libx264" if mp4 else "libvpx"]
+    command += ["-t", str(seconds), "-c:v", "libx264" if mp4 else "libvpx"]
     command += ["-c:a", "aac" if mp4 else "libopus"] if audio else ["-an"]
     if streaming:
         command += ["-vf", "select='not(between(t,1,1.6))'", "-fps_mode", "vfr",
@@ -48,3 +48,17 @@ def inspect_download(download, audio=False, stage="recording"):
     if audio:
         assert any(track == {"codec_type": "audio", "codec_name": expected_audio} for track in tracks), (stage, tracks)
     return {"container": extension[1:], "tracks": tracks}
+
+
+def inspect_mp3(download):
+    assert pathlib.Path(download.suggested_filename).suffix.lower() == ".mp3"
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=format_name,duration:stream=codec_type,codec_name",
+         "-of", "json", str(download.path())],
+        check=True, capture_output=True, text=True,
+    )
+    data = json.loads(result.stdout)
+    assert data["format"]["format_name"] == "mp3", data
+    assert data["streams"] == [{"codec_name": "mp3", "codec_type": "audio"}], data
+    assert abs(float(data["format"]["duration"]) - 3) < 0.25, data
+    return data

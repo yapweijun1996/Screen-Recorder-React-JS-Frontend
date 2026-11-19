@@ -123,13 +123,19 @@ MediaRecorder WebM can lack a cues table and have sparse keyframes. A streaming 
 
 ## Cancellation
 
-`exportWithWebCodecs()` accepts an optional `AbortSignal`. The shared UI hook `useExportOperation` creates a task through `ExportTaskScope`; both the editor and converter cancel it on unmount. Cancel immediately dismisses processing UI. A replacement task invalidates old progress/results, and each `processVideo` call receives its own progress callback.
+`exportWithWebCodecs()` accepts an optional `AbortSignal`. The shared UI hooks create a task through `ExportTaskScope`. Actual disposal cancels the task. The converter stays mounted across in-app surfaces, and confirming its Cancel action stops conversion. A replacement task invalidates old progress/results, and each job receives its own progress callback.
 
 `mediaWait.ts` attaches listeners before setting `src` or seeking, checks already-ready media, and handles abort, load errors and a 30-second timeout. Seeking to the current position completes without waiting for an event that may never fire. Source setup releases its video element and object URL even when it fails before the coordinator starts.
 
 Video sample, queue and flush waits handle abort and a 30-second inactivity timeout. The video pass returns its iterator and closes its sample/frame/encoder on every exit, including late samples delivered after an abandoned wait. The coordinator disposes both media inputs and releases metadata video resources. Decoder support or container parsing failures remain visible export failures; there is no lossy display-playback fallback.
 
 Audio read, queue and flush waits reject promptly on abort. Audio queue and flush waits also have a 30-second inactivity timeout. Disposing the Mediabunny input cancels reads, closes decoders and releases queued samples. The coordinator disposes it on success, failure and cancellation. Result object URLs are allocated only while the task is current, and are revoked on a new export, clear or unmount.
+
+## MP3 conversion and result lifetime
+
+MP3 is an audio-only option in the converter. [The MP3 service](../src/services/mp3ExportService.ts) decodes the primary audio track through Mediabunny and selects a bitrate from the chosen quality preset. It uses native support if available, otherwise it loads a worker-backed LAME extension on demand. The export returns `audio/mpeg` with an `.mp3` extension. The [third-party notice](../THIRD_PARTY_NOTICES.md#mediabunny-mp3-extension-and-lame) documents the encoder and corresponding source.
+
+The converter protects active work and finished results before the first download is requested. Reload and close use the browser's own warning where supported. An app-controlled update waits until the conversion is cancelled or fails, or until the user requests a download or discards the result. Files and pending results stay in memory for the lifetime of the current browser document. A frozen or discarded browser tab can suspend or end the conversion. [Browser page lifecycle](https://developer.chrome.com/docs/web-platform/page-lifecycle-api) · [Leave confirmation](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event)
 
 ---
 
@@ -139,4 +145,4 @@ Audio read, queue and flush waits reject promptly on abort. Audio queue and flus
 - **Adding a new resolution preset** — extend `RESOLUTION_MAP` and the `ExportResolution` union, and test orientation, aspect ratio and even dimensions
 - **Changing keyframe interval** — update the keyframe cadence in `createDeadlinePlan`
 - **Quality controls** — presets select video/audio bitrates. The unused CRF field and control have been removed from the UI and `ExportOptions`.
-- **Re-introducing FFmpeg** — **don't.** It re-triggers GPL/LGPL, which our LICENSE forbids. WebCodecs is enough.
+- **MP4 and WebM formats** — keep encoding on WebCodecs and the current muxers. The standalone MP3 encoder has a separate [license notice](../THIRD_PARTY_NOTICES.md#mediabunny-mp3-extension-and-lame).

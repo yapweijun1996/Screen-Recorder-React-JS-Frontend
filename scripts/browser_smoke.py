@@ -13,6 +13,7 @@ import threading
 
 from playwright.sync_api import Error, expect, sync_playwright
 
+from browser_smoke_converter import check_converter_lifetime, check_mp3
 from browser_smoke_editor import check_draft_recovery, check_invalid_draft, check_preview_seek
 from browser_smoke_media import inspect_download, make_fixture
 
@@ -250,6 +251,7 @@ def main():
         damaged = directory / "damaged.webm"
         damaged.write_bytes(b"Invalid WebM fixture")
         fixtures["damaged"] = damaged
+        handoff = make_fixture(directory, "handoff.webm", True, seconds=12, size="640x360")
         handler = functools.partial(StaticPreview, directory=str(public))
         with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
             server.offline = threading.Event()
@@ -263,12 +265,17 @@ def main():
                     try:
                         with getattr(playwright, engine).launch() as browser:
                             outcome = {"browser": engine, "version": browser.version}
-                            for stage, run in (
+                            checks = [
                                 ("capture_and_recovery", lambda: capture_and_recover(
                                     browser, url, public / PROJECT_PATH / "sw.js" if engine == "chromium" else None,
                                 )),
                                 ("converter_and_offline", lambda: converter_and_offline(browser, url, fixtures, server.offline)),
-                            ):
+                            ]
+                            if engine in ("chromium", "firefox"):
+                                checks.append(("mp3", lambda: check_mp3(browser, url, fixtures["with_audio"], fixtures["silent"])))
+                            if engine == "chromium":
+                                checks.append(("converter_lifetime", lambda: check_converter_lifetime(browser, url, handoff)))
+                            for stage, run in checks:
                                 try:
                                     outcome.update(run())
                                 except Exception as error:

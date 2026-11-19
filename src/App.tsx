@@ -7,7 +7,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { Layers, Loader2, RefreshCw, Video, FileVideo } from 'lucide-react';
 import { useI18n } from './i18n';
 import { LanguageSelector } from './components/LanguageSelector';
-import { Converter } from './components/Converter';
+import { Converter, type ConverterStatus } from './components/Converter';
 import { setupServiceWorker, applyUpdate } from './registerSW';
 import { EditorDraftProvider } from './components/editor/EditorDraftContext';
 import { useVideoSession } from './components/useVideoSession';
@@ -22,6 +22,7 @@ const App: React.FC = () => {
     const updateBusy = useSyncExternalStore(taskActivity.subscribe, taskActivity.isBusy, () => false);
     const recordingBusy = useSyncExternalStore(recordingActivity.subscribe, recordingActivity.isBusy, () => false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
+    const [converterStatus, setConverterStatus] = useState<ConverterStatus>('idle');
     const [page, setPage] = useState<Page>(() => {
         const p = new URLSearchParams(window.location.search).get('page');
         return p === 'converter' ? 'converter' : 'recorder';
@@ -104,7 +105,7 @@ const App: React.FC = () => {
             {/* Update Available Banner */}
             {updateAvailable && (
                 <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-300 dark:border-indigo-500/50 text-indigo-800 dark:text-indigo-200 flex items-center justify-between gap-3 animate-fade-in flex-shrink-0">
-                    <span className="text-sm">{t(updateBusy ? 'app.update.busy' : 'app.update.available')}</span>
+                    <span className="text-sm">{t(converterStatus === 'undownloaded' ? 'app.update.converterUnsaved' : updateBusy ? 'app.update.busy' : 'app.update.available')}</span>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                             disabled={updateBusy}
@@ -135,21 +136,29 @@ const App: React.FC = () => {
 
             {storageIssue && <StorageNotice issue={storageIssue} video={videoData} />}
 
+            {page !== 'converter' && converterStatus !== 'idle' && (
+                <div role="status" className="px-4 py-1.5 bg-th-card border-b border-th-edge text-th-secondary flex items-center justify-center gap-2 text-xs flex-shrink-0">
+                    <FileVideo size={13} className="text-indigo-500" aria-hidden="true" />
+                    <span>{t(converterStatus === 'converting' ? 'converter.progress.label' : 'converter.done.title')}</span>
+                </div>
+            )}
+
+            {/* The converter owns its file and result for this document. */}
+            <div hidden={page !== 'converter'}>
+                <Converter onStatusChange={setConverterStatus} />
+                <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
+                    <p>{t('app.footer.line1')}</p>
+                    <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
+                </footer>
+            </div>
+
             {/* Keep the draft owner mounted while pages change. */}
             <EditorDraftProvider
                 key={videoData?.recordingId ?? videoData?.url ?? 'empty'}
                 duration={videoData?.duration ?? 0}
                 recordingId={videoData?.recordingId}
             >
-                {page === 'converter' ? (
-                    <>
-                        <Converter />
-                        <footer className="py-6 text-center text-th-muted text-sm border-t border-th-edge flex-shrink-0">
-                            <p>{t('app.footer.line1')}</p>
-                            <p className="mt-1 text-th-faint">{t('app.footer.line2')}</p>
-                        </footer>
-                    </>
-                ) : showEditor ? (
+                {page === 'converter' ? null : showEditor ? (
                     <Editor
                         videoMetadata={videoData!}
                         onReset={handleReset}

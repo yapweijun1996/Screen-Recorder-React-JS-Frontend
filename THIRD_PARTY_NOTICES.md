@@ -14,6 +14,7 @@ LICENSE for ScreenClip Pro alters or supersedes these third-party licenses.
 | mp4-muxer | ^5.2.2 | MIT | https://github.com/Vanilagy/mp4-muxer |
 | webm-muxer | ^5.1.4 | MIT | https://github.com/Vanilagy/webm-muxer |
 | mediabunny | ^1.61.3 | MPL-2.0 | https://registry.npmjs.org/mediabunny/-/mediabunny-1.61.3.tgz |
+| @mediabunny/mp3-encoder | 1.61.3 | MPL-2.0, with LGPL LAME encoder | https://registry.npmjs.org/@mediabunny/mp3-encoder/-/mp3-encoder-1.61.3.tgz |
 
 ## Build / Dev Dependencies
 
@@ -85,3 +86,7 @@ See https://www.apache.org/licenses/LICENSE-2.0 for the full text.
 ### Mozilla Public License 2.0 (Mediabunny)
 
 Mediabunny is used without source modifications. Its covered source is available at https://registry.npmjs.org/mediabunny/-/mediabunny-1.61.3.tgz and via the npm package `mediabunny@1.61.3`. A copy of its license is distributed as [`licenses/mediabunny-MPL-2.0.txt`](public/licenses/mediabunny-MPL-2.0.txt). ScreenClip application source retains its MIT license; Mediabunny retains MPL-2.0. The shipped source-availability notice is [`licenses/mediabunny-NOTICE.txt`](public/licenses/mediabunny-NOTICE.txt).
+
+### Mediabunny MP3 extension and LAME
+
+MP3 conversion loads the MP3 extension as a separate module. This extension is distributed with the [MPL 2.0 terms](public/licenses/mediabunny-MPL-2.0.txt), and includes the [LAME 3.100 MP3 encoder](https://lame.sourceforge.io/) under the [GNU Library General Public License v2](public/licenses/lame-LGPL-2.0.txt). See the [shipped MP3 encoder notice](public/licenses/mp3-encoder-NOTICE.txt) for the corresponding source and build instructions.

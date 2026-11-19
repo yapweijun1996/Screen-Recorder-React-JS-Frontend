@@ -1,0 +1,24 @@
+ScreenClip Pro MP3 encoder notice
+
+ScreenClip Pro uses the unmodified @mediabunny/mp3-encoder 1.61.3 package.
+The extension is licensed under the Mozilla Public License 2.0. A copy
+of the license is provided in mediabunny-MPL-2.0.txt in this directory.
+
+The extension includes the LAME 3.100 MP3 encoder, licensed under the GNU
+Library General Public License, version 2 or later. A copy of version 2
+is provided in lame-LGPL-2.0.txt in this directory.
+LAME project and attribution: https://lame.sourceforge.io/
+
+Corresponding source:
+https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download
+https://github.com/Vanilagy/mediabunny/tree/9d36fc5779b254904bc609e66f2cd80ed8390b4b/packages/mp3-encoder
+
+The extension repository documents building the original LAME source with
+its MP3 decoder disabled, compiling the bridge, and creating the extension
+package. The same instructions are in the README in the published npm
+package. To replace the encoder in ScreenClip Pro, build that package with
+the desired LAME encoder, install the rebuilt package in a local checkout of
+ScreenClip Pro, then run npm run build to produce a replacement browser build.
+
+ScreenClip Pro source and lockfile:
+https://github.com/yapweijun1996/Screen-Recorder-React-JS-Frontend
