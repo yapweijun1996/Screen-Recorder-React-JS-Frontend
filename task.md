@@ -6,6 +6,17 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Ship recording protection, draft recovery and verified export
+
+**Status.** Code shipped to `main`. Device verification and full long-export profiling remain open in the [improvement roadmap](improvement.md).
+
+- `945fdbf` added typecheck and tests to the Pages build gate. `6212c70` added the stable PWA identity and platform icons.
+- `293b8ee` added the recording identity check, keyboard and preview changes, and validated editor drafts. `dc49d1f` completed the converter keyboard flow and added codec-aware selection, sound-preserving WebM fallback and lazy frame planning.
+- Verified 137 Node tests, TypeScript and the production build. The [browser smoke suite](docs/BROWSER_VERIFICATION.md) checked Chromium and Firefox capture and editor paths, downloaded media tracks, Windows WebKit's unsupported export response, and cached reload on all three engines.
+- A planner-only run retained 0.04 MiB after GC while iterating 216,000 deadlines, compared with 22.75 MiB for the baseline eager planner. Compressed export output remains in memory.
+
+---
+
 ## 2026-11-19 — Fix capture, timeline, export, and preference reliability
 
 **Status:** implemented and verified locally. [Bug register](bug.md) · [Feature map](FEATURES_MAP.md)
@@ -181,9 +192,7 @@ Also:
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 🟡 P1 | Generate PNG icons (192/512/180 apple-touch + maskable) | iOS home-screen shows blank without these |
 | 🟢 P2 | `beforeinstallprompt` install button | Big install-rate lever |
-| 🟢 P2 | Manifest `id` field | Prevents duplicate installs |
 | 🟢 P2 | Dedicated `offline.html` | Currently falls back to cached `index.html` |
 | 🟢 P2 | Remove dead `ffmpeg.*` / `engine.ready.*` i18n keys | Harmless but confusing for translators |
 | 🟢 P2 | Sentry / error monitoring for commercial deploy | |

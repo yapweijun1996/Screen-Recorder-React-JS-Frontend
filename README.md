@@ -11,12 +11,12 @@ Professional browser-based screen recorder and video editor. 100% client-side �
 - 🎥 **Screen + Webcam + Microphone capture** — picture-in-picture compositing built in
 - ✂️ **Multi-segment trim editor** — keep/remove regions; edits and undo survive navigation to the converter within the same tab
 - 🚀 **WebCodecs streaming export** — bounded decoded frames and audio blocks; compressed output remains in memory
-- 📦 **MP4 (H.264 + AAC) on Chrome/Edge/Safari, WebM (VP8 + Opus) on Firefox** — auto-detected per browser
+- 📦 **MP4 and WebM export** — the app selects from the video and audio encoders available for the source
 - 🌐 **PWA** — installable, offline-capable, service-worker update prompts with safe, confirmed reloads
 - 🎨 **Dark / light theme** with prefers-color-scheme support
 - 🌍 **10 languages** out of the box (en, zh, ja, ko, es, fr, de, pt, hi, id)
 - 🔒 **Zero server uploads** — all processing in-browser
-- 💾 **Recording recovery** — original recordings persist after transaction commit; save failures show a backup download link. Edit drafts persist during page navigation, not reloads.
+- 💾 **Recording recovery** — a committed original and its saved trim, selection and export settings restore on reload. Save failures show a backup download link.
 
 ## 🚀 Quick Start
 
@@ -27,7 +27,7 @@ npm run build     # Production build → dist/
 npm run preview   # Serve dist/ locally
 ```
 
-Requires Node 20+ and a modern browser (Chrome 87+, Firefox 130+, Safari 15.4+, Edge 87+).
+Use Node 20+ for development. Browser capture and export capabilities depend on the browser engine, operating system, capture source, and available codecs. See the [browser verification matrix](docs/BROWSER_VERIFICATION.md) for tested paths.
 
 ## 🏗️ Tech Stack
 
@@ -70,6 +70,7 @@ src/
 
 Detailed docs:
 
+- [Feature map](FEATURES_MAP.md), [improvement roadmap](improvement.md) and [browser verification](docs/BROWSER_VERIFICATION.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — component graph, data flow, services
 - [docs/EXPORT_PIPELINE.md](docs/EXPORT_PIPELINE.md) — how WebCodecs streaming export works, the Chrome WebM duration quirk, and lazy packet-based frame sampling
 - [docs/PWA.md](docs/PWA.md) — service worker update confirmation flow, manifest, safe-area handling, what's still pending for full 2026 compliance
