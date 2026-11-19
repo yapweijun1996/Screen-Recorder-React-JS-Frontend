@@ -161,6 +161,8 @@ const id: TranslationTable = {
     'converter.format.mp3': "Hanya audio",
     'converter.confirm.cancel': "Hentikan konversi? Anda dapat mencoba lagi dengan berkas yang dipilih.",
     'converter.confirm.discard': "Buang hasil konversi? Unduh dahulu jika ingin menyimpannya.",
+    'converter.transcript.title': "MP3 ke Teks",
+    'converter.confirm.discardTranscript': "Mulai ulang dan buang berkas hasil konversi serta transkrip yang sedang diproses atau belum diunduh?",
     'converter.done.unsaved': "Unduh hasil sebelum menutup atau memuat ulang halaman.",
     'app.update.converterUnsaved': "Unduh atau buang berkas hasil konversi sebelum memperbarui.",
     'converter.nav': 'Konverter WebM',

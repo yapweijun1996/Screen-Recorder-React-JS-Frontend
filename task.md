@@ -6,6 +6,14 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Add MP3 to Text to conversion results
+
+- Added **MP3 to Text** to the converter's MP3 result card. The existing local speech model processes the audio already in memory. Users can choose a language, edit the transcript, and download TXT or SRT.
+- The transcript stays with its MP3 result across app tab switches. Starting over confirms before discarding active transcription or an undownloaded transcript. [Feature map](FEATURES_MAP.md#converter-and-app-controls)
+- Chromium verified actual bilingual recognition from converted MP3, text edits in TXT and SRT downloads, tab switching, and reload and discard warnings. TypeScript, 146 Node tests, and the production build passed.
+
+---
+
 ## 2026-11-19 — Add offline browser captions
 
 - The editor can generate and edit captions from the original recording, seek to cue timestamps, and download SRT or TXT. Active transcription survives an in-app tab switch, and an active job or unsaved captions hold the application update guard.

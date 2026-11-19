@@ -161,6 +161,8 @@ const ko: TranslationTable = {
     'converter.format.mp3': "오디오만",
     'converter.confirm.cancel': "변환을 중지할까요? 선택한 파일로 다시 시도할 수 있습니다.",
     'converter.confirm.discard': "결과를 버릴까요? 보관하려면 먼저 다운로드하세요.",
+    'converter.transcript.title': "MP3를 텍스트로 변환",
+    'converter.confirm.discardTranscript': "변환한 파일과 진행 중이거나 다운로드하지 않은 텍스트를 삭제하고 다시 시작할까요?",
     'converter.done.unsaved': "페이지를 닫거나 새로고침하기 전에 결과를 다운로드하세요.",
     'app.update.converterUnsaved': "업데이트하기 전에 변환 결과를 다운로드하거나 버리세요.",
     'converter.nav': 'WebM 변환기',

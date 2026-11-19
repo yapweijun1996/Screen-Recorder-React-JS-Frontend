@@ -7,7 +7,7 @@ import type { Translate } from './types';
 interface CueListProps {
     cues: Cue[];
     labelId: string;
-    onSeek: (seconds: number) => void;
+    onSeek?: (seconds: number) => void;
     updateCue: (id: string, text: string) => void;
     t: Translate;
 }
@@ -29,7 +29,7 @@ export const CueList: React.FC<CueListProps> = ({ cues, labelId, onSeek, updateC
                 const seekLabel = t('editor.transcript.seek', { time: timestamp });
                 return (
                     <div key={cue.id} className="flex gap-2 rounded-lg border border-th-edge bg-th-card/40 p-2">
-                        <button
+                        {onSeek ? <button
                             type="button"
                             title={seekLabel}
                             aria-label={seekLabel}
@@ -38,7 +38,7 @@ export const CueList: React.FC<CueListProps> = ({ cues, labelId, onSeek, updateC
                         >
                             <Play size={10} fill="currentColor" aria-hidden="true" />
                             {timestamp}
-                        </button>
+                        </button> : <span className="shrink-0 px-1.5 py-2 font-mono text-[10px] text-th-secondary">{timestamp}</span>}
                         <label htmlFor={cueId} className="sr-only">
                             {t('editor.transcript.editCue', { time: timestamp })}
                         </label>

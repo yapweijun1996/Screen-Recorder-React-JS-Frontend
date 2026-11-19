@@ -161,6 +161,8 @@ const de: TranslationTable = {
     'converter.format.mp3': "Nur Audio",
     'converter.confirm.cancel': "Konvertierung beenden? Du kannst es mit der ausgewählten Datei erneut versuchen.",
     'converter.confirm.discard': "Ergebnis verwerfen? Lade es zuerst herunter, wenn du es behalten möchtest.",
+    'converter.transcript.title': "MP3 in Text umwandeln",
+    'converter.confirm.discardTranscript': "Neu beginnen und die konvertierte Datei sowie das laufende oder noch nicht heruntergeladene Transkript verwerfen?",
     'converter.done.unsaved': "Lade das Ergebnis herunter, bevor du die Seite schließt oder neu lädst.",
     'app.update.converterUnsaved': "Lade die konvertierte Datei herunter oder verwirf sie vor dem Update.",
     'converter.nav': 'WebM-Konverter',

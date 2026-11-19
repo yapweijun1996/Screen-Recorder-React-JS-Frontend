@@ -161,6 +161,8 @@ const hi: TranslationTable = {
     'converter.format.mp3': "सिर्फ़ ऑडियो",
     'converter.confirm.cancel': "रूपांतरण रोकें? आप चुनी हुई फ़ाइल से फिर कोशिश कर सकते हैं।",
     'converter.confirm.discard': "नतीजा हटाएँ? अगर रखना है तो पहले डाउनलोड करें।",
+    'converter.transcript.title': "MP3 से टेक्स्ट",
+    'converter.confirm.discardTranscript': "फिर शुरू करें और बदली गई फ़ाइल तथा जारी या अभी तक डाउनलोड न किए गए टेक्स्ट को छोड़ दें?",
     'converter.done.unsaved': "पेज बंद करने या दोबारा लोड करने से पहले नतीजा डाउनलोड करें।",
     'app.update.converterUnsaved': "अपडेट करने से पहले बदली हुई फ़ाइल डाउनलोड करें या हटा दें।",
     'converter.nav': 'WebM कनवर्टर',

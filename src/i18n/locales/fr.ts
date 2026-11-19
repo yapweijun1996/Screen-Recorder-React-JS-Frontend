@@ -161,6 +161,8 @@ const fr: TranslationTable = {
     'converter.format.mp3': "Audio uniquement",
     'converter.confirm.cancel': "Arrêter la conversion ? Vous pourrez réessayer avec le fichier sélectionné.",
     'converter.confirm.discard': "Supprimer le résultat ? Téléchargez-le d’abord pour le conserver.",
+    'converter.transcript.title': "MP3 vers texte",
+    'converter.confirm.discardTranscript': "Recommencer et abandonner le fichier converti ainsi que la transcription en cours ou non téléchargée ?",
     'converter.done.unsaved': "Téléchargez le résultat avant de fermer ou de recharger cette page.",
     'app.update.converterUnsaved': "Téléchargez ou supprimez le fichier converti avant la mise à jour.",
     'converter.nav': 'Convertisseur WebM',

@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileVideo, Download, X, Loader2, RefreshCw, CheckCircle } from 'lucide-react';
+import { Upload, FileVideo, X, Loader2, RefreshCw } from 'lucide-react';
 import { useConverterSession, type ConverterFormat, type ConverterStatus } from './useConverterSession';
 import { VIDEO_QUALITY_PRESETS, VideoQualityPreset } from '../types';
-import { formatBytes, generateFileName } from '../utils/format';
+import { formatBytes } from '../utils/format';
 import { Button } from './Button';
 import { useI18n } from '../i18n';
 import { isLikelyVideoInput } from '../services/webcodecs/inputValidation';
+import { ConverterResult } from './ConverterResult';
 
 const QUALITY_OPTIONS: VideoQualityPreset[] = ['low', 'medium', 'high'];
 const FORMAT_OPTIONS: ConverterFormat[] = ['mp4', 'mp3'];
@@ -21,8 +22,7 @@ export const Converter: React.FC<{ onStatusChange: (status: ConverterStatus) => 
     const [inputError, setInputError] = useState<string | null>(null);
     const operation = useConverterSession(t, onStatusChange);
     const { isProcessing: isConverting, progress, eta, error } = operation;
-    const outputUrl = operation.output?.url ?? null;
-    const outputFormat = operation.output?.format ?? 'mp4';
+    const { output } = operation;
     const inputRef = useRef<HTMLInputElement>(null);
 
     const loadFile = (f: File) => {
@@ -68,15 +68,12 @@ export const Converter: React.FC<{ onStatusChange: (status: ConverterStatus) => 
         if (window.confirm(t('converter.confirm.cancel'))) operation.cancel();
     };
     const handleReset = () => {
-        if (operation.awaitingDownload && !window.confirm(t('converter.confirm.discard'))) return;
         operation.cancel();
         operation.clearOutput();
         operation.clearError();
         setInputError(null);
         setFile(null);
     };
-
-    const outputFileName = operation.output?.fileName ?? generateFileName('converted', outputFormat);
 
     return (
         <main className="max-w-2xl mx-auto px-4 py-10 flex flex-col gap-6">
@@ -127,7 +124,7 @@ export const Converter: React.FC<{ onStatusChange: (status: ConverterStatus) => 
             )}
 
             {/* File loaded card */}
-            {file && !outputUrl && (
+            {file && !output && (
                 <div className="bg-th-card rounded-2xl border border-th-edge p-5 flex flex-col gap-5">
                     {/* File info */}
                     <div className="flex items-start gap-3">
@@ -252,36 +249,14 @@ export const Converter: React.FC<{ onStatusChange: (status: ConverterStatus) => 
             )}
 
             {/* Done card */}
-            {outputUrl && (
-                <div className="status-success border rounded-2xl p-6 flex flex-col items-center gap-4 text-center animate-fade-in">
-                    <CheckCircle aria-hidden="true" size={36} className="status-success-icon" />
-                    <div>
-                        <p role="status" className="status-success-text font-semibold">{t('converter.done.title')}</p>
-                        <p className="text-xs text-th-tertiary mt-0.5">{outputFileName}</p>
-                        {format === 'mp4' && outputFormat !== 'mp4' && (
-                            <p role="status" className="status-warning-text text-xs mt-2">
-                                {t('converter.done.fallback', { format: outputFormat.toUpperCase() })}
-                            </p>
-                        )}
-                        {operation.awaitingDownload && <p className="mt-2 text-xs">{t('converter.done.unsaved')}</p>}
-                    </div>
-                    <a
-                        href={outputUrl}
-                        download={outputFileName}
-                        onClick={operation.acknowledgeDownload}
-                        className="status-success-action flex items-center gap-2 px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all"
-                    >
-                        <Download size={18} />
-                        {t('converter.btn.download', { format: outputFormat.toUpperCase() })}
-                    </a>
-                    <button
-                        onClick={handleReset}
-                        className="text-th-tertiary text-xs hover:text-white underline"
-                        type="button"
-                    >
-                        {t('converter.btn.again')}
-                    </button>
-                </div>
+            {output && (
+                <ConverterResult
+                    output={output}
+                    showFallback={format === 'mp4' && output.format !== 'mp4'}
+                    awaitingDownload={operation.awaitingDownload}
+                    onDownload={operation.acknowledgeDownload}
+                    onReset={handleReset}
+                />
             )}
         </main>
     );

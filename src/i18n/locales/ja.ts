@@ -161,6 +161,8 @@ const ja: TranslationTable = {
     'converter.format.mp3': "音声のみ",
     'converter.confirm.cancel': "変換を停止しますか？選択したファイルでやり直せます。",
     'converter.confirm.discard': "結果を破棄しますか？残す場合は先にダウンロードしてください。",
+    'converter.transcript.title': "MP3 をテキストに変換",
+    'converter.confirm.discardTranscript': "変換したファイルと、処理中または未ダウンロードの文字起こしを破棄しますか？",
     'converter.done.unsaved': "ページを閉じたり再読み込みしたりする前に結果をダウンロードしてください。",
     'app.update.converterUnsaved': "更新する前に変換結果をダウンロードするか、破棄してください。",
     'converter.nav': 'WebM 変換ツール',

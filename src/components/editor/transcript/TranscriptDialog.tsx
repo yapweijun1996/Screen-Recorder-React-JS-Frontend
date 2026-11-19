@@ -22,7 +22,8 @@ interface TranscriptDialogProps {
     state: TranscriptionState;
     language: Language;
     onLanguageChange: (language: Language) => void;
-    onSeek: (seconds: number) => void;
+    onSeek?: (seconds: number) => void;
+    titleKey: string;
     onClose: () => void;
 }
 
@@ -39,7 +40,7 @@ const getStatusLabel = (status: TranscriptionState['status'], t: Translate) => {
     return t('editor.transcript.processingTranscribing');
 };
 
-export const TranscriptDialog: React.FC<TranscriptDialogProps> = ({ state, language, onLanguageChange, onSeek, onClose }) => {
+export const TranscriptDialog: React.FC<TranscriptDialogProps> = ({ state, language, onLanguageChange, onSeek, onClose, titleKey }) => {
     const { t } = useI18n();
     const [replaceConfirm, setReplaceConfirm] = useState(false);
     const [clearConfirm, setClearConfirm] = useState(false);
@@ -55,7 +56,7 @@ export const TranscriptDialog: React.FC<TranscriptDialogProps> = ({ state, langu
     useDialogFocus(dialogRef, onClose);
 
     const handleSeek = (seconds: number) => {
-        onSeek(seconds);
+        onSeek?.(seconds);
         onClose();
     };
 
@@ -111,7 +112,7 @@ export const TranscriptDialog: React.FC<TranscriptDialogProps> = ({ state, langu
                     <div className="min-w-0">
                         <h2 id={`${titleId}-heading`} className="flex items-center gap-2 text-sm font-semibold">
                             <FileAudio size={16} className="text-indigo-500" aria-hidden="true" />
-                            {t('editor.transcript.title')}
+                            {t(titleKey)}
                         </h2>
                         <p className="mt-1 text-xs text-th-tertiary">
                             {t('editor.transcript.subtitle')}
@@ -200,7 +201,7 @@ export const TranscriptDialog: React.FC<TranscriptDialogProps> = ({ state, langu
                         )}
 
                         {cueCount > 0 && (
-                            <CueList cues={cues} labelId={`${titleId}-captions`} onSeek={handleSeek} updateCue={updateCue} t={t} />
+                            <CueList cues={cues} labelId={`${titleId}-captions`} onSeek={onSeek && handleSeek} updateCue={updateCue} t={t} />
                         )}
                     </div>
                 </div>

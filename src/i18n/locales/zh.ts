@@ -186,6 +186,8 @@ const zh: TranslationTable = {
     'converter.format.mp3': "仅音频",
     'converter.confirm.cancel': "停止转换？你仍可使用当前文件重试。",
     'converter.confirm.discard': "丢弃转换结果？如需保留，请先下载。",
+    'converter.transcript.title': "MP3 转文字",
+    'converter.confirm.discardTranscript': "要重新开始，并丢弃转换结果及转写中或尚未下载的文字稿吗？",
     'converter.done.unsaved': "关闭或重新加载页面前，请下载转换结果。",
     'app.update.converterUnsaved': "请先下载或丢弃转换结果，再更新应用。",
     'converter.nav': 'WebM 转换器',

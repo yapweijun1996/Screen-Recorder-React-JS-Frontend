@@ -188,6 +188,8 @@ const en: TranslationTable = {
     'converter.format.mp3': "Audio only",
     'converter.confirm.cancel': "Stop this conversion? You can retry with the selected file.",
     'converter.confirm.discard': "Discard this result? Download it first if you want to keep it.",
+    'converter.transcript.title': "MP3 to Text",
+    'converter.confirm.discardTranscript': "Start over and discard the converted file and any transcript in progress or pending download?",
     'converter.done.unsaved': "Download the result before closing or reloading this page.",
     'app.update.converterUnsaved': "Download or discard your converted file before updating.",
     'converter.nav': 'WebM Converter',
