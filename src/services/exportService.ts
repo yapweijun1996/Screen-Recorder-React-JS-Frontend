@@ -80,8 +80,11 @@ export class ExportService {
             if (support.supported) {
                 this.engine = 'webcodecs';
                 this.setStatus('ready');
-                const codec = support.h264 ? 'H.264/MP4' : 'VP8/WebM';
-                console.info(`[ExportService] WebCodecs ready — ${codec} (MIT, hardware-accelerated)`);
+                const formats = [
+                    support.h264 && `MP4/H.264${support.aac ? '+AAC' : ''}`,
+                    support.vp8 && `WebM/VP8${support.opus ? '+Opus' : ''}`,
+                ].filter(Boolean).join(', ');
+                console.info(`[ExportService] WebCodecs ready — ${formats} (MIT, hardware-accelerated)`);
                 return;
             }
             console.warn('[ExportService] WebCodecs not supported in this browser');

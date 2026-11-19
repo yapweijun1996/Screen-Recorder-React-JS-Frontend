@@ -5,6 +5,7 @@ import { VIDEO_QUALITY_PRESETS, VideoQualityPreset } from '../types';
 import { formatBytes, generateFileName } from '../utils/format';
 import { Button } from './Button';
 import { useI18n } from '../i18n';
+import { isLikelyVideoInput } from '../services/webcodecs/inputValidation';
 
 const QUALITY_OPTIONS: VideoQualityPreset[] = ['low', 'medium', 'high'];
 
@@ -13,6 +14,7 @@ export const Converter: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [quality, setQuality] = useState<VideoQualityPreset>('medium');
+    const [inputError, setInputError] = useState<string | null>(null);
     const operation = useExportOperation(t, 'converter.error');
     const { isProcessing: isConverting, progress, eta, error } = operation;
     const outputUrl = operation.output?.url ?? null;
@@ -20,6 +22,11 @@ export const Converter: React.FC = () => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const loadFile = (f: File) => {
+        if (!isLikelyVideoInput(f)) {
+            setInputError(t('converter.error'));
+            return;
+        }
+        setInputError(null);
         setFile(f);
         operation.cancel();
         operation.clearOutput();
@@ -58,6 +65,7 @@ export const Converter: React.FC = () => {
         operation.cancel();
         operation.clearOutput();
         operation.clearError();
+        setInputError(null);
         setFile(null);
     };
 
@@ -71,37 +79,44 @@ export const Converter: React.FC = () => {
             </div>
 
             {!file && (
-                <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => inputRef.current?.click()}
-                    className={`
-                        cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200
-                        flex flex-col items-center justify-center gap-3 py-16 px-6 text-center
-                        ${isDragging
-                            ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40'
-                            : 'border-th-edge hover:border-indigo-400/60 bg-th-card/50 hover:bg-th-card'
-                        }
-                    `}
-                >
+                <>
                     <input
                         ref={inputRef}
                         type="file"
-                        accept="video/*"
+                        accept="video/*,.avi,.flv,.m4v,.mkv,.mov,.mp4,.ogv,.webm,.wmv"
                         className="hidden"
                         onChange={handleFileInput}
                     />
-                    <div className={`p-4 rounded-full ${isDragging ? 'bg-indigo-100 dark:bg-indigo-900/60' : 'bg-th-surface'}`}>
-                        <Upload size={28} className={isDragging ? 'text-indigo-500' : 'text-th-tertiary'} />
-                    </div>
-                    <div>
-                        <p className="font-medium text-th-primary">
-                            {isDragging ? t('converter.drop.active') : t('converter.drop.idle')}
-                        </p>
-                        <p className="text-xs text-th-tertiary mt-1">{t('converter.drop.hint')}</p>
-                    </div>
-                </div>
+                    <button
+                        type="button"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => inputRef.current?.click()}
+                        aria-label={t('converter.drop.idle')}
+                        aria-describedby="converter-file-hint"
+                        className={`
+                            cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200
+                            flex flex-col items-center justify-center gap-3 py-16 px-6 text-center
+                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500
+                            ${isDragging
+                                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40'
+                                : 'border-th-edge hover:border-indigo-400/60 bg-th-card/50 hover:bg-th-card'
+                            }
+                        `}
+                    >
+                        <span className={`p-4 rounded-full ${isDragging ? 'bg-indigo-100 dark:bg-indigo-900/60' : 'bg-th-surface'}`}>
+                            <Upload aria-hidden="true" size={28} className={isDragging ? 'text-indigo-500' : 'text-th-tertiary'} />
+                        </span>
+                        <span>
+                            <span className="block font-medium text-th-primary">
+                                {isDragging ? t('converter.drop.active') : t('converter.drop.idle')}
+                            </span>
+                            <span id="converter-file-hint" className="block text-xs text-th-tertiary mt-1">{t('converter.drop.hint')}</span>
+                        </span>
+                    </button>
+                    {inputError && <p role="alert" className="text-xs text-red-300 text-center mt-2">{inputError}</p>}
+                </>
             )}
 
             {/* File loaded card */}

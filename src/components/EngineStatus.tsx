@@ -51,9 +51,29 @@ export const EngineStatus: React.FC<EngineStatusProps> = ({ className = '' }) =>
     };
 
     const ui = getStatusUI();
+    const support = getCachedSupport();
+    const localized = (key: string, fallback: string) => {
+        const value = t(key);
+        return value === key ? fallback : value;
+    };
+    const videoLabel = localized('engine.capability.video', 'video');
+    const audioLabel = localized('engine.capability.audio', 'audio');
+    const silentLabel = localized('engine.capability.silent', 'silent source only');
+    const audioOnlyLabel = localized('engine.capability.audioOnly', 'audio-only');
+    const capabilitySummary = support
+        ? [
+            support.h264 && `MP4 ${videoLabel}${support.aac ? ` + ${audioLabel}` : ` (${silentLabel})`}`,
+            support.vp8 && `WebM ${videoLabel}${support.opus ? ` + ${audioLabel}` : ` (${silentLabel})`}`,
+            (support.aac || support.opus) && audioOnlyLabel,
+        ].filter(Boolean).join(' · ')
+        : undefined;
 
     return (
-        <div className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs font-mono border ${ui.color} ${className}`}>
+        <div
+            title={capabilitySummary}
+            aria-label={capabilitySummary ? `${ui.text}: ${capabilitySummary}` : ui.text}
+            className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs font-mono border ${ui.color} ${className}`}
+        >
             {ui.icon}
             <span>{ui.text}</span>
         </div>

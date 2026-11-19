@@ -22,11 +22,11 @@ muxer.finalize() -> MP4/WebM Blob
 | Property | Value |
 | --- | --- |
 | Decoded data | Bounded decoder prefetch; one current video sample/canvas, ≤4 pending video encoder inputs; ≤4096-frame PCM copies and ≤4 pending audio encoder inputs |
-| Growing memory | Compressed muxer output, frame deadlines and container metadata grow with duration; total memory is not constant |
+| Growing memory | Compressed muxer output and container metadata grow with duration. Frame deadlines are generated on demand. |
 | Decode strategy | Lazy Mediabunny video samples at requested source timestamps |
 | Encode strategy | One `VideoFrame` per output deadline, encoded inline and immediately closed |
 | Mux strategy | Frames flow through `addVideoChunk` as they finish encoding |
-| Fallback | Unsupported containers/codecs reject visibly; no display-playback fallback |
+| Fallback | A compatible alternate container preserves the source tracks. Unreadable inputs and unavailable codecs produce distinct errors. |
 
 Export speed depends on actual source decoding, resizing and encoding. It does not depend on how quickly a hidden video can skip through displayed frames.
 
@@ -45,9 +45,9 @@ if (!Number.isFinite(video.duration)) {
 }
 ```
 
-### 2. Shared timeline and `planDeadlines(timeline, targetFps)`
+### 2. Shared timeline and `createDeadlinePlan(timeline, targetFps)`
 
-Pre-computes the **full list of output frame deadlines**, each with:
+Computes the total frame count and iterates output frame deadlines as needed. Each deadline carries:
 
 - `inputTime` — the source timestamp this output frame samples from (seconds)
 - `outputTimestampUs` — the position in the output stream (microseconds), gap-free across segments
@@ -66,12 +66,12 @@ Metadata inspection is bounded to 4096 header reads. An inconclusive result neve
 
 ### 4. Muxer + Encoder setup
 
-Codec selection comes from [`capability.ts`](../src/services/webcodecs/capability.ts):
+[`formatDecision.ts`](../src/services/webcodecs/formatDecision.ts) combines the requested format, decoded source tracks and runtime encoder probes from [`capability.ts`](../src/services/webcodecs/capability.ts).
 
-| Browser | Video | Audio | Container |
-| --- | --- | --- | --- |
-| Chrome / Edge / Safari | H.264 (`avc1.*`) | AAC | MP4 |
-| Firefox | VP8 (`vp8`) | Opus | WebM |
+| Container | Video codec | Audio codec when required |
+| --- | --- | --- |
+| MP4 | H.264 (`avc1.*`) | AAC |
+| WebM | VP8 (`vp8`) | Opus, signaled as `A_OPUS` in the muxer |
 
 Bitrate scales with output resolution: `videoBitsPerSecond * pixelRatio` clamped to `[0.5, 3]` of the preset's base bitrate.
 
@@ -98,6 +98,8 @@ Source timestamps determine the position inside each selected cut. Leading gaps 
 ### 7. Finalize
 
 `videoEncoder.flush() → audioEncoder.flush() → muxer.finalize()` → return a `Blob` of the muxer's `ArrayBuffer`.
+
+When the source includes sound, the encoder must emit audio chunks and the finalized container must report an audio track before the job produces a downloadable result. The browser smoke suite inspects downloaded bytes and checks the track codecs with FFprobe.
 
 ---
 
@@ -135,6 +137,6 @@ Audio read, queue and flush waits reject promptly on abort. Audio queue and flus
 
 - **Adding a new output format** — add a muxer + capability flags in `capability.ts`, wire codec selection in `exportWithWebCodecs`
 - **Adding a new resolution preset** — extend `RESOLUTION_MAP` and the `ExportResolution` union, and test orientation, aspect ratio and even dimensions
-- **Changing keyframe interval** — change the `i % (targetFps * 2)` formula in `planDeadlines`
+- **Changing keyframe interval** — update the keyframe cadence in `createDeadlinePlan`
 - **Quality controls** — presets select video/audio bitrates. The unused CRF field and control have been removed from the UI and `ExportOptions`.
 - **Re-introducing FFmpeg** — **don't.** It re-triggers GPL/LGPL, which our LICENSE forbids. WebCodecs is enough.

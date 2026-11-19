@@ -3,7 +3,7 @@ import type { VideoQualityPreset } from '../../types';
 import type { ExportProgress } from './webcodecExportService';
 import type { VideoSource } from './exportVideo';
 import { getAvcCodecString, getVideoBitrate, throwIfAborted } from './exportHelpers';
-import type { Deadline } from './exportTimeline';
+import type { Deadline, LazyDeadlinePlan } from './exportTimeline';
 import { awaitWithTimeout, MEDIA_WAIT_TIMEOUT_MS } from './mediaWait';
 
 export const VIDEO_QUEUE_LIMIT = 4;
@@ -12,7 +12,7 @@ interface VideoEncodingArgs {
     source: VideoSource;
     width: number;
     height: number;
-    deadlines: Deadline[];
+    deadlines: readonly Deadline[] | LazyDeadlinePlan;
     quality: VideoQualityPreset;
     targetFps: number;
     useMp4: boolean;
@@ -49,6 +49,7 @@ export async function encodeVideoFrames({
     signal?.addEventListener('abort', onAbort, { once: true });
     let encoderError: Error | null = null;
     let encodedFrames = 0;
+    const deadlineCount = deadlines.length;
     const pendingDeadlines = new Map<number, Deadline>();
     let encoder: VideoEncoder | null = null;
     let iterator: ReturnType<VideoSource['samples']> | undefined;
@@ -70,7 +71,7 @@ export async function encodeVideoFrames({
                     // with a full frame interval. The shared timeline owns it.
                     addVideoChunk(chunk, metadata, deadline.durationUs);
                     encodedFrames++;
-                    onProgress?.({ ratio: Math.min(0.9, 0.1 + 0.8 * encodedFrames / deadlines.length), phase: 'encoding' });
+                    onProgress?.({ ratio: Math.min(0.9, 0.1 + 0.8 * encodedFrames / deadlineCount), phase: 'encoding' });
                 } catch (error) { fail(error); }
             },
             error: fail,
@@ -86,8 +87,12 @@ export async function encodeVideoFrames({
         iterator = source.samples((function* () {
             for (const deadline of deadlines) yield deadline.inputTime;
         })());
-        for (let index = 0; index < deadlines.length; index++) {
+        const deadlineIterator = deadlines[Symbol.iterator]();
+        for (let index = 0; index < deadlineCount; index++) {
             throwIfAborted(operation.signal);
+            const nextDeadline = deadlineIterator.next();
+            if (nextDeadline.done) throw new Error('Video deadline plan ended before every frame was encoded');
+            const deadline = nextDeadline.value;
             const sampleRef: { current: VideoSample | null } = { current: null };
             try {
                 const pending = iterator.next().then(result => {
@@ -105,7 +110,6 @@ export async function encodeVideoFrames({
                 context.fillStyle = '#000';
                 context.fillRect(0, 0, width, height);
                 result.value.drawWithFit(context, { fit: 'contain' });
-                const deadline = deadlines[index];
                 const frame = new VideoFrame(canvas, { timestamp: deadline.outputTimestampUs, duration: deadline.durationUs });
                 pendingDeadlines.set(deadline.outputTimestampUs, deadline);
                 try { encoder.encode(frame, { keyFrame: deadline.isKeyframe }); }
@@ -119,7 +123,7 @@ export async function encodeVideoFrames({
         throwIfAborted(operation.signal);
         await awaitWithTimeout(encoder.flush(), MEDIA_WAIT_TIMEOUT_MS, 'Video decoder or encoder timed out', operation.signal);
         throwIfAborted(operation.signal);
-        if (encodedFrames !== deadlines.length || pendingDeadlines.size) throw new Error('Video encoder did not output every requested frame');
+        if (encodedFrames !== deadlineCount || pendingDeadlines.size) throw new Error('Video encoder did not output every requested frame');
     } catch (error) {
         operation.abort();
         throwIfAborted(signal);

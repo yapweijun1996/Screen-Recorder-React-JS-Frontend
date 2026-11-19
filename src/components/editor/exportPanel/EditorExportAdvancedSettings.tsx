@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Zap, Sparkles, Crown, Film } from 'lucide-react';
 import type { ExportFormat, ExportFrameRateOption, ExportResolution, VideoQualityPreset } from '../../../types';
 import { VIDEO_QUALITY_PRESETS } from '../../../types';
 import { useI18n } from '../../../i18n';
+import { exportService } from '../../../services/exportService';
+import { getCachedSupport, type WebCodecsSupport } from '../../../services/webcodecs/capability';
+import { getExportFormatAvailability } from '../../../services/webcodecs/formatDecision';
 
 const qualityIcons: Record<VideoQualityPreset, React.ReactNode> = {
     low: <Zap size={14} />,
@@ -41,6 +44,25 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
 }) => {
     const { t } = useI18n();
     const isAudioOnly = selectedFormat === 'audio';
+    const [support, setSupport] = useState<WebCodecsSupport | null>(() => getCachedSupport());
+
+    useEffect(() => {
+        let active = true;
+        exportService.init().then(() => {
+            if (active) setSupport(getCachedSupport());
+        }).catch(() => {
+            if (active) setSupport(getCachedSupport());
+        });
+        return () => { active = false; };
+    }, []);
+
+    const availability = support ? getExportFormatAvailability(support) : null;
+    const availableFormats = availability
+        ? [availability.mp4 && 'MP4', availability.webm && 'WebM', availability.audio && 'Audio'].filter(Boolean).join(' · ') || t('engine.error')
+        : t('engine.loading');
+    const audioNote = support && (!support.h264 || !support.aac)
+        ? t('converter.fallback.notice')
+        : null;
 
     return (
         <div className="space-y-4 animate-fade-in">
@@ -86,6 +108,10 @@ export const EditorExportAdvancedSettings: React.FC<EditorExportAdvancedSettings
                         </button>
                     ))}
                 </div>
+                <p role="status" className="text-[11px] text-th-tertiary">
+                    {t('editor.export.format')}: {availableFormats}
+                </p>
+                {audioNote && <p className="text-[11px] text-amber-600 dark:text-amber-300">{audioNote}</p>}
             </div>
 
             {/* FPS */}

@@ -20,11 +20,14 @@ import { getExportDimensions, getAudioBitrate, normalizeSegments, openSourceVide
 import type { AudioSource } from './exportAudio';
 import type { VideoSource } from './exportVideo';
 import { AudioExportError } from './AudioExportError';
+import { ExportInputError } from './exportErrors';
 import { awaitWithAbort, awaitWithTimeout, MEDIA_WAIT_TIMEOUT_MS } from './mediaWait';
-import { createTimeline, planDeadlines, type Deadline } from './exportTimeline';
+import { createDeadlinePlan, createTimeline, type LazyDeadlinePlan } from './exportTimeline';
 import { encodeAudioTimeline } from './encodeAudioTimeline';
 import { encodeVideoFrames } from './encodeVideoFrames';
 import { getCachedSupport } from './capability';
+import { resolveExportFormat } from './formatDecision';
+import { probeAudioTrack } from './audioTrackProbe';
 
 export interface ExportProgress {
     ratio: number;
@@ -62,7 +65,13 @@ export async function exportWithWebCodecs(
     onProgress?.({ ratio: 0, phase: 'decoding' });
 
     // ─── 1. Open source ───
-    const source = await openSourceVideo(inputBlob, signal);
+    let source: Awaited<ReturnType<typeof openSourceVideo>>;
+    try {
+        source = await openSourceVideo(inputBlob, signal);
+    } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') throw error;
+        throw new ExportInputError(error);
+    }
     const { release: releaseSource, duration: inputDuration } = source;
 
     // The audio encoder belongs to this coordinator; video resources are local
@@ -70,7 +79,8 @@ export async function exportWithWebCodecs(
     let audioEncoderRef: AudioEncoder | null = null;
     let audioSource: AudioSource | null = null;
     let videoSource: VideoSource | null = null;
-    let audioError: DOMException | null = null;
+    let audioError: unknown = null;
+    let encodedAudioChunks = 0;
     signal?.addEventListener('abort', releaseSource, { once: true });
 
     try {
@@ -101,28 +111,13 @@ export async function exportWithWebCodecs(
             throw new AudioExportError('noTrack');
         }
 
-        // Keep current behavior for full/trimmed video exports: fail if no
-        // compatible muxer+codec combination exists.
-        const canUseMp4 = support.h264 && (!hasAudio || support.aac);
-        const canUseWebm = support.vp8 && (!hasAudio || support.opus);
-        const canUseMp4Audio = support.aac;
-        const canUseWebmAudio = support.opus;
-
-        const useMp4 = isAudioOnly
-            ? canUseMp4Audio
-            : requestedFormat === 'mp4' ? canUseMp4 : !canUseWebm && canUseMp4;
-        const useWebm = isAudioOnly
-            ? (!useMp4 && canUseWebmAudio)
-            : requestedFormat === 'webm' ? canUseWebm : !useMp4 && canUseWebm;
-
-        if (!useMp4 && !useWebm) {
-            throw new Error('No supported codec combination is available for export.');
-        }
+        const formatDecision = resolveExportFormat(requestedFormat, hasAudio, support);
+        const useMp4 = formatDecision.container === 'mp4';
 
         // ─── 4. Optional video pipeline setup ───
         let width = source.width;
         let height = source.height;
-        let deadlines: Deadline[] = [];
+        let deadlines: LazyDeadlinePlan | [] = [];
 
         if (!isAudioOnly) {
             const { openVideoSource } = await awaitWithAbort(import('./exportVideo'), signal);
@@ -130,7 +125,7 @@ export async function exportWithWebCodecs(
             ({ width, height } = getExportDimensions(videoSource.width, videoSource.height, resolution));
 
             // ─── 4b. Plan output deadlines (sorted by inputTime since segments are sorted) ───
-            deadlines = planDeadlines(timeline, targetFps);
+            deadlines = createDeadlinePlan(timeline, targetFps);
         }
 
         // ─── 5. Setup muxer ───
@@ -139,7 +134,7 @@ export async function exportWithWebCodecs(
         let mp4Target: Mp4Target | null = null;
         let webmTarget: WebmTarget | null = null;
 
-        const mp4AudioTrack = audioSource ? {
+        const mp4AudioTrack = audioSource && formatDecision.audioCodec === 'aac' ? {
             audio: {
                 codec: 'aac' as const,
                 numberOfChannels: audioSource.numberOfChannels,
@@ -147,9 +142,9 @@ export async function exportWithWebCodecs(
             },
         } : null;
 
-        const webmAudioTrack = audioSource ? {
+        const webmAudioTrack = audioSource && formatDecision.audioCodec === 'opus' ? {
             audio: {
-                codec: 'Opus',
+                codec: 'A_OPUS',
                 numberOfChannels: audioSource.numberOfChannels,
                 sampleRate: audioSource.sampleRate,
             },
@@ -181,6 +176,7 @@ export async function exportWithWebCodecs(
             else if (webmMuxer) webmMuxer.addVideoChunk(chunk, meta, chunk.timestamp);
         };
         const addAudioChunk = (chunk: EncodedAudioChunk, meta?: EncodedAudioChunkMetadata) => {
+            encodedAudioChunks++;
             if (mp4Muxer) mp4Muxer.addAudioChunk(chunk, meta, chunk.timestamp);
             else if (webmMuxer) webmMuxer.addAudioChunk(chunk, meta, chunk.timestamp);
         };
@@ -188,17 +184,22 @@ export async function exportWithWebCodecs(
         // ─── 6. Setup encoders ───
         let audioEncoder: AudioEncoder | null = null;
         if (audioSource) {
-            audioEncoder = new AudioEncoder({
-                output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
-                error: (error) => { audioError = error; },
-            });
-            audioEncoderRef = audioEncoder;
-            audioEncoder.configure({
-                codec: useMp4 ? 'mp4a.40.2' : 'opus',
-                numberOfChannels: audioSource.numberOfChannels,
-                sampleRate: audioSource.sampleRate,
-                bitrate: getAudioBitrate(quality),
-            });
+            try {
+                audioEncoder = new AudioEncoder({
+                    output: (chunk, meta) => addAudioChunk(chunk, meta ?? undefined),
+                    error: (error) => { audioError = error; },
+                });
+                audioEncoderRef = audioEncoder;
+                audioEncoder.configure({
+                    codec: formatDecision.audioCodec === 'aac' ? 'mp4a.40.2' : 'opus',
+                    numberOfChannels: audioSource.numberOfChannels,
+                    sampleRate: audioSource.sampleRate,
+                    bitrate: getAudioBitrate(quality),
+                });
+            } catch (error) {
+                if (error instanceof Error && error.name === 'AbortError') throw error;
+                throw new AudioExportError('encodeFailed');
+            }
         }
 
         if (videoSource) {
@@ -216,14 +217,15 @@ export async function exportWithWebCodecs(
             await encodeAudioTimeline(audioEncoder, audioSource, timeline, signal, ratio => {
                 onProgress?.({ ratio: isAudioOnly ? 0.05 + ratio * 0.9 : 0.92 + ratio * 0.07, phase: 'encoding' });
             });
-            if (audioError) throw new AudioExportError('decodeFailed');
+            if (audioError) throw new AudioExportError('encodeFailed');
         }
 
         // ─── 10. Flush audio and finalize ───
         throwIfAborted(signal);
         if (audioEncoder) {
             await awaitWithTimeout(audioEncoder.flush(), MEDIA_WAIT_TIMEOUT_MS, 'Audio encoder timed out', signal);
-            if (audioError) throw new AudioExportError('decodeFailed');
+            if (audioError) throw new AudioExportError('encodeFailed');
+            if (encodedAudioChunks === 0) throw new AudioExportError('encodeFailed');
             audioEncoder.close();
             audioEncoderRef = null;
         }
@@ -232,22 +234,30 @@ export async function exportWithWebCodecs(
         if (isAudioOnly) {
             if (mp4Muxer) {
                 mp4Muxer.finalize();
+                const blob = new Blob([mp4Target!.buffer], { type: 'audio/mp4' });
+                await assertAudioTrack(blob);
                 onProgress?.({ ratio: 1, phase: 'muxing' });
-                return { blob: new Blob([mp4Target!.buffer], { type: 'audio/mp4' }), format: 'audio' };
+                return { blob, format: 'audio' };
             }
             webmMuxer!.finalize();
+            const blob = new Blob([webmTarget!.buffer], { type: 'audio/webm' });
+            await assertAudioTrack(blob);
             onProgress?.({ ratio: 1, phase: 'muxing' });
-            return { blob: new Blob([webmTarget!.buffer], { type: 'audio/webm' }), format: 'audio' };
+            return { blob, format: 'audio' };
         }
 
         if (mp4Muxer) {
             mp4Muxer.finalize();
+            const blob = new Blob([mp4Target!.buffer], { type: 'video/mp4' });
+            if (hasAudio) await assertAudioTrack(blob);
             onProgress?.({ ratio: 1, phase: 'muxing' });
-            return { blob: new Blob([mp4Target!.buffer], { type: 'video/mp4' }), format: 'mp4' };
+            return { blob, format: 'mp4' };
         } else {
             webmMuxer!.finalize();
+            const blob = new Blob([webmTarget!.buffer], { type: 'video/webm' });
+            if (hasAudio) await assertAudioTrack(blob);
             onProgress?.({ ratio: 1, phase: 'muxing' });
-            return { blob: new Blob([webmTarget!.buffer], { type: 'video/webm' }), format: 'webm' };
+            return { blob, format: 'webm' };
         }
 
     } catch (err) {
@@ -265,3 +275,10 @@ export async function exportWithWebCodecs(
         releaseSource();
     }
 }
+
+/** Do not publish a successful export that silently lost a declared audio track. */
+async function assertAudioTrack(blob: Blob): Promise<void> {
+    if (await probeAudioTrack(blob) !== true) throw new AudioExportError('encodeFailed');
+}
+
+export { getExportFormatAvailability, resolveExportFormat } from './formatDecision';
