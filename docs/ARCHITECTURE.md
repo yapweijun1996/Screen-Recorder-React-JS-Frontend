@@ -101,6 +101,14 @@ A separate `recordingActivity` lease disables navigation to the converter from t
 
 Export quality presets control bitrate. CRF is not part of the export contract or user interface.
 
+## Local transcription
+
+`TranscriptionProvider` owns the current recording's caption session above the recorder/converter switch. Starting transcription creates a dedicated Worker. MediaBunny decodes the recording in bounded windows and Whisper Tiny q8 transcribes 16 kHz mono PCM through single-threaded ONNX WebAssembly. Auto detect splits at quiet pauses and uses Whisper's first language-token prediction before transcription, adding a model pass per segment. The Worker returns cues with original recording timestamps for seeking and SRT output. TXT contains only the cue text. Captions accompany the original recording and may require timestamp adjustments if the video is trimmed separately.
+
+The Worker fetches the pinned speech model and initializes its runtime on demand. Browser storage retains these assets for later offline sessions. **Clear downloaded model** removes the speech cache. Recordings and caption text stay in the browser. Caption edits exist in memory and survive app navigation within the recording session. A running job or unsaved caption output holds an application update guard until the job is canceled or the output is downloaded.
+
+Run `python -B scripts/browser_smoke_transcription.py --browser chromium --long` after `npm run build` to exercise actual bilingual recognition and an offline browser restart. The opt-in check requires Playwright, FFmpeg, and network access to fetch the initial model and public speech fixtures.
+
 ## Draft and Storage Ownership
 
 `EditorDraftProvider` remains mounted above the recorder/converter page switch. It retains segments, selected segment, bounded undo history, playhead and export settings during navigation. Its versioned local-storage draft saves the retained segments, selection and export settings under the persisted recording identity. Undo history, playhead, preview playback and export jobs remain session state. Reload restores a validated draft for the same recording. An invalid draft blocks trimmed export until **Reset Trim** is confirmed. Full export and the original download remain available. Replacing or successfully clearing the recording clears its associated draft.

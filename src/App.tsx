@@ -16,6 +16,7 @@ import {
     type UpdateCheckResult,
 } from './registerSW';
 import { EditorDraftProvider } from './components/editor/EditorDraftContext';
+import { TranscriptionProvider } from './components/editor/useTranscription';
 import { useVideoSession } from './components/useVideoSession';
 import { recordingActivity, taskActivity } from './services/taskActivity';
 import { StorageNotice } from './components/StorageNotice';
@@ -234,43 +235,45 @@ const App: React.FC = () => {
                     duration={videoData?.duration ?? 0}
                     recordingId={videoData?.recordingId}
                 >
-                    {page !== 'converter' && (showEditor ? (
-                        <Editor
-                            videoMetadata={videoData!}
-                            onReset={handleReset}
-                        />
-                    ) : (
-                        <>
-                            <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
-                                <div className="flex-1 flex flex-col">
-                                    {status === AppStatus.IDLE && (
-                                        <Recorder
-                                            onRecordingComplete={handleRecordingComplete}
-                                            onError={setErrorMsg}
-                                        />
-                                    )}
-
-                                    {status === AppStatus.PROCESSING && (
-                                        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
-                                            <Loader2 size={36} className="animate-spin text-indigo-400" />
-                                            <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
-                                            <p className="text-sm text-th-secondary text-center px-4">
-                                                {t('app.processing.desc')}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </main>
-
-                            <AppFooter
-                                t={t}
-                                releaseVersion={currentReleaseVersion}
-                                checkingUpdates={checkingUpdates}
-                                onCheckForUpdates={handleCheckForUpdates}
-                                checkStatus={checkStatus}
+                    <TranscriptionProvider blob={videoData?.blob ?? null}>
+                        {page !== 'converter' && (showEditor ? (
+                            <Editor
+                                videoMetadata={videoData!}
+                                onReset={handleReset}
                             />
-                        </>
-                    ))}
+                        ) : (
+                            <>
+                                <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+                                    <div className="flex-1 flex flex-col">
+                                        {status === AppStatus.IDLE && (
+                                            <Recorder
+                                                onRecordingComplete={handleRecordingComplete}
+                                                onError={setErrorMsg}
+                                            />
+                                        )}
+
+                                        {status === AppStatus.PROCESSING && (
+                                            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-th-secondary">
+                                                <Loader2 size={36} className="animate-spin text-indigo-400" />
+                                                <p className="text-lg font-semibold text-th-primary mb-2">{t('app.processing.title')}</p>
+                                                <p className="text-sm text-th-secondary text-center px-4">
+                                                    {t('app.processing.desc')}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </main>
+
+                                <AppFooter
+                                    t={t}
+                                    releaseVersion={currentReleaseVersion}
+                                    checkingUpdates={checkingUpdates}
+                                    onCheckForUpdates={handleCheckForUpdates}
+                                    checkStatus={checkStatus}
+                                />
+                            </>
+                        ))}
+                    </TranscriptionProvider>
                 </EditorDraftProvider>
             </section>
         </div>

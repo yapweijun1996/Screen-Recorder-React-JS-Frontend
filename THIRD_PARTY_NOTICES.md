@@ -15,6 +15,11 @@ LICENSE for ScreenClip Pro alters or supersedes these third-party licenses.
 | webm-muxer | ^5.1.4 | MIT | https://github.com/Vanilagy/webm-muxer |
 | mediabunny | ^1.61.3 | MPL-2.0 | https://registry.npmjs.org/mediabunny/-/mediabunny-1.61.3.tgz |
 | @mediabunny/mp3-encoder | 1.61.3 | MPL-2.0, with LGPL LAME encoder | https://registry.npmjs.org/@mediabunny/mp3-encoder/-/mp3-encoder-1.61.3.tgz |
+| @huggingface/transformers | 3.8.1 | Apache-2.0 | https://github.com/huggingface/transformers.js |
+| onnxruntime-web | 1.22.0-dev.20250409-89f8206ba4 | MIT | https://github.com/microsoft/onnxruntime |
+| Xenova/whisper-tiny | Quantized ONNX weights downloaded on demand | Apache-2.0 model repository | https://huggingface.co/Xenova/whisper-tiny |
+
+The Whisper model is derived from [OpenAI Whisper](https://github.com/openai/whisper), which publishes its code and model weights under the MIT license. The distribution includes the [Transformers.js Apache-2.0 license](public/licenses/transformers-Apache-2.0.txt) and the [Microsoft ONNX Runtime MIT license](public/licenses/onnxruntime-MIT.txt), sourced from the official [ONNX Runtime 1.22.0 package](https://pypi.org/project/onnxruntime/1.22.0/).
 
 ## Build / Dev Dependencies
 

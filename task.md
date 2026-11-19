@@ -6,6 +6,14 @@ Newest first.
 
 ---
 
+## 2026-11-19 — Add offline browser captions
+
+- The editor can generate and edit captions from the original recording, seek to cue timestamps, and download SRT or TXT. Active transcription survives an in-app tab switch, and an active job or unsaved captions hold the application update guard.
+- A dedicated Worker runs single-threaded Whisper Tiny q8 with local language detection for Auto mode. The first generation downloads about 67 MB of model and runtime files into dedicated browser storage. The user can clear these files through the caption panel. [Feature map](FEATURES_MAP.md#editing-and-export) · [Architecture](docs/ARCHITECTURE.md#local-transcription)
+- TypeScript, 146 Node tests, and the production build passed. Chromium completed a 316-second bilingual recording after an offline restart. Firefox completed the 18.6-second offline fixture. [Browser checks](docs/BROWSER_VERIFICATION.md#offline-caption-verification)
+
+---
+
 ## 2026-11-19 — Add MP3 selection, protect conversions and show PWA build versions
 
 - The converter offers MP4 video and MP3 audio. In-app surface switches retain the active job, selected file and pending output. Cancelling a job or discarding a result before download requires confirmation. An undownloaded result blocks app-controlled reload.

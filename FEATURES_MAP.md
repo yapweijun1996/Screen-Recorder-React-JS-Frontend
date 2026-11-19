@@ -28,6 +28,8 @@ This index maps user actions to the screens and code that implement them. Paths 
 
 ## Editing and export
 
+Use **Generate captions** to transcribe the original recording in the browser. Choose Auto detect, Chinese, or English, edit the generated text, and select a timestamp to seek the player. Download the result as SRT or TXT. The first successful model load caches its assets for later offline use. [Caption panel](src/components/editor/TranscriptPanel.tsx) · [Transcription lifecycle](docs/ARCHITECTURE.md#local-transcription)
+
 | Feature ID | User entry | Prerequisites and expected result | Negative case | Source |
 | --- | --- | --- | --- | --- |
 | `editor.preview` | **Edit & Export** → video preview, timeline ruler, or **Preview Selection** | A playable recording. Regular playback loops the selected clip. **Preview Selection** plays the retained clips in order. Manual seeking leaves that mode and seeks to the requested source time. **Enter fullscreen** depends on browser support. | Invalid recording metadata surfaces a playback error and prevents processed export. | [Player](src/components/editor/EditorPlayer.tsx), [Playback modes](src/components/editor/useEditorPlayback.ts), [Export validation](src/components/editor/useEditorExportController.ts#L23) |

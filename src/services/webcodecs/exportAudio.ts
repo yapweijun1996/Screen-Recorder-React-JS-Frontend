@@ -7,11 +7,17 @@ import { awaitWithAbort, throwIfAborted } from './mediaWait';
 export interface AudioSource {
     sampleRate: number;
     numberOfChannels: number;
+    /** Best-effort duration from container metadata, when available. */
+    duration?: number;
     samples: (start: number, end: number) => AsyncGenerator<AudioSample, void, unknown>;
     dispose: () => void;
 }
 
-export async function openAudioSource(blob: Blob, signal?: AbortSignal): Promise<AudioSource | null> {
+export interface AudioSourceOptions {
+    readDuration?: boolean;
+}
+
+export async function openAudioSource(blob: Blob, signal?: AbortSignal, options: AudioSourceOptions = {}): Promise<AudioSource | null> {
     throwIfAborted(signal);
     const input = new Input({ formats: ALL_FORMATS, source: new BlobSource(blob, { maxCacheSize: 8 * 1024 * 1024 }) });
     let disposed = false;
@@ -28,9 +34,20 @@ export async function openAudioSource(blob: Blob, signal?: AbortSignal): Promise
         if (!await awaitWithAbort(track.canDecode(), signal)) throw new AudioExportError('decodeFailed');
         const sampleRate = await awaitWithAbort(track.getSampleRate(), signal);
         const numberOfChannels = await awaitWithAbort(track.getNumberOfChannels(), signal);
+        let duration: number | undefined;
+        if (options.readDuration) {
+            try {
+                const metadataDuration = await awaitWithAbort(track.getDurationFromMetadata(), signal);
+                if (metadataDuration !== null && Number.isFinite(metadataDuration) && metadataDuration > 0) {
+                    duration = metadataDuration;
+                }
+            } catch {
+                // Metadata is optional. Sequential sample decoding remains authoritative.
+            }
+        }
         const sink = new AudioSampleSink(track);
         throwIfAborted(signal);
-        return { sampleRate, numberOfChannels, samples: (start, end) => sink.samples(start, end), dispose };
+        return { sampleRate, numberOfChannels, duration, samples: (start, end) => sink.samples(start, end), dispose };
     } catch {
         dispose();
         throwIfAborted(signal);

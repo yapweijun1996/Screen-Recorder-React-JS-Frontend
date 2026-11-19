@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '../Button';
 import { FileVideo, RotateCcw, ExternalLink } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { useTranscription } from './useTranscription';
 
 interface EditorHeaderProps {
     onReset: () => void;
@@ -9,6 +10,7 @@ interface EditorHeaderProps {
 
 export const EditorHeader: React.FC<EditorHeaderProps> = ({ onReset }) => {
     const { t } = useI18n();
+    const { warnOnLeave } = useTranscription();
 
     const converterUrl = `${window.location.pathname}?page=converter`;
 
@@ -34,7 +36,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ onReset }) => {
                     <ExternalLink size={13} />
                     {t('converter.nav')}
                 </a>
-                <Button variant="danger" onClick={onReset}>
+                <Button variant="danger" onClick={() => {
+                    if (!warnOnLeave || window.confirm(t('editor.transcript.confirmReset'))) onReset();
+                }}>
                     <RotateCcw size={16} />
                     {t('editor.header.recordNew')}
                 </Button>

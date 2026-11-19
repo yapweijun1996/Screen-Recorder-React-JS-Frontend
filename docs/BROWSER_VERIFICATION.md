@@ -41,6 +41,16 @@ Local Windows comparison of `293b8ee` and `dc49d1f`, one run per configuration. 
 
 On the 60-second fixture, the retry action reappeared within 132 ms in Chromium and 241 ms in Firefox after clicking Cancel on the current release. Neither browser published a download during the 300 ms observation window after cancellation. Longer exports, audio-bearing stress fixtures and file-backed output need separate evaluation.
 
+## Offline caption verification
+
+Run `python -B scripts/browser_smoke_transcription.py --browser chromium --long` after the production build. Use `--browser firefox --timeout-seconds 600` for the short Firefox replay. The public fixture combines an English JFK excerpt and a Mandarin sample with pauses. The long replay repeats this pair for 316 seconds. The check warms the model, closes the browser, disables networking and the preview server, then opens the same profile and generates captions again.
+
+Chromium 148 produced 52 cues from the 316-second offline replay in 362 seconds. The measured peak was 1,207 MiB in the largest browser process. Approximate English word error was 11.8% and Mandarin character error was 23.1% for this repeated fixture. These values describe one local run and one pair of reference utterances.
+
+Firefox 150 produced four cues from the 18.6-second offline replay in 184 seconds while the Chromium run was active. The 316-second replay was measured only in Chromium. Safari and mobile browser execution remain unverified.
+
+The smoke covers no-audio and silence handling before downloads, cancel, navigation during an active job, editing, cue seeking, SRT and TXT downloads, and clearing the model while retaining the application cache.
+
 ## Physical device checks
 
 Record the browser version, operating system, capture source and output bytes for each manual result. Use test content and disposable recordings.
