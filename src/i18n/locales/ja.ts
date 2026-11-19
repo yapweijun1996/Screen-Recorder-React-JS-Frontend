@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ja: TranslationTable = {
+    'editor.draft.invalid': "保存した編集下書きを読み込めませんでした。トリミングをリセットして新しい下書きを作成してください。",
+    'editor.draft.reset': "トリミングをリセット",
+    'export.input.invalid': "このファイルを対応する動画として読み込めません。",
+    'export.codec.unsupported': "このブラウザーには出力とソーストラックに対応するエンコーダーがありません。",
+    'export.audio.encodeFailed': "音声のエンコードに失敗しました。音声を失わないように書き出しを停止しました。",
+    'engine.capability.video': "動画",
+    'engine.capability.audio': "音声",
+    'engine.capability.silent': "無音のソースのみ",
+    'engine.capability.audioOnly': "音声のみ",
+    'app.storage.recordingChanged': "別のタブに別の録画が保存されました。現在の録画と編集は保持されています。元の録画をダウンロードするか、ページを再読み込みしてください。",
+    'editor.timeline.label': "タイムライン",
+    'editor.timeline.play': "再生",
+    'editor.timeline.shuttle': "早送り・巻き戻し",
+    'editor.trim.keyboardHint': "Alt と矢印キーで開始位置、Alt・Shift と矢印キーで終了位置を調整します。",
     "app.navigation.recordingBusy": "録画の準備を完了またはキャンセルするか、録画を停止してからページを切り替えてください。",
     "app.update.available": "新しいバージョンがあります。再読み込みで未保存の編集がリセットされるため、先に作品をダウンロードしてください。",
     "app.update.busy": "更新準備完了。録画やエクスポートを終えてから再読み込みしてください。",

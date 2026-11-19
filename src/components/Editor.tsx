@@ -31,6 +31,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         currentTime, setCurrentTime, showAdvanced, setShowAdvanced,
         selectedQuality, setSelectedQuality, selectedResolution, setSelectedResolution,
         selectedFormat, setSelectedFormat, selectedFps, setSelectedFps,
+        draftBlocked, acknowledgeDraftRecovery,
     } = useEditorDraft();
 
     const applyHighQualityPreset = () => {
@@ -140,6 +141,16 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         syncDurationIfUntouched, maxDuration, t
     });
 
+    const exportTrigger = useRef<HTMLElement | null>(null);
+    const beginExport = (run: () => void) => {
+        const focused = document.activeElement;
+        exportTrigger.current = focused instanceof HTMLElement ? focused : null;
+        run();
+    };
+
+    const handleResetTrim = () => { resetSegments(); acknowledgeDraftRecovery(); handleSeek(0); };
+    const handleExportTrimmed = () => draftBlocked ? undefined : beginExport(exportTrimmed);
+
     const segmentProgressPercent = (() => {
         const seg = activeSegment;
         const denom = Math.max(seg.end - seg.start, 0.0001);
@@ -156,7 +167,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
     };
 
     return (
-        <div className="w-full flex-1 flex flex-col animate-fade-in min-h-0">
+        <div data-editor className="w-full flex-1 flex flex-col animate-fade-in min-h-0">
+            {draftBlocked && <div role="alert" className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-300 dark:border-amber-500/50 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3 flex-shrink-0"><span className="text-sm">{t('editor.draft.invalid')}</span><button type="button" className="text-sm font-semibold underline underline-offset-2" onClick={handleResetTrim}>{t('editor.draft.reset')}</button></div>}
             {/* Export progress modal */}
             {isProcessing && (
                 <ExportProgressModal
@@ -164,6 +176,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                     eta={processingEta}
                     format={selectedFormat}
                     onCancel={cancelExport}
+                    returnFocusTo={exportTrigger.current}
                 />
             )}
 
@@ -207,10 +220,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onToggleFullscreen={toggleFullscreen}
                         onSeekPercent={(p01) => {
                             if (!videoRef.current || playbackError) return;
-                            setPreviewIndex(null);
                             const time = activeSegment.start + (Math.max(activeSegment.end - activeSegment.start, 0) * p01);
-                            videoRef.current.currentTime = time;
-                            setCurrentTime(time);
+                            handleSeek(time);
                         }}
                     />
                 }
@@ -237,8 +248,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         exportError={exportError}
                         playbackError={playbackError}
                         onApplyHighQualityPreset={applyHighQualityPreset}
-                        onExportTrimmed={exportTrimmed}
-                        onExportFull={exportFull}
+                        onExportTrimmed={handleExportTrimmed}
+                        onExportFull={() => beginExport(exportFull)}
                         onClearExportUrl={clearExportUrl}
                         onClearExportError={clearExportError}
                         downloadFileName={exportDownloadFileName}
@@ -259,9 +270,8 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         canDelete={safeSegments.length > 1}
                         onSelectSegment={(idx) => {
                             selectIndex(idx);
-                            if (videoRef.current) {
-                                videoRef.current.currentTime = safeSegments[Math.min(idx, safeSegments.length - 1)].start;
-                            }
+                            const segment = safeSegments[Math.min(idx, safeSegments.length - 1)];
+                            if (segment) handleSeek(segment.start);
                         }}
                         onSeek={handleSeek}
                         onTrimSegment={(start, end) => {
@@ -274,10 +284,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onDeleteSelected={handleDeleteSelected}
                         onUndo={undo}
                         onPreviewEdited={previewEditedResult}
-                        onResetTrim={() => {
-                            resetSegments();
-                            if (videoRef.current) videoRef.current.currentTime = 0;
-                        }}
+                        onResetTrim={handleResetTrim}
                         skimmingEnabled={!isPlaying}
                     />
                 }

@@ -51,7 +51,7 @@ export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, onP
                 title={`${t('editor.trim.splitAtPlayhead')} (B)`}
             >
                 <Scissors size={12} />
-                <span className="hidden md:inline">Split</span>
+                <span className="hidden md:inline">{t('editor.trim.splitAtPlayhead')}</span>
             </button>
             {/* Minimum split distance */}
             {!canSplit && (
@@ -86,7 +86,7 @@ export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, onP
             title={`${t('editor.trim.deleteSegment')} (Del)`}
         >
             <Trash2 size={12} />
-            <span className="hidden md:inline">Delete</span>
+            <span className="hidden md:inline">{t('editor.trim.deleteSegment')}</span>
         </button>
 
         {/* Desktop separator */}

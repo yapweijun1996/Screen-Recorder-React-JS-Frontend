@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const de: TranslationTable = {
+    'editor.draft.invalid': "Der gespeicherte Entwurf konnte nicht gelesen werden. Setze den Schnitt zurück, um einen neuen Entwurf zu erstellen.",
+    'editor.draft.reset': "Schnitt zurücksetzen",
+    'export.input.invalid': "Diese Datei konnte nicht als unterstütztes Video gelesen werden.",
+    'export.codec.unsupported': "Dieser Browser hat keinen passenden Encoder für die Ausgabe und die Quellspuren.",
+    'export.audio.encodeFailed': "Die Audiokodierung ist fehlgeschlagen. Der Export wurde beendet, um den Ton zu erhalten.",
+    'engine.capability.video': "Video",
+    'engine.capability.audio': "Audio",
+    'engine.capability.silent': "nur Quellen ohne Ton",
+    'engine.capability.audioOnly': "nur Audio",
+    'app.storage.recordingChanged': "Ein anderer Tab hat eine andere Aufnahme gespeichert. Ihre Aufnahme und Änderungen bleiben erhalten. Laden Sie das Original herunter oder laden Sie die Seite neu.",
+    'editor.timeline.label': "Zeitleiste",
+    'editor.timeline.play': "Wiedergabe",
+    'editor.timeline.shuttle': "Vor- und Rücklauf",
+    'editor.trim.keyboardHint': "Alt und die Pfeiltasten kürzen den Anfang. Alt, Umschalt und die Pfeiltasten kürzen das Ende.",
     "app.navigation.recordingBusy": "Schließe die Aufnahmevorbereitung ab oder brich sie ab, oder stoppe die Aufnahme, bevor du die Seite wechselst.",
     "app.update.available": "Eine neue Version ist verfügbar. Beim Neuladen gehen ungespeicherte Bearbeitungen verloren; lade deine Arbeit zuerst herunter.",
     "app.update.busy": "Update bereit. Beende Aufnahme oder Export vor dem Neuladen.",

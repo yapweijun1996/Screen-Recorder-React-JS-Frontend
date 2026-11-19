@@ -10,6 +10,8 @@ export interface VideoMetadata {
     blob: Blob;
     url: string;
     duration: number; // in seconds
+    /** Stable identity for the persisted recording, when storage is available. */
+    recordingId?: string;
 }
 
 export interface TrimRange {

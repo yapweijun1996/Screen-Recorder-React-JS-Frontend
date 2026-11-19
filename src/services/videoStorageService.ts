@@ -5,6 +5,7 @@ const VIDEO_KEY = 'current_recording';
 
 interface StoredVideo {
     id: string;
+    recordingId?: string;
     blob: Blob;
     mimeType: string;
     duration: number;
@@ -64,21 +65,53 @@ export class VideoStorageService {
         });
     }
 
-    async saveVideo(blob: Blob, duration: number, name = 'Screen Recording'): Promise<void> {
+    async saveVideo(blob: Blob, duration: number, name = 'Screen Recording'): Promise<string> {
         const db = await this.init();
-        const video: StoredVideo = { id: VIDEO_KEY, blob, mimeType: blob.type, duration, createdAt: Date.now(), name };
+        const recordingId = crypto.randomUUID();
+        const video: StoredVideo = { id: VIDEO_KEY, recordingId, blob, mimeType: blob.type, duration, createdAt: Date.now(), name };
         await this.transact(db, 'readwrite', store => store.put(video));
+        return recordingId;
     }
 
     async loadVideo(): Promise<StoredVideo | null> {
         const db = await this.init();
         const stored = await this.transact<StoredVideo | undefined>(db, 'readonly', store => store.get(VIDEO_KEY));
-        return stored ?? null;
+        if (!stored || stored.recordingId) return stored ?? null;
+
+        // Re-read under a write transaction so migration cannot overwrite a newer recording.
+        try {
+            const recordingId = crypto.randomUUID();
+            let identified: StoredVideo | null = null;
+            await this.transact<StoredVideo | undefined>(db, 'readwrite', store => {
+                const request = store.get(VIDEO_KEY);
+                request.onsuccess = () => {
+                    const current = request.result;
+                    if (!current) return;
+                    identified = current.recordingId ? current : { ...current, recordingId };
+                    if (!current.recordingId) store.put(identified);
+                };
+                return request;
+            });
+            return identified;
+        } catch (error) {
+            console.warn('Could not identify the recovered recording:', error);
+            return stored;
+        }
     }
 
-    async deleteVideo(): Promise<void> {
+    async deleteVideo(recordingId: string): Promise<boolean> {
         const db = await this.init();
-        await this.transact(db, 'readwrite', store => store.delete(VIDEO_KEY));
+        let canReset = false;
+        await this.transact<StoredVideo | undefined>(db, 'readwrite', store => {
+            const request = store.get(VIDEO_KEY);
+            request.onsuccess = () => {
+                const current = request.result;
+                canReset = !current || (!!recordingId && current.recordingId === recordingId);
+                if (canReset && current) store.delete(VIDEO_KEY);
+            };
+            return request;
+        });
+        return canReset;
     }
 
     async hasStoredVideo(): Promise<boolean> { return (await this.loadVideo()) !== null; }

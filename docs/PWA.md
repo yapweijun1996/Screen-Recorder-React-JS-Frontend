@@ -1,6 +1,6 @@
 # PWA
 
-ScreenClip Pro is installable and offline-capable. New versions install in the background and show a localized prompt. The user confirms when to reload; unsaved editor changes reset, so the prompt asks them to download their work first.
+ScreenClip Pro supports installation through compatible browsers and can reopen from its service-worker cache. New versions install in the background and show a localized prompt. The user confirms when to reload. The saved recording's retained clips, selection and export settings can be restored after reload. Download any unsaved work before confirming.
 
 ## Configuration and Update Flow
 

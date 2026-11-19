@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { canHandleEditorShortcut } from './editorShortcutTarget';
 
 interface KeyboardShortcutsConfig {
     videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -63,14 +64,7 @@ export function useKeyboardShortcuts({
     }, [videoRef]);
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        // 忽略在输入框中的按键
-        if (
-            e.target instanceof HTMLInputElement ||
-            e.target instanceof HTMLTextAreaElement ||
-            e.target instanceof HTMLSelectElement
-        ) {
-            return;
-        }
+        if (!canHandleEditorShortcut(e)) return;
 
         const video = videoRef.current;
         if (!video) return;

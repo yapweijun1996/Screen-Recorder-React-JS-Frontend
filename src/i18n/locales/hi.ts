@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const hi: TranslationTable = {
+    'editor.draft.invalid': "सहेजा गया संपादन ड्राफ़्ट नहीं पढ़ा जा सका। नया ड्राफ़्ट शुरू करने के लिए ट्रिम रीसेट करें।",
+    'editor.draft.reset': "ट्रिम रीसेट करें",
+    'export.input.invalid': "इस फ़ाइल को समर्थित वीडियो के रूप में नहीं पढ़ा जा सका।",
+    'export.codec.unsupported': "इस ब्राउज़र में चुने गए आउटपुट और स्रोत ट्रैक के लिए संगत एन्कोडर नहीं है।",
+    'export.audio.encodeFailed': "ऑडियो एन्कोडिंग विफल रही। आवाज़ सुरक्षित रखने के लिए निर्यात रोक दिया गया।",
+    'engine.capability.video': "वीडियो",
+    'engine.capability.audio': "ऑडियो",
+    'engine.capability.silent': "केवल बिना आवाज़ वाले स्रोत",
+    'engine.capability.audioOnly': "केवल ऑडियो",
+    'app.storage.recordingChanged': "दूसरे टैब ने अलग रिकॉर्डिंग सहेजी है। मौजूदा रिकॉर्डिंग और संपादन सुरक्षित हैं। मूल रिकॉर्डिंग डाउनलोड करें या पेज फिर से लोड करें।",
+    'editor.timeline.label': "टाइमलाइन",
+    'editor.timeline.play': "चलाएँ",
+    'editor.timeline.shuttle': "आगे और पीछे",
+    'editor.trim.keyboardHint': "शुरुआत काटने के लिए Alt और तीर कुंजियाँ दबाएँ, या अंत काटने के लिए Alt, Shift और तीर कुंजियाँ दबाएँ।",
     "app.navigation.recordingBusy": "पेज बदलने से पहले रिकॉर्डिंग की तैयारी पूरी करें या रद्द करें, या रिकॉर्डिंग रोकें।",
     "app.update.available": "नया संस्करण उपलब्ध है। पुनः लोड करने से असहेजे संपादन हटेंगे; पहले अपना काम डाउनलोड करें।",
     "app.update.busy": "अपडेट तैयार है। पुनः लोड करने से पहले रिकॉर्डिंग या निर्यात पूरा करें।",

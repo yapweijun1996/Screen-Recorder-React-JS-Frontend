@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const zh: TranslationTable = {
+    'editor.draft.invalid': "无法读取已保存的剪辑草稿。请选择“重置剪辑”以开始新草稿。",
+    'editor.draft.reset': "重置剪辑",
+    'export.input.invalid': "无法将此文件读取为受支持的视频。",
+    'export.codec.unsupported': "此浏览器没有与所选输出和源轨道兼容的编码器。",
+    'export.audio.encodeFailed': "音频编码失败。为避免丢失声音，导出已停止。",
+    'engine.capability.video': "视频",
+    'engine.capability.audio': "音频",
+    'engine.capability.silent': "仅限无声源",
+    'engine.capability.audioOnly': "仅音频",
+    'app.storage.recordingChanged': "另一个标签页保存了不同的录制。当前录制和编辑已保留。下载原始录制，或刷新以打开已保存的录制。",
+    'editor.timeline.label': "时间轴",
+    'editor.timeline.play': "播放",
+    'editor.timeline.shuttle': "快进与倒退",
+    'editor.trim.keyboardHint': "按 Alt 和方向键裁剪起点，按 Alt、Shift 和方向键裁剪终点。",
     "app.navigation.recordingBusy": "请先完成或取消录制准备，或停止录制，再切换页面。",
     "app.update.available": "新版本已就绪。重新载入会重置未保存的剪辑，请先下载作品。",
     "app.update.busy": "新版本已就绪，请完成录制或导出后再更新。",

@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const en: TranslationTable = {
+    'editor.draft.invalid': "The saved edit draft could not be read. Reset Trim to start a new draft.",
+    'editor.draft.reset': "Reset Trim",
+    'export.input.invalid': "This file could not be read as a supported video.",
+    'export.codec.unsupported': "This browser has no compatible encoder for the requested output and source tracks.",
+    'export.audio.encodeFailed': "Audio encoding failed. Export stopped to avoid losing sound.",
+    'engine.capability.video': "video",
+    'engine.capability.audio': "audio",
+    'engine.capability.silent': "silent source only",
+    'engine.capability.audioOnly': "audio-only",
+    'app.storage.recordingChanged': "Another tab saved a different recording. Your current recording and edits have been kept. Download the original or reload to open the saved recording.",
+    'editor.timeline.label': "Timeline",
+    'editor.timeline.play': "Play",
+    'editor.timeline.shuttle': "Shuttle",
+    'editor.trim.keyboardHint': "Use Alt and the arrow keys to trim the start, or Alt, Shift and the arrow keys to trim the end.",
     "app.navigation.recordingBusy": "Finish or cancel recording setup, or stop the recording, before switching pages.",
     "app.update.available": "A new version is available. Reloading resets unsaved edits; download your work first.",
     "app.update.busy": "Update ready. Finish recording or exporting before reloading.",

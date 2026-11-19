@@ -19,13 +19,16 @@ interface Drag {
     bounds: TrimRange;
 }
 
-export function trimAtPointer(drag: Drag, x: number): TrimRange {
-    const { original, edge, bounds } = drag;
+export function trimEdge(original: TrimRange, bounds: TrimRange, edge: Edge, deltaSeconds: number): TrimRange {
     const gap = Math.min(MIN_HANDLE_GAP_SECONDS, original.end - original.start);
-    const time = original[edge] + (x - drag.x) * drag.secondsPerPixel;
+    const time = original[edge] + deltaSeconds;
     return edge === 'start'
         ? { start: Math.max(bounds.start, Math.min(time, original.end - gap)), end: original.end }
         : { start: original.start, end: Math.min(bounds.end, Math.max(time, original.start + gap)) };
+}
+
+export function trimAtPointer(drag: Drag, x: number): TrimRange {
+    return trimEdge(drag.original, drag.bounds, drag.edge, (x - drag.x) * drag.secondsPerPixel);
 }
 
 export function useClipTrim({ segment, bounds, displayDuration, onTrim }: Args) {

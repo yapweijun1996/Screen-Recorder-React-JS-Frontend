@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import type { TrimRange } from '../../types';
 import { formatTime } from '../../utils/format';
-import { useClipTrim } from './useClipTrim';
+import { trimEdge, useClipTrim } from './useClipTrim';
+import { useI18n } from '../../i18n';
 
 interface TimelineClipProps {
     segment: TrimRange;
@@ -36,35 +37,29 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
     showTrimHandles = !isBlade,
     onBladeClick,
 }) => {
+    const { t } = useI18n();
     const { preview, handleProps } = useClipTrim({ segment, bounds: trimBounds, displayDuration: maxDuration, onTrim });
     const displayed = preview ?? segment;
     const previewLeft = leftPct + ((displayed.start - segment.start) / maxDuration) * 100;
     const previewWidth = preview ? ((displayed.end - displayed.start) / maxDuration) * 100 : widthPct;
-    // 生成伪波形数据 - 使用确定性种子
-    const waveformBars = useMemo(() => {
-        const barCount = Math.max(8, Math.min(60, Math.floor(widthPct * 1.5)));
-        const bars: number[] = [];
-
-        // 使用片段属性作为伪随机种子
-        const seed = segment.start * 1000 + segment.end * 100 + index;
-
-        for (let i = 0; i < barCount; i++) {
-            // 伪随机但确定性的高度计算
-            const noise = Math.sin(seed + i * 0.7) * 0.5 + 0.5;
-            const wave = Math.sin((i / barCount) * Math.PI * 2 + seed * 0.1) * 0.3;
-            const height = 0.2 + noise * 0.6 + wave * 0.2;
-            bars.push(Math.max(0.15, Math.min(0.95, height)));
-        }
-
-        return bars;
-    }, [segment.start, segment.end, index, widthPct]);
-
     const duration = displayed.end - displayed.start;
     const durationLabel = formatTime(duration);
+    const keyboardTrim = isSelected && showTrimHandles && !!onTrim;
 
     return (
         <button
             type="button"
+            data-timeline-clip
+            aria-pressed={isSelected}
+            aria-keyshortcuts={keyboardTrim ? 'Alt+ArrowLeft Alt+ArrowRight Alt+Shift+ArrowLeft Alt+Shift+ArrowRight' : undefined}
+            aria-describedby={keyboardTrim ? `clip-trim-keys-${index}` : undefined}
+            onKeyDown={event => {
+                if (!keyboardTrim || !event.altKey || event.ctrlKey || event.metaKey) return;
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                event.preventDefault();
+                const result = trimEdge(segment, trimBounds, event.shiftKey ? 'end' : 'start', (event.key === 'ArrowLeft' ? -1 : 1) / 30);
+                if (result.start !== segment.start || result.end !== segment.end) onTrim?.(result.start, result.end);
+            }}
             onClick={(e) => {
                 e.stopPropagation();
                 if (isBlade) {
@@ -85,6 +80,7 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
             style={{ left: `${previewLeft}%`, width: `${previewWidth}%`, transition: preview ? 'none' : undefined }}
             title={`#${index + 1}: ${formatTime(segment.start)} - ${formatTime(segment.end)} (${durationLabel})`}
         >
+            {keyboardTrim && <span hidden id={`clip-trim-keys-${index}`}>{t('editor.trim.keyboardHint')}</span>}
             {/* 背景渐变层 */}
             <div className={`
                 absolute inset-0 rounded-md
@@ -100,27 +96,6 @@ export const TimelineClip: React.FC<TimelineClipProps> = ({
                 bg-gradient-to-b from-white/20 to-transparent
                 pointer-events-none
             `} />
-
-            {/* 波形区域 */}
-            <div className="absolute inset-0 flex items-center justify-center px-1 overflow-hidden">
-                <div className="flex items-center justify-center gap-[1px] h-full w-full">
-                    {waveformBars.map((height, i) => (
-                        <div
-                            key={i}
-                            className={`
-                                flex-shrink-0 rounded-full
-                                transition-all duration-200
-                                ${isSelected ? 'bg-white/50' : 'bg-white/30'}
-                                group-hover:bg-white/40
-                            `}
-                            style={{
-                                width: widthPct > 3 ? '2px' : '1px',
-                                height: `${height * 70}%`,
-                            }}
-                        />
-                    ))}
-                </div>
-            </div>
 
             {/* 片段编号标签 */}
             {widthPct > 4 && (

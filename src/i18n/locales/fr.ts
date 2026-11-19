@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const fr: TranslationTable = {
+    'editor.draft.invalid': "Impossible de lire le brouillon enregistré. Réinitialisez le découpage pour en créer un nouveau.",
+    'editor.draft.reset': "Réinitialiser le découpage",
+    'export.input.invalid': "Impossible de lire ce fichier comme une vidéo prise en charge.",
+    'export.codec.unsupported': "Ce navigateur ne dispose pas d’un encodeur compatible avec la sortie et les pistes source.",
+    'export.audio.encodeFailed': "L’encodage audio a échoué. L’exportation a été arrêtée pour préserver le son.",
+    'engine.capability.video': "vidéo",
+    'engine.capability.audio': "audio",
+    'engine.capability.silent': "source sans audio uniquement",
+    'engine.capability.audioOnly': "audio uniquement",
+    'app.storage.recordingChanged': "Un autre onglet a sauvegardé un enregistrement différent. Votre enregistrement et vos modifications sont conservés. Téléchargez l’original ou rechargez la page.",
+    'editor.timeline.label': "Chronologie",
+    'editor.timeline.play': "Lecture",
+    'editor.timeline.shuttle': "Avance et retour",
+    'editor.trim.keyboardHint': "Utilisez Alt et les flèches pour ajuster le début, ou Alt, Maj et les flèches pour ajuster la fin.",
     "app.navigation.recordingBusy": "Terminez ou annulez la préparation, ou arrêtez l’enregistrement, avant de changer de page.",
     "app.update.available": "Une nouvelle version est disponible. Le rechargement réinitialise les modifications non enregistrées ; téléchargez votre travail d’abord.",
     "app.update.busy": "Mise à jour prête. Terminez l’enregistrement ou l’exportation avant de recharger.",

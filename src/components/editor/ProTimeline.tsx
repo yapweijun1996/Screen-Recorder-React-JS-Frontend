@@ -121,7 +121,10 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
             {/* 可滚动的时间轴区域 */}
             <div
                 ref={scrollableRef}
-                className={`timeline-scrollable flex-1 min-h-0 overflow-x-auto overflow-y-hidden ${cursorClass}`}
+                tabIndex={0}
+                role="region"
+                aria-label={t('editor.timeline.label')}
+                className={`timeline-scrollable flex-1 min-h-0 overflow-x-auto overflow-y-hidden focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-500 ${cursorClass}`}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 onPointerDown={handleHandPointerDown}
@@ -250,29 +253,29 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                 <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">Space</kbd>
-                        <span className="text-th-tertiary">Play</span>
+                        <span className="text-th-tertiary">{t('editor.timeline.play')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">J</kbd>
                         <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">K</kbd>
                         <kbd className="px-1 py-0.5 bg-th-input/80 rounded text-th-secondary border border-th-divider/50 shadow-sm">L</kbd>
-                        <span className="text-th-tertiary">Shuttle</span>
+                        <span className="text-th-tertiary">{t('editor.timeline.shuttle')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-700/60 rounded text-amber-700 dark:text-amber-200 border border-amber-300 dark:border-amber-500/50 shadow-sm">B</kbd>
-                        <span className="text-th-tertiary">Blade</span>
+                        <span className="text-th-tertiary">{t('editor.tools.blade')}</span>
                     </span>
                     <span className="flex items-center gap-1">
                         <kbd className="px-1.5 py-0.5 bg-red-100 dark:bg-red-700/60 rounded text-red-700 dark:text-red-200 border border-red-300 dark:border-red-500/50 shadow-sm">Del</kbd>
-                        <span className="text-th-tertiary">Delete</span>
+                        <span className="text-th-tertiary">{t('editor.trim.deleteSegment')}</span>
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-th-tertiary">
-                        Segments: <span className="text-purple-600 dark:text-purple-400 font-semibold">{segments.length}</span>
+                        {t('editor.library.segments')}: <span className="text-purple-600 dark:text-purple-400 font-semibold">{segments.length}</span>
                     </span>
                     <span className="text-th-tertiary">
-                        Total: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{formatTime(displayDuration)}</span>
+                        {t('editor.trim.totalSelected')}: <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{formatTime(displayDuration)}</span>
                     </span>
                 </div>
             </div>

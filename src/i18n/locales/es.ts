@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const es: TranslationTable = {
+    'editor.draft.invalid': "No se pudo leer el borrador guardado. Restablece el recorte para iniciar otro.",
+    'editor.draft.reset': "Restablecer recorte",
+    'export.input.invalid': "No se pudo leer este archivo como un vídeo compatible.",
+    'export.codec.unsupported': "Este navegador no tiene un codificador compatible con la salida y las pistas de origen.",
+    'export.audio.encodeFailed': "Falló la codificación de audio. La exportación se detuvo para conservar el sonido.",
+    'engine.capability.video': "vídeo",
+    'engine.capability.audio': "audio",
+    'engine.capability.silent': "solo fuentes sin audio",
+    'engine.capability.audioOnly': "solo audio",
+    'app.storage.recordingChanged': "Otra pestaña guardó una grabación diferente. Se conservaron la grabación y sus ediciones. Descarga el original o recarga la página.",
+    'editor.timeline.label': "Línea de tiempo",
+    'editor.timeline.play': "Reproducir",
+    'editor.timeline.shuttle': "Avanzar y retroceder",
+    'editor.trim.keyboardHint': "Usa Alt y las flechas para recortar el inicio, o Alt, Mayús y las flechas para recortar el final.",
     "app.navigation.recordingBusy": "Completa o cancela la preparación de la grabación, o detén la grabación, antes de cambiar de página.",
     "app.update.available": "Hay una nueva versión. Recargar restablece las ediciones sin guardar; descarga primero tu trabajo.",
     "app.update.busy": "Actualización lista. Termina la grabación o exportación antes de recargar.",

@@ -103,9 +103,11 @@ Export quality presets control bitrate. CRF is not part of the export contract o
 
 ## Draft and Storage Ownership
 
-`EditorDraftProvider` remains mounted above the recorder/converter page switch and is keyed by the current recording URL. It retains segments, selected segment, bounded undo history, playhead and export settings during navigation. Preview playback and export jobs remain local to the mounted editor. Replacing or clearing the recording resets the draft. Draft edits are in-memory only; reload restores the saved original recording, not its edits.
+`EditorDraftProvider` remains mounted above the recorder/converter page switch. It retains segments, selected segment, bounded undo history, playhead and export settings during navigation. Its versioned local-storage draft saves the retained segments, selection and export settings under the persisted recording identity. Undo history, playhead, preview playback and export jobs remain session state. Reload restores a validated draft for the same recording. An invalid draft blocks trimmed export until **Reset Trim** is confirmed. Full export and the original download remain available. Replacing or successfully clearing the recording clears its associated draft.
 
 `useVideoSession` owns the current recording URL and metadata finalization. It awaits IndexedDB transaction completion before finishing a save or deletion. Failed saves still open the in-memory recording in the editor, with a persistent localized warning and an original-video backup link. Failed deletion retains the video and draft so an undeleted recording is not silently discarded. Database failures are surfaced and initialization can be retried.
+
+The current recording slot is shared per origin. Each saved recording has its own identity, and an existing record receives one the first time it is restored. **Record New** compares that identity with the current slot in the same transaction as deletion. A stale editor keeps its draft and original download while displaying the conflict. Legacy recordings remain viewable and downloadable if the identity write fails.
 
 `useExportOperation` and `ExportTaskScope` own each UI export. Unmount, cancellation, file replacement and a new export invalidate the previous task; late progress/results cannot update the current UI or allocate a result URL. Completed result URLs are revoked on replacement and unmount.
 

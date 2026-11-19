@@ -136,7 +136,11 @@ const App: React.FC = () => {
             {storageIssue && <StorageNotice issue={storageIssue} video={videoData} />}
 
             {/* Keep the draft owner mounted while pages change. */}
-            <EditorDraftProvider key={videoData?.url ?? 'empty'} duration={videoData?.duration ?? 0}>
+            <EditorDraftProvider
+                key={videoData?.recordingId ?? videoData?.url ?? 'empty'}
+                duration={videoData?.duration ?? 0}
+                recordingId={videoData?.recordingId}
+            >
                 {page === 'converter' ? (
                     <>
                         <Converter />

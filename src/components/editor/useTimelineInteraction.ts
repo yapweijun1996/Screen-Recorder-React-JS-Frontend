@@ -4,6 +4,7 @@ import type { TrimRange } from '../../types';
 import { formatTime } from '../../utils/format';
 import type { TimelineToolMode } from './TimelineToolbar';
 import { sequenceTimeFromPixels } from './timelineCoordinates';
+import { canHandleEditorShortcut } from './editorShortcutTarget';
 
 interface InteractionArgs {
     segments: TrimRange[];
@@ -90,9 +91,7 @@ export function useTimelineInteraction({ segments, totalSelectedDuration, skimmi
 
     useEffect(() => {
         const handleShortcut = (event: KeyboardEvent) => {
-            const target = event.target as HTMLElement | null;
-            const tagName = target?.tagName;
-            if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return;
+            if (!canHandleEditorShortcut(event) || event.ctrlKey || event.metaKey) return;
             if (event.code !== 'KeyH' && event.code !== 'KeyA') return;
             event.preventDefault();
             setActiveTool(event.code === 'KeyH' ? 'hand' : 'select');

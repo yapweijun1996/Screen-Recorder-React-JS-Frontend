@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const id: TranslationTable = {
+    'editor.draft.invalid': "Draf suntingan tersimpan tidak dapat dibaca. Reset pemangkasan untuk membuat draf baru.",
+    'editor.draft.reset': "Reset pemangkasan",
+    'export.input.invalid': "Berkas ini tidak dapat dibaca sebagai video yang didukung.",
+    'export.codec.unsupported': "Browser ini tidak memiliki enkoder yang kompatibel dengan keluaran dan trek sumber.",
+    'export.audio.encodeFailed': "Pengodean audio gagal. Ekspor dihentikan agar suara tidak hilang.",
+    'engine.capability.video': "video",
+    'engine.capability.audio': "audio",
+    'engine.capability.silent': "hanya sumber tanpa suara",
+    'engine.capability.audioOnly': "hanya audio",
+    'app.storage.recordingChanged': "Tab lain menyimpan rekaman berbeda. Rekaman dan edit saat ini tetap tersedia. Unduh rekaman asli atau muat ulang halaman.",
+    'editor.timeline.label': "Linimasa",
+    'editor.timeline.play': "Putar",
+    'editor.timeline.shuttle': "Maju dan mundur",
+    'editor.trim.keyboardHint': "Gunakan Alt dan tombol panah untuk memangkas awal, atau Alt, Shift, dan tombol panah untuk memangkas akhir.",
     "app.navigation.recordingBusy": "Selesaikan atau batalkan persiapan rekaman, atau hentikan rekaman, sebelum berpindah halaman.",
     "app.update.available": "Versi baru tersedia. Memuat ulang mereset edit yang belum disimpan; unduh pekerjaan Anda dahulu.",
     "app.update.busy": "Pembaruan siap. Selesaikan rekaman atau ekspor sebelum memuat ulang.",

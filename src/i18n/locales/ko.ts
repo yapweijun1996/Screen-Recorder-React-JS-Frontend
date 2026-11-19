@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const ko: TranslationTable = {
+    'editor.draft.invalid': "저장된 편집 초안을 읽을 수 없습니다. 트리밍을 재설정하여 새 초안을 시작하세요.",
+    'editor.draft.reset': "트리밍 재설정",
+    'export.input.invalid': "이 파일을 지원되는 동영상으로 읽을 수 없습니다.",
+    'export.codec.unsupported': "이 브라우저에는 선택한 출력 및 원본 트랙과 호환되는 인코더가 없습니다.",
+    'export.audio.encodeFailed': "오디오 인코딩에 실패했습니다. 소리 손실을 방지하기 위해 내보내기를 중단했습니다.",
+    'engine.capability.video': "동영상",
+    'engine.capability.audio': "오디오",
+    'engine.capability.silent': "무음 소스만",
+    'engine.capability.audioOnly': "오디오만",
+    'app.storage.recordingChanged': "다른 탭에서 다른 녹화를 저장했습니다. 현재 녹화와 편집 내용은 유지됩니다. 원본을 다운로드하거나 페이지를 새로고침하세요.",
+    'editor.timeline.label': "타임라인",
+    'editor.timeline.play': "재생",
+    'editor.timeline.shuttle': "앞뒤 재생",
+    'editor.trim.keyboardHint': "Alt와 방향키로 시작점을, Alt와 Shift 및 방향키로 끝점을 조정합니다.",
     "app.navigation.recordingBusy": "녹화 준비를 완료하거나 취소하거나, 녹화를 중지한 후 페이지를 전환하세요.",
     "app.update.available": "새 버전이 준비되었습니다. 새로 고침하면 저장되지 않은 편집이 초기화됩니다. 먼저 작업을 다운로드하세요.",
     "app.update.busy": "업데이트 준비 완료. 녹화나 내보내기를 마친 후 새로 고침하세요.",

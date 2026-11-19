@@ -4,8 +4,9 @@ import { exportService } from '../services/exportService';
 import { videoStorageService } from '../services/videoStorageService';
 import { readRecordingDuration } from '../services/readRecordingDuration';
 import { taskActivity } from '../services/taskActivity';
+import { clearEditorDraft } from './editor/editorDraftPersistence';
 
-export type StorageIssue = 'saveFailed' | 'loadFailed' | 'deleteFailed';
+export type StorageIssue = 'saveFailed' | 'loadFailed' | 'deleteFailed' | 'recordingChanged';
 
 export function useVideoSession(t: (key: string) => string) {
     const [status, setStatus] = useState(AppStatus.IDLE);
@@ -16,11 +17,13 @@ export function useVideoSession(t: (key: string) => string) {
     const mounted = useRef(true);
     const revision = useRef(0);
     const urlRef = useRef<string | null>(null);
+    const savedRecordingId = useRef<string | null | undefined>(null);
     const finalization = useRef<AbortController | null>(null);
     const resetting = useRef(false);
-    const replaceVideo = (data: VideoMetadata | null) => {
+    const replaceVideo = (data: VideoMetadata | null, recordingId: string | null | undefined) => {
         if (urlRef.current) URL.revokeObjectURL(urlRef.current);
         urlRef.current = data?.url ?? null;
+        savedRecordingId.current = recordingId;
         setVideoData(data);
     };
 
@@ -31,7 +34,7 @@ export function useVideoSession(t: (key: string) => string) {
         const current = () => mounted.current && revision.current === version;
         void videoStorageService.loadVideo().then(stored => {
             if (!current() || !stored?.blob.size) return;
-            replaceVideo({ blob: stored.blob, url: URL.createObjectURL(stored.blob), duration: stored.duration });
+            replaceVideo({ blob: stored.blob, url: URL.createObjectURL(stored.blob), duration: stored.duration, recordingId: stored.recordingId }, stored.recordingId);
             setStatus(AppStatus.REVIEWING);
         }).catch(error => {
             if (!current()) return;
@@ -62,14 +65,19 @@ export function useVideoSession(t: (key: string) => string) {
         try {
             const workingBlob = await exportService.fixWebmDuration(blob, recordedDuration);
             const duration = await readRecordingDuration(workingBlob, recordedDuration, controller.signal);
-            try { await videoStorageService.saveVideo(workingBlob, duration); }
+            let recordingId: string | null = null;
+            try { recordingId = await videoStorageService.saveVideo(workingBlob, duration); }
             catch (error) {
                 if (!current()) return;
                 console.warn('Recording remains in memory; persistence failed:', error);
                 setStorageIssue('saveFailed');
             }
             if (!current()) return;
-            replaceVideo({ blob: workingBlob, url: URL.createObjectURL(workingBlob), duration });
+            const previousRecordingId = savedRecordingId.current;
+            if (recordingId && previousRecordingId && recordingId !== previousRecordingId) {
+                clearEditorDraft(previousRecordingId);
+            }
+            replaceVideo({ blob: workingBlob, url: URL.createObjectURL(workingBlob), duration, recordingId: recordingId ?? undefined }, recordingId);
             setStatus(AppStatus.REVIEWING);
         } catch (error) {
             if (!current()) return;
@@ -87,10 +95,20 @@ export function useVideoSession(t: (key: string) => string) {
         resetting.current = true;
         const endActivity = taskActivity.begin();
         try {
-            await videoStorageService.deleteVideo();
+            const recordingId = savedRecordingId.current;
+            if (recordingId === undefined) {
+                setStorageIssue('deleteFailed');
+                return;
+            }
+            const canReset = recordingId === null || await videoStorageService.deleteVideo(recordingId);
             if (!mounted.current) return;
+            if (!canReset) {
+                setStorageIssue('recordingChanged');
+                return;
+            }
+            clearEditorDraft(recordingId ?? undefined);
             revision.current++;
-            replaceVideo(null);
+            replaceVideo(null, null);
             setStatus(AppStatus.IDLE);
             setErrorMsg(null);
             setStorageIssue(null);

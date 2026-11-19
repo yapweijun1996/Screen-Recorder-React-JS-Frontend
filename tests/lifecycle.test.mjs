@@ -181,7 +181,11 @@ async function withStorage(run) {
     const previous = globalThis.indexedDB, transactions = [];
     const db = { transaction() {
         const request = { result: undefined, error: null };
-        const tx = { request, error: null, objectStore: () => ({ put: () => request, delete: () => request, get: () => request }) };
+        const tx = { request, error: null, writes: [], deletions: [], objectStore: () => ({
+            put: record => { tx.writes.push(record); return request; },
+            delete: key => { tx.deletions.push(key); return request; },
+            get: () => request,
+        }) };
         transactions.push(tx);
         return tx;
     } };
@@ -195,11 +199,15 @@ async function withStorage(run) {
 }
 
 for (const method of ['saveVideo', 'deleteVideo']) {
+    const start = storage => method === 'saveVideo'
+        ? storage.saveVideo(new Blob(['video']), 10)
+        : storage.deleteVideo('matching-recording');
     test(`${method} waits for transaction commit after request success`, () => withStorage(async (storage, transactions) => {
         let settled = false;
-        const pending = storage[method](new Blob(['video']), 10).then(() => { settled = true; });
+        const pending = start(storage).then(() => { settled = true; });
         await tick();
         const tx = transactions[0];
+        if (method === 'deleteVideo') tx.request.result = { recordingId: 'matching-recording' };
         tx.request.onsuccess?.();
         await tick();
         assert.equal(settled, false);
@@ -207,15 +215,45 @@ for (const method of ['saveVideo', 'deleteVideo']) {
         assert.equal(settled, true);
     }));
     test(`${method} rejects transaction abort following request success`, () => withStorage(async (storage, transactions) => {
-        const pending = storage[method](new Blob(['video']), 10);
+        const pending = start(storage);
         await tick();
         const tx = transactions[0];
+        if (method === 'deleteVideo') tx.request.result = { recordingId: 'matching-recording' };
         tx.request.onsuccess?.();
         tx.error = new DOMException('Quota exhausted', 'QuotaExceededError');
         tx.onabort();
         await assert.rejects(pending, error => error.name === 'QuotaExceededError');
     }));
 }
+
+test('stale recording identity cannot delete a replacement', () => withStorage(async (storage, transactions) => {
+    const pending = storage.deleteVideo('old-recording');
+    await tick();
+    const tx = transactions[0];
+    tx.request.result = { recordingId: 'new-recording' };
+    tx.request.onsuccess();
+    tx.oncomplete();
+    assert.equal(await pending, false);
+    assert.deepEqual(tx.deletions, []);
+}));
+
+test('legacy recording gets an identity in the transaction that reads the current slot', () => withStorage(async (storage, transactions) => {
+    const legacy = { id: 'current_recording', blob: new Blob(['video']), createdAt: 1 };
+    const pending = storage.loadVideo();
+    await tick();
+    const read = transactions[0];
+    read.request.result = legacy;
+    read.oncomplete();
+    await tick();
+    const migration = transactions[1];
+    migration.request.result = legacy;
+    migration.request.onsuccess();
+    migration.oncomplete();
+    const restored = await pending;
+    assert.ok(restored.recordingId);
+    assert.equal(restored.blob, legacy.blob);
+    assert.deepEqual(migration.writes, [restored]);
+}));
 
 test('storage errors are observable instead of appearing as an empty store', () => withStorage(async (storage, transactions) => {
     const pending = storage.loadVideo(); await tick();

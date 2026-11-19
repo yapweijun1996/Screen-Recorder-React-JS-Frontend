@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import type { VideoQualityPreset } from '../../../types';
 import { Button } from '../../Button';
 import { useI18n } from '../../../i18n';
+import { useEditorDraft } from '../EditorDraftContext';
 
 interface EditorExportFooterActionsProps {
     exportUrl: string | null;
@@ -28,6 +29,7 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
     onExportFull,
 }) => {
     const { t } = useI18n();
+    const { draftBlocked } = useEditorDraft();
 
     if (exportUrl) return null;
 
@@ -38,7 +40,7 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
                 className="w-full py-3"
                 onClick={onExportTrimmed}
                 isLoading={isProcessing}
-                disabled={!!playbackError || isProcessing}
+                disabled={!!playbackError || isProcessing || draftBlocked}
             >
                 {t('editor.export.exportTrimmed', { label: t(`quality.${selectedQuality}.label`) })}
             </Button>

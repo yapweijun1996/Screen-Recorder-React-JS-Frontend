@@ -2,6 +2,20 @@ import type { RefObject } from 'react';
 import type { TrimRange, VideoMetadata } from '../../types';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
+export function applyManualSeek(
+    video: Pick<HTMLVideoElement, 'currentTime'> | null,
+    time: number,
+    setCurrentTime: (value: number) => void,
+    setPreviewIndex: (value: number | null) => void,
+): void {
+    if (!video) return;
+    // A user seek always leaves sequence preview. Otherwise the next timeupdate
+    // can still advance the old preview index and snap back to a clip boundary.
+    setPreviewIndex(null);
+    video.currentTime = time;
+    setCurrentTime(time);
+}
+
 interface PlaybackArgs {
     videoRef: RefObject<HTMLVideoElement | null>;
     videoMetadata: VideoMetadata;
@@ -44,6 +58,16 @@ export const useEditorPlayback = ({
     maxDuration,
     t
 }: PlaybackArgs) => {
+    const seekManually = (time: number) => {
+        // A source-time seek into another retained clip must update selection as
+        // one user action; otherwise regular playback still loops the old clip.
+        const targetIndex = safeSegments.findIndex((segment, index) =>
+            time >= segment.start && (time < segment.end || index === safeSegments.length - 1)
+        );
+        if (targetIndex >= 0) setSelectedIndexDirect(targetIndex);
+        applyManualSeek(videoRef.current, time, setCurrentTime, setPreviewIndex);
+    };
+
     // Keep keyboard and player actions on the same playback state.
     useKeyboardShortcuts({
         videoRef,
@@ -59,12 +83,7 @@ export const useEditorPlayback = ({
             }
             setIsPlaying(!isPlaying);
         },
-        onSeek: (time: number) => {
-            if (videoRef.current) {
-                videoRef.current.currentTime = time;
-                setCurrentTime(time);
-            }
-        },
+        onSeek: seekManually,
         onSplitAtPlayhead: () => splitSelectedAt(currentTime),
         onUndo: undo,
         onDeleteSelected,
@@ -144,10 +163,7 @@ export const useEditorPlayback = ({
     };
 
     const handleSeek = (time: number) => {
-        if (videoRef.current) {
-            videoRef.current.currentTime = time;
-            setCurrentTime(time);
-        }
+        seekManually(time);
     };
 
     const toggleFullscreen = () => {

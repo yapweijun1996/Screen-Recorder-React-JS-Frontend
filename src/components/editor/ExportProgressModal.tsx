@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { useI18n } from '../../i18n';
 
 interface ExportProgressModalProps {
@@ -6,6 +6,7 @@ interface ExportProgressModalProps {
     eta: string | null;
     format: string;
     onCancel?: () => void;
+    returnFocusTo: HTMLElement | null;
 }
 
 export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
@@ -13,15 +14,32 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
     eta,
     format,
     onCancel,
+    returnFocusTo,
 }) => {
     const { t } = useI18n();
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    const titleId = useId();
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        dialog.showModal();
+        return () => {
+            dialog.close();
+            if (returnFocusTo?.isConnected) returnFocusTo.focus();
+        };
+    }, [returnFocusTo]);
     const clampedProgress = Math.min(100, Math.max(0, progress));
     const circumference = 2 * Math.PI * 54; // radius=54
     const strokeOffset = circumference - (clampedProgress / 100) * circumference;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 dark:bg-black/70 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-6 bg-th-surface border border-th-edge rounded-2xl shadow-2xl px-10 py-8 max-w-sm w-full mx-4">
+        <dialog
+            ref={dialogRef}
+            aria-labelledby={titleId}
+            onCancel={event => { event.preventDefault(); onCancel?.(); }}
+            className="m-auto w-[calc(100%_-_2rem)] max-w-sm rounded-2xl p-0 text-th-primary backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+        >
+            <div className="flex flex-col items-center gap-6 bg-th-surface border border-th-edge rounded-2xl shadow-2xl px-10 py-8">
                 {/* Circular SVG progress */}
                 <div className="relative w-32 h-32">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -57,7 +75,7 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
 
                 {/* Status text */}
                 <div className="text-center space-y-1">
-                    <h3 className="text-base font-semibold text-th-primary">
+                    <h3 id={titleId} className="text-base font-semibold text-th-primary">
                         {t('editor.export.processing')}
                     </h3>
                     <p className="text-sm text-th-secondary">
@@ -88,6 +106,7 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
                 {onCancel && (
                     <button
                         type="button"
+                        autoFocus
                         onClick={onCancel}
                         className="w-full px-4 py-2 text-sm font-medium rounded-lg border border-th-edge text-th-primary hover:bg-th-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-th-input"
                     >
@@ -95,6 +114,6 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
                     </button>
                 )}
             </div>
-        </div>
+        </dialog>
     );
 };

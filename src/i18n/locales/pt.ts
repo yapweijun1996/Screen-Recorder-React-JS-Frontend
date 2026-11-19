@@ -4,6 +4,20 @@ import type { TranslationTable } from '../types';
  * 語系字典（拆分檔案，降低單檔維護成本）
  */
 const pt: TranslationTable = {
+    'editor.draft.invalid': "Não foi possível ler o rascunho guardado. Redefina o corte para criar outro rascunho.",
+    'editor.draft.reset': "Redefinir corte",
+    'export.input.invalid': "Não foi possível ler este ficheiro como um vídeo compatível.",
+    'export.codec.unsupported': "Este navegador não tem um codificador compatível com a saída e as faixas de origem.",
+    'export.audio.encodeFailed': "A codificação de áudio falhou. A exportação foi interrompida para preservar o som.",
+    'engine.capability.video': "vídeo",
+    'engine.capability.audio': "áudio",
+    'engine.capability.silent': "apenas fontes sem áudio",
+    'engine.capability.audioOnly': "apenas áudio",
+    'app.storage.recordingChanged': "Outra aba salvou uma gravação diferente. A gravação e as edições atuais foram mantidas. Baixe o original ou recarregue a página.",
+    'editor.timeline.label': "Linha do tempo",
+    'editor.timeline.play': "Reproduzir",
+    'editor.timeline.shuttle': "Avançar e retroceder",
+    'editor.trim.keyboardHint': "Use Alt e as setas para aparar o início, ou Alt, Shift e as setas para aparar o fim.",
     "app.navigation.recordingBusy": "Conclua ou cancele a preparação, ou pare a gravação, antes de mudar de página.",
     "app.update.available": "Há uma nova versão. Recarregar redefine edições não salvas; baixe seu trabalho primeiro.",
     "app.update.busy": "Atualização pronta. Conclua a gravação ou exportação antes de recarregar.",
