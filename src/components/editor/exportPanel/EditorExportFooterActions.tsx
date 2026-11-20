@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download } from 'lucide-react';
 import type { VideoQualityPreset } from '../../../types';
+import { VIDEO_QUALITY_PRESETS } from '../../../types';
 import { Button } from '../../Button';
 import { useI18n } from '../../../i18n';
 import { useEditorDraft } from '../EditorDraftContext';
@@ -16,6 +17,7 @@ interface EditorExportFooterActionsProps {
 
     onExportTrimmed: () => void;
     onExportFull: () => void;
+    onExportMp3: () => void;
 }
 
 export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps> = ({
@@ -27,6 +29,7 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
     rawDownloadFileName,
     onExportTrimmed,
     onExportFull,
+    onExportMp3,
 }) => {
     const { t } = useI18n();
     const { draftBlocked } = useEditorDraft();
@@ -53,6 +56,18 @@ export const EditorExportFooterActions: React.FC<EditorExportFooterActionsProps>
                 disabled={!!playbackError || isProcessing}
             >
                 {t('editor.export.exportFull')}
+            </Button>
+
+            <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-th-secondary"
+                onClick={onExportMp3}
+                disabled={!!playbackError || isProcessing}
+            >
+                {t('editor.export.exportMp3', {
+                    bitrate: Number.parseInt(VIDEO_QUALITY_PRESETS[selectedQuality].audioBitrate, 10),
+                })}
             </Button>
 
             <a

@@ -98,6 +98,7 @@ export interface ExportOptions {
 export type ExportFrameRateOption = 24 | 30 | 60;
 export type ExportResolution = NonNullable<ExportOptions['resolution']>;
 export type ExportFormat = NonNullable<ExportOptions['format']>;
+export type ExportOutputFormat = ExportFormat | 'mp3';
 
 // Recording Quality
 export type RecordingQuality = 'standard' | 'high' | 'ultra' | 'custom';

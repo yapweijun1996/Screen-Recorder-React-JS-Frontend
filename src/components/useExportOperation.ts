@@ -1,23 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ExportOptions } from '../types';
+import type { ExportOptions, ExportOutputFormat, VideoQualityPreset } from '../types';
 import { exportService } from '../services/exportService';
 import { getExportErrorMessage } from '../services/webcodecs/exportErrors';
-import type { WebCodecsExportResult } from '../services/webcodecs/webcodecExportService';
 import { generateFileName } from '../utils/format';
 import { ExportTaskScope } from './ExportTaskScope';
 import { taskActivity } from '../services/taskActivity';
 
-type ResultFormat = WebCodecsExportResult['format'] | 'mp3';
-type Result<Format extends ResultFormat> = { blob: Blob; format: Format };
-type Output<Format extends ResultFormat> = Result<Format> & { url: string; fileName: string };
-type RunExport<Options, Format extends ResultFormat> = (
+type Result<Format extends ExportOutputFormat> = { blob: Blob; format: Format };
+type Output<Format extends ExportOutputFormat> = Result<Format> & { url: string; fileName: string };
+type RunExport<Options, Format extends ExportOutputFormat> = (
     blob: Blob,
     options: Options,
     signal: AbortSignal,
     onProgress: (progress: { ratio: number }) => void,
 ) => Promise<Result<Format>>;
 
-export function useExportJob<Options, Format extends ResultFormat>(
+export function useExportJob<Options, Format extends ExportOutputFormat>(
     t: (key: string) => string,
     errorKey: string,
     process: RunExport<Options, Format>,
@@ -95,9 +93,13 @@ export function useExportJob<Options, Format extends ResultFormat>(
     return { output, error, isProcessing, progress, eta, awaitingDownload, acknowledgeDownload, run, cancel, clearOutput, clearError: () => setError(null) };
 }
 
-const processVideo: RunExport<ExportOptions, WebCodecsExportResult['format']> =
-    (blob, options, signal, onProgress) => exportService.processVideo(blob, options, signal, onProgress);
+type RecordingExportOptions = ExportOptions | { format: 'mp3'; quality: VideoQualityPreset };
+
+const processRecording: RunExport<RecordingExportOptions, ExportOutputFormat> =
+    (blob, options, signal, onProgress) => options.format === 'mp3'
+        ? exportService.processMp3(blob, options.quality, signal, onProgress)
+        : exportService.processVideo(blob, options, signal, onProgress);
 
 export function useExportOperation(t: (key: string) => string, errorKey: string) {
-    return useExportJob(t, errorKey, processVideo);
+    return useExportJob(t, errorKey, processRecording);
 }

@@ -149,6 +149,7 @@ const es: TranslationTable = {
     'editor.export.exportAnother': 'Exportar otra versión',
     'editor.export.exportTrimmed': 'Exportar recorte ({{label}})',
     'editor.export.exportFull': 'Exportar video completo (sin recorte)',
+    'editor.export.exportMp3': 'Exportar toda la grabación a MP3 ({{bitrate}} kbps)',
     'editor.export.downloadRaw': 'Descargar original (WebM)',
     'editor.export.playbackIssue': 'Vuelve a grabar para corregir la reproducción.',
     'editor.export.failed': 'Error al exportar. Revisa la consola.',

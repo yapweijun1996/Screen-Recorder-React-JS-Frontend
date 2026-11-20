@@ -50,7 +50,7 @@ def inspect_download(download, audio=False, stage="recording"):
     return {"container": extension[1:], "tracks": tracks}
 
 
-def inspect_mp3(download):
+def inspect_mp3(download, expected_duration=3, tolerance=0.25):
     assert pathlib.Path(download.suggested_filename).suffix.lower() == ".mp3"
     result = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=format_name,duration:stream=codec_type,codec_name",
@@ -60,5 +60,16 @@ def inspect_mp3(download):
     data = json.loads(result.stdout)
     assert data["format"]["format_name"] == "mp3", data
     assert data["streams"] == [{"codec_name": "mp3", "codec_type": "audio"}], data
-    assert abs(float(data["format"]["duration"]) - 3) < 0.25, data
+    assert abs(float(data["format"]["duration"]) - expected_duration) < tolerance, data
     return data
+
+
+def audio_packet_duration(path):
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_packets",
+         "-show_entries", "packet=pts_time,duration_time", "-of", "json", str(path)],
+        check=True, capture_output=True, text=True,
+    )
+    packets = json.loads(result.stdout)["packets"]
+    return (float(packets[-1]["pts_time"]) + float(packets[-1]["duration_time"])
+            - float(packets[0]["pts_time"]))

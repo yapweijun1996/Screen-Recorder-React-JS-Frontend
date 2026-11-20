@@ -149,6 +149,7 @@ const de: TranslationTable = {
     'editor.export.exportAnother': 'Weitere Version exportieren',
     'editor.export.exportTrimmed': 'Getrimmten Teil exportieren ({{label}})',
     'editor.export.exportFull': 'Gesamtes Video exportieren (ohne Trim)',
+    'editor.export.exportMp3': 'Gesamte Aufnahme als MP3 exportieren ({{bitrate}} kbit/s)',
     'editor.export.downloadRaw': 'Original herunterladen (WebM)',
     'editor.export.playbackIssue': 'Neu aufnehmen, um Wiedergabe zu reparieren.',
     'editor.export.failed': 'Export fehlgeschlagen. Konsole prüfen.',

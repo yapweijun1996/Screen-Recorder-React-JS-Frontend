@@ -14,7 +14,7 @@ import threading
 from playwright.sync_api import Error, expect, sync_playwright
 
 from browser_smoke_converter import check_converter_lifetime, check_mp3
-from browser_smoke_editor import check_draft_recovery, check_invalid_draft, check_preview_seek
+from browser_smoke_editor import check_draft_recovery, check_invalid_draft, check_preview_seek, check_recorded_mp3
 from browser_smoke_media import inspect_download, make_fixture
 
 PROJECT_PATH = "Screen-Recorder-React-JS-Frontend"
@@ -115,8 +115,12 @@ def capture_and_recover(browser, url, worker_file=None):
         check_draft_recovery(page, update_button if worker_file else None)
         check_invalid_draft(page)
         check_preview_seek(page)
+        page.get_by_role("button", name="Export MP3 (Whole Recording", exact=False).click()
+        expect(page.get_by_role("alert")).to_contain_text("This video has no audio track")
+        expect(page.get_by_role("link", name="Download MP3")).to_have_count(0)
         expect(page.get_by_role("link", name="Download Original (WebM)")).to_be_visible()
         return {"capabilities": capability, "capture": captured, "draft_recovery_and_manual_seek": "passed",
+                "recorded_mp3_silent_input": "rejected",
                 "update_during_capture": "blocked as expected" if worker_file else "not run"}
     finally:
         context.close()
@@ -273,6 +277,7 @@ def main():
                             ]
                             if engine in ("chromium", "firefox"):
                                 checks.append(("mp3", lambda: check_mp3(browser, url, fixtures["with_audio"], fixtures["silent"])))
+                                checks.append(("recorded_mp3", lambda: check_recorded_mp3(browser, url, SYNTHETIC_CAPTURE)))
                             if engine == "chromium":
                                 checks.append(("converter_lifetime", lambda: check_converter_lifetime(browser, url, handoff)))
                             for stage, run in checks:

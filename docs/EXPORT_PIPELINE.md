@@ -133,7 +133,9 @@ Audio read, queue and flush waits reject promptly on abort. Audio queue and flus
 
 ## MP3 conversion and result lifetime
 
-MP3 is an audio-only option in the converter. [The MP3 service](../src/services/mp3ExportService.ts) decodes the primary audio track through Mediabunny and selects a bitrate from the chosen quality preset. It uses native support if available, otherwise it loads a worker-backed LAME extension on demand. The export returns `audio/mpeg` with an `.mp3` extension. The [third-party notice](../THIRD_PARTY_NOTICES.md#mediabunny-mp3-extension-and-lame) documents the encoder and corresponding source.
+The converter and editor both offer audio-only MP3. In the editor, **Export MP3 (Whole Recording)** uses the original recording's audio and follows the current quality preset. Timeline edits apply to **Export Trimmed**. The editor uses its existing progress, cancellation and result handling. [Editor export controller](../src/components/editor/useEditorExportController.ts)
+
+[The MP3 service](../src/services/mp3ExportService.ts) decodes the primary audio track through Mediabunny and selects a bitrate from the chosen quality preset. It uses native support if available, otherwise it loads a worker-backed LAME extension on demand. The export returns `audio/mpeg` with an `.mp3` extension. The [third-party notice](../THIRD_PARTY_NOTICES.md#mediabunny-mp3-extension-and-lame) documents the encoder and corresponding source.
 
 The converter protects active work and finished results before the first download is requested. Reload and close use the browser's own warning where supported. An app-controlled update waits until the conversion is cancelled or fails, or until the user requests a download or discards the result. Files and pending results stay in memory for the lifetime of the current browser document. A frozen or discarded browser tab can suspend or end the conversion. [Browser page lifecycle](https://developer.chrome.com/docs/web-platform/page-lifecycle-api) · [Leave confirmation](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event)
 

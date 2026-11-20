@@ -149,6 +149,7 @@ const ja: TranslationTable = {
     'editor.export.exportAnother': '別のバージョンを出力',
     'editor.export.exportTrimmed': 'トリムを出力（{{label}}）',
     'editor.export.exportFull': '全編を出力（トリムなし）',
+    'editor.export.exportMp3': '録画全体を MP3 で出力（{{bitrate}} kbps）',
     'editor.export.downloadRaw': 'オリジナルをダウンロード (WebM)',
     'editor.export.playbackIssue': '再録画して再生問題を修正してください。',
     'editor.export.failed': '書き出しに失敗しました。コンソールを確認してください。',

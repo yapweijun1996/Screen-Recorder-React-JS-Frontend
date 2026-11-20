@@ -108,6 +108,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         exportDownloadFileName,
         exportTrimmed,
         exportFull,
+        exportMp3,
         cancelExport,
         clearExportUrl,
         clearExportError,
@@ -175,7 +176,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                 <ExportProgressModal
                     progress={processingProgress}
                     eta={processingEta}
-                    format={selectedFormat}
+                    format={exportFormat}
                     onCancel={cancelExport}
                     returnFocusTo={exportTrigger.current}
                 />
@@ -252,6 +253,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
                         onApplyHighQualityPreset={applyHighQualityPreset}
                         onExportTrimmed={handleExportTrimmed}
                         onExportFull={() => beginExport(exportFull)}
+                        onExportMp3={() => beginExport(exportMp3)}
                         onClearExportUrl={clearExportUrl}
                         onClearExportError={clearExportError}
                         downloadFileName={exportDownloadFileName}

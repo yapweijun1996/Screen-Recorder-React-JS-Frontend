@@ -1,6 +1,6 @@
 import React from 'react';
 import { Download, Loader2, X } from 'lucide-react';
-import type { ExportFormat } from '../../../types';
+import type { ExportOutputFormat } from '../../../types';
 import { useI18n } from '../../../i18n';
 
 interface EditorExportStatusProps {
@@ -11,7 +11,7 @@ interface EditorExportStatusProps {
     exportUrl: string | null;
     exportError: string | null;
 
-    selectedFormat: ExportFormat;
+    outputFormat: ExportOutputFormat;
     downloadFileName: string;
 
     onClearExportUrl: () => void;
@@ -24,7 +24,7 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
     processingEta,
     exportUrl,
     exportError,
-    selectedFormat,
+    outputFormat,
     downloadFileName,
     onClearExportUrl,
     onClearExportError,
@@ -34,12 +34,12 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
     return (
         <div className="space-y-3">
             {exportError && !isProcessing && (
-                <div className="bg-red-900/20 border border-red-500/30 p-3 rounded-xl text-red-200 flex items-start justify-between gap-3 animate-fade-in">
+                <div role="alert" className="status-error border p-3 rounded-xl flex items-start justify-between gap-3 animate-fade-in">
                     <span className="text-xs leading-relaxed">{exportError}</span>
                     <button
                         type="button"
                         onClick={onClearExportError}
-                        className="text-red-200/80 hover:text-white"
+                        className="shrink-0 hover:opacity-75"
                         aria-label={t('common.dismiss')}
                     >
                         <X size={14} />
@@ -75,7 +75,7 @@ export const EditorExportStatus: React.FC<EditorExportStatusProps> = ({
                         className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg font-bold shadow-lg shadow-emerald-500/20 transition-all"
                     >
                         <Download size={20} />
-                        {t('editor.export.download', { format: selectedFormat.toUpperCase() })}
+                        {t('editor.export.download', { format: outputFormat.toUpperCase() })}
                     </a>
                     <button
                         onClick={onClearExportUrl}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../Button';
 import { ChevronDown, Settings, Download, Sparkles } from 'lucide-react';
-import type { ExportFormat, ExportFrameRateOption, ExportResolution, VideoQualityPreset } from '../../types';
+import type { ExportFormat, ExportFrameRateOption, ExportOutputFormat, ExportResolution, VideoQualityPreset } from '../../types';
 import { useI18n } from '../../i18n';
 import { EditorExportAdvancedSettings } from './exportPanel/EditorExportAdvancedSettings';
 import { EditorExportStatus } from './exportPanel/EditorExportStatus';
@@ -32,7 +32,7 @@ interface InspectorPanelProps {
     processingEta: string | null;
 
     exportUrl: string | null;
-    exportFormat: ExportFormat;
+    exportFormat: ExportOutputFormat;
     exportError: string | null;
 
     playbackError: string | null;
@@ -41,6 +41,7 @@ interface InspectorPanelProps {
     onApplyHighQualityPreset: () => void;
     onExportTrimmed: () => void;
     onExportFull: () => void;
+    onExportMp3: () => void;
     onClearExportUrl: () => void;
     onClearExportError: () => void;
 
@@ -76,6 +77,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     onApplyHighQualityPreset,
     onExportTrimmed,
     onExportFull,
+    onExportMp3,
     onClearExportUrl,
     onClearExportError,
     downloadFileName,
@@ -159,7 +161,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         processingEta={processingEta}
                         exportUrl={exportUrl}
                         exportError={exportError}
-                        selectedFormat={exportFormat}
+                        outputFormat={exportFormat}
                         downloadFileName={downloadFileName}
                         onClearExportUrl={onClearExportUrl}
                         onClearExportError={onClearExportError}
@@ -178,6 +180,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     rawDownloadFileName={rawDownloadFileName}
                     onExportTrimmed={onExportTrimmed}
                     onExportFull={onExportFull}
+                    onExportMp3={onExportMp3}
                 />
             </div>
         </div>

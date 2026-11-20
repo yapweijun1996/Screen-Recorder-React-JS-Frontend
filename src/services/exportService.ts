@@ -143,6 +143,17 @@ export class ExportService {
         );
     }
 
+    async processMp3(
+        inputBlob: Blob,
+        quality: VideoQualityPreset,
+        signal: AbortSignal,
+        onProgress: (progress: EngineProgress) => void,
+    ) {
+        throwIfAborted(signal);
+        const { exportMp3 } = await awaitWithAbort(import('./mp3ExportService'), signal);
+        return exportMp3(inputBlob, quality, signal, onProgress);
+    }
+
     /**
      * Fix WebM duration metadata.
      * Without FFmpeg, we return the blob unchanged.

@@ -6,6 +6,13 @@ Newest first.
 
 ---
 
+## 2026-11-20 — Export MP3 directly from screen recordings
+
+- The editor can export the complete recording's audio as MP3 at the displayed quality preset bitrate. The export uses the existing progress and cancellation flow. Recordings without an audio track show an error.
+- Chromium and Firefox verified cancel and retry, the `audio/mpeg` MIME type, the MP3 download and its duration against the source audio after the editor timeline was shortened. [Feature map](FEATURES_MAP.md#editing-and-export) · [Browser verification](docs/BROWSER_VERIFICATION.md)
+
+---
+
 ## 2026-11-19 — Add a top-level MP3 to Text tab
 
 - The new tab accepts a local MP3 directly and opens the existing on-device transcription dialog. An active job and undownloaded text stay with the selected file across app tab switches.
@@ -238,7 +245,7 @@ The ordered items below are planning backlog only. Existing transcript TXT and S
 1. **High — Responsive editor.** Keep the player, timeline and export reachable across the viewport matrix before adding workflow screens. [Chrome DevTools follow-up](improvement.md#chrome-devtools-mcp-follow-up) · [UI/UX audit](improvement.md#uiux-audit-and-parallel-backlog)
 2. **High — Recorder and app shell responsiveness.** Run this alongside the editor layout with separate ownership for the shared header. Keep capture controls aligned with active recording state and verify the combined layout in both themes and at least two locales. [Chrome DevTools follow-up](improvement.md#chrome-devtools-mcp-follow-up)
 3. **Medium — Common converter and transcript UI.** Consolidate shared file selection, progress, result, error, discard and transcript actions across the converter and standalone transcript tab. Preserve the current local transcription lifecycle and keep existing TXT/SRT downloads intact.
-4. **Medium — Direct recorded MP3 export.** Add a direct audio-only MP3 export from a completed recording, reusing the existing audio-track validation and MP3 encoder path. Define result lifetime, download protection and failure feedback alongside the [meeting workflow](docs/MEETING_WORKFLOW.md).
+4. **Medium — Export kept segments as MP3.** Extend whole-recording MP3 export to the ordered kept ranges from the editor timeline. Compare output timing with trimmed video export. [Meeting workflow](docs/MEETING_WORKFLOW.md)
 5. **Medium — Markdown transcript export.** Export edited text as Markdown (`.md`) or plain text (`.txt`). Offer SRT where valid timestamps are available. [Transcript formats](docs/MEETING_WORKFLOW.md#transcript-outputs)
 6. **Optional — OpenAI or OpenRouter BYOK.** Evaluate an opt-in provider path using user-supplied keys, with explicit provider selection, local-first behavior and documented key handling. Keep this separate from the offline transcription path and record the decision in the [meeting workflow](docs/MEETING_WORKFLOW.md).
 7. **Optional — OpenAI summary and meeting memo.** Design a transcript-to-summary flow with reusable meeting-memo sections, review and editing before download, and clear network/provider status. Define the output contract in the [meeting workflow](docs/MEETING_WORKFLOW.md).

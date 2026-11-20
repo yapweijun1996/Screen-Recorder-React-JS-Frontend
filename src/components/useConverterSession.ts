@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import type { VideoQualityPreset } from '../types';
 import { exportService } from '../services/exportService';
-import { awaitWithAbort } from '../services/webcodecs/mediaWait';
 import { useExportJob } from './useExportOperation';
 
 export type ConverterFormat = 'mp4' | 'mp3';
@@ -19,8 +18,7 @@ async function processConversion(
     onProgress: (progress: { ratio: number }) => void,
 ) {
     if (format === 'mp3') {
-        const { exportMp3 } = await awaitWithAbort(import('../services/mp3ExportService'), signal);
-        return exportMp3(file, quality, signal, onProgress);
+        return exportService.processMp3(file, quality, signal, onProgress);
     }
     return exportService.processVideo(file, { quality, format, resolution: 'original', fps: 30 }, signal, onProgress);
 }

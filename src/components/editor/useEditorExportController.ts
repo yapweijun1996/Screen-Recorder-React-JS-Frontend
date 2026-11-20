@@ -1,4 +1,5 @@
-import type { ExportFormat, ExportOptions, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
+import { useState } from 'react';
+import type { ExportFormat, ExportOptions, ExportOutputFormat, ExportResolution, ExportFrameRateOption, TrimRange, VideoMetadata, VideoQualityPreset } from '../../types';
 import { generateFileName } from '../../utils/format';
 import { useExportOperation } from '../useExportOperation';
 
@@ -19,8 +20,9 @@ export const useEditorExportController = ({
     selectedFormat, selectedFps, playbackError, setPlaybackError, t,
 }: UseEditorExportControllerArgs) => {
     const operation = useExportOperation(t, 'editor.export.failed');
+    const [requestedFormat, setRequestedFormat] = useState<ExportOutputFormat>(selectedFormat);
 
-    const exportVideo = async (mode: 'full' | 'trimmed') => {
+    const exportRecording = async (mode: 'full' | 'trimmed' | 'mp3') => {
         operation.clearError();
         if (playbackError || videoMetadata.duration <= 0) {
             setPlaybackError(t('editor.playback.cannotExport'));
@@ -29,6 +31,11 @@ export const useEditorExportController = ({
         const totalSelected = segments.reduce((sum, segment) => sum + Math.max(segment.end - segment.start, 0), 0);
         if (mode === 'trimmed' && totalSelected <= 0) {
             setPlaybackError(t('editor.playback.trimInvalid'));
+            return;
+        }
+        setRequestedFormat(mode === 'mp3' ? 'mp3' : selectedFormat);
+        if (mode === 'mp3') {
+            await operation.run(videoMetadata.blob, { quality: selectedQuality, format: 'mp3' }, 'screen-recording');
             return;
         }
         const options: ExportOptions = {
@@ -44,10 +51,11 @@ export const useEditorExportController = ({
         processingProgress: operation.progress,
         processingEta: operation.eta,
         exportUrl: operation.output?.url ?? null,
-        exportFormat: operation.output?.format ?? selectedFormat,
+        exportFormat: operation.output?.format ?? requestedFormat,
         exportError: operation.error,
-        exportTrimmed: () => exportVideo('trimmed'),
-        exportFull: () => exportVideo('full'),
+        exportTrimmed: () => exportRecording('trimmed'),
+        exportFull: () => exportRecording('full'),
+        exportMp3: () => exportRecording('mp3'),
         cancelExport: operation.cancel,
         clearExportUrl: operation.clearOutput,
         clearExportError: operation.clearError,

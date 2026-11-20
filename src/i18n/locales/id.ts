@@ -149,6 +149,7 @@ const id: TranslationTable = {
     'editor.export.exportAnother': 'Ekspor versi lain',
     'editor.export.exportTrimmed': 'Ekspor potongan ({{label}})',
     'editor.export.exportFull': 'Ekspor video penuh (tanpa potong)',
+    'editor.export.exportMp3': 'Ekspor seluruh rekaman ke MP3 ({{bitrate}} kbps)',
     'editor.export.downloadRaw': 'Unduh asli (WebM)',
     'editor.export.playbackIssue': 'Rekam lagi untuk memperbaiki pemutaran.',
     'editor.export.failed': 'Gagal mengekspor. Cek konsol.',

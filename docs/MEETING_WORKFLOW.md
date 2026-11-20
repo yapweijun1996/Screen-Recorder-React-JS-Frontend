@@ -1,16 +1,16 @@
 # Meeting Workflow Proposal
 
-This document proposes a meeting workflow for ScreenClip Pro. It is a design proposal only. The current application remains a static GitHub Pages build and the existing local browser transcription path remains the default.
+This document proposes a meeting workflow for ScreenClip Pro. It builds on local browser transcription and whole-recording MP3 export.
 
 ## Product flow
 
 1. The user opens a completed screen recording in the editor or selects an MP3 in the transcription tool. A converter result can feed the same transcript workflow.
 2. The user chooses **Generate transcript**. The default uses the existing local worker and model cache. The user can edit the text and inspect source cues when timing is available.
-3. The editor adds **Export audio (MP3)** to the completed recording's export actions. Start with **Whole recording** and reuse the [converter's MP3 encoder](../src/services/mp3ExportService.ts#L87), audio-track checks and cancellation path. Add **Kept segments** once the encoder consumes the same ordered ranges and output timing as trimmed video. Show the scope and audio bitrate before export. Explain when the recording has no audio track.
+3. Choose **Export MP3 (Whole Recording)** to save the original recording's audio with the displayed bitrate. A future **Kept segments** action can use the same ordered ranges and output timing as trimmed video. [MP3 export pipeline](EXPORT_PIPELINE.md#mp3-conversion-and-result-lifetime)
 4. A Meeting Memo tab presents editable sections for decisions, actions, open questions, and source cues.
 5. The user reviews the memo, then exports the transcript or memo.
 
-The current editor audio option produces M4A or WebM/Opus. Direct MP3 needs an explicit output path that returns actual MP3 bytes, MIME type and extension. The converter already hands its MP3 Blob to transcription in memory. Use that same handoff when offering transcription after an editor audio export. [Editor export controller](../src/components/editor/useEditorExportController.ts#L23) · [Converter result](../src/components/ConverterResult.tsx#L56)
+The editor's **Audio** format still serves trimmed or full M4A or WebM/Opus exports. The converter hands its MP3 Blob to transcription in memory. Use that same handoff when offering transcription after an editor audio export. [Editor export controller](../src/components/editor/useEditorExportController.ts#L23) · [Converter result](../src/components/ConverterResult.tsx#L56)
 
 ## Transcript outputs
 
