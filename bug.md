@@ -24,9 +24,11 @@ See [task.md](task.md) for current verification results.
 | Firefox could report a successful WebM conversion with no recognized audio track. | `dc49d1f` supplies `A_OPUS` to the muxer and guards audio output. FFprobe confirmed VP8 and Opus in downloads created from both Opus and AAC inputs. |
 | A streamed WebM from screen recording failed conversion with `Missing decoded video frame`. | The container lacked declared duration, and sparse timestamp lookup returned no sample from the first affected target at 1.133 seconds. Sequential decoding read all 1,510 source frames. In Chromium, the corrected download contained 8,600 H.264 frames and AAC audio at approximately the original 286.6-second duration. [Decoder path](src/services/webcodecs/exportVideo.ts) |
 
-## Open findings
+## Follow-up audit findings
 
 Audit baseline `630729c29d78aa67ca9bf926fab801997b0c1a72` (2026-11-20).
+
+BUG-014 and BUG-017 are fixed. The other findings in this section are open.
 
 ### BUG-011 — A stale PWA tab offers the active build while a newer build waits
 
@@ -56,6 +58,10 @@ Audit baseline `630729c29d78aa67ca9bf926fab801997b0c1a72` (2026-11-20).
 
 **Priority** High. **Evidence** Reproduced with the production draft persistence and segment reducer using controlled local storage.
 
+**Fix.** Draft persistence reports whether local storage accepted the write. The editor keeps failed edits in memory, preserves the previous snapshot and offers a retry. A pending save requests the browser's leave warning even after switching app views. Editing and persistence share a 1,000-clip limit. [Draft owner](src/components/editor/EditorDraftContext.tsx) · [Clip limit](src/components/editor/segmentsState.ts)
+
+**Verification.** Chromium and Firefox preserved the last saved snapshot during an injected quota failure, requested a leave warning after switching views, and restored the latest trim after retry and reload. Node tests cover the write result and the capacity boundary. [Persistence tests](tests/editor-roadmap.test.mjs) · [Segment editing tests](tests/editor-safety.test.mjs)
+
 - **Reproduction.** Save a draft, make another valid trim, and make `localStorage.setItem` raise `QuotaExceededError`. The save reports success, but loading returns the old range. Separately, the reducer accepted a 1,001-clip draft created by splitting a 2,001-second source. The save rejected it and loading returned the previous snapshot.
 - **Cause.** The preference writer suppresses storage errors, so `saveEditorDraft` reports success after a rejected write. The draft validator caps segments at 1,000, while the reducer accepts more. The provider records the attempted snapshot as persisted without using the save result. [Preference storage](src/services/preferenceStorage.ts#L10) · [Draft validation](src/components/editor/editorDraftPersistence.ts#L76) · [Draft save](src/components/editor/editorDraftPersistence.ts#L137) · [Provider effect](src/components/editor/EditorDraftContext.tsx#L80) · [Split](src/components/editor/segmentsState.ts#L49)
 - **Acceptance.** Keep failed saves visibly pending and preserve the last durable draft. Allow recovery after a transient storage failure. Align the editable clip limit with the persistent limit so accepted edits can be recovered after reload.
@@ -78,6 +84,10 @@ Audit baseline `630729c29d78aa67ca9bf926fab801997b0c1a72` (2026-11-20).
 ### BUG-017 — Ending screen sharing during setup can still start the recorder
 
 **Priority** High. **Evidence** Reproduced with the production capture controller and controlled media streams and permission timing.
+
+**Fix.** The session starts listening for screen-track termination before waiting for microphone or camera permission or composition. Setup returns to idle when sharing ends and releases late results through the original session. An active recorder still uses the normal stop path, including delivery of a stop event already queued by the browser. [Capture preparation](src/components/recorder/capturePreparation.ts) · [Capture controller](src/components/recorder/useRecorderController.ts)
+
+**Verification.** Chromium and Firefox used synthetic device streams with native MediaRecorder. Ending sharing during microphone permission returned to setup without creating a recording. A late microphone stream was stopped after a successful restart, and the queued native stop finalized the new recording. Node tests cover the same ownership races and a track that ends at the setup handoff. [Capture preparation tests](tests/capture-preparation.test.mjs)
 
 - **Reproduction.** Enable the microphone and select a screen. End sharing while the microphone permission is pending, then resolve the microphone request. The controller attempts `MediaRecorder.start()` with the screen video track already `ended`. The test recorder observed one start and no stop request.
 - **Cause.** The screen track's `onended` handler is installed after microphone and camera permission waits and composition setup. The code proceeds without checking whether the event already happened. [Screen capture and permission waits](src/components/recorder/useRecorderController.ts#L87) · [Late handler](src/components/recorder/useRecorderController.ts#L116)

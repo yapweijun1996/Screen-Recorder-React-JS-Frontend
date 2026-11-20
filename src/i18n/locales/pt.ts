@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const pt: TranslationTable = {
     'editor.draft.invalid': "Não foi possível ler o rascunho guardado. Redefina o corte para criar outro rascunho.",
     'editor.draft.reset': "Redefinir corte",
+    'editor.draft.savePending': "Não foi possível salvar as últimas alterações. Tente novamente antes de recarregar a página.",
+    'editor.draft.retry': "Tentar novamente",
+    'editor.trim.segmentLimit': "O número máximo de clipes foi atingido.",
     'export.input.invalid': "Não foi possível ler este ficheiro como um vídeo compatível.",
     'export.codec.unsupported': "Este navegador não tem um codificador compatível com a saída e as faixas de origem.",
     'export.audio.encodeFailed': "A codificação de áudio falhou. A exportação foi interrompida para preservar o som.",
@@ -104,6 +107,7 @@ const pt: TranslationTable = {
     'recorder.errors.empty': 'A gravação está vazia. Grave um pouco mais antes de parar.',
     'recorder.errors.permission': 'Permissão negada. Autorize o compartilhamento de tela.',
     'recorder.errors.startFailed': 'Falha ao iniciar a gravação',
+    'recorder.errors.screenEnded': 'O compartilhamento de tela terminou antes do início da gravação. Compartilhe a tela novamente para tentar de novo.',
     'recorder.errors.notFound': 'Nenhuma câmera ou microfone encontrado. Conecte um dispositivo e tente novamente.',
     'recorder.errors.notReadable': 'A câmera ou o microfone está sendo usado por outro aplicativo.',
     'recorder.errors.overconstrained': 'As configurações de mídia solicitadas não são suportadas pelo seu dispositivo.',

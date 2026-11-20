@@ -22,6 +22,7 @@ export const getRecorderErrorMessage = (error: unknown, translate: (key: string)
     if (name === 'NotFoundError') return translate('recorder.errors.notFound');
     if (name === 'NotReadableError') return translate('recorder.errors.notReadable');
     if (name === 'OverconstrainedError') return translate('recorder.errors.overconstrained');
+    if (name === 'ScreenCaptureEndedError') return translate('recorder.errors.screenEnded');
     if (name === 'StreamCompositorError') return translate('recorder.errors.startFailed');
     return error instanceof Error ? error.message : translate('recorder.errors.startFailed');
 };

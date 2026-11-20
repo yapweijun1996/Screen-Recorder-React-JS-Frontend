@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RecordingSession } from './RecordingSession';
 import { PIPPosition, RecordingQuality } from '../../types';
 import { useI18n } from '../../i18n';
-import { createFinalStream, formatRecordingTimeLabel, getChosenRecordingPreset, getRecorderErrorMessage } from './recorderControllerUtils';
+import { formatRecordingTimeLabel, getChosenRecordingPreset, getRecorderErrorMessage } from './recorderControllerUtils';
+import { prepareCapture } from './capturePreparation';
 interface UseRecorderControllerArgs {
     onRecordingComplete: (blob: Blob, duration: number) => void;
     onError: (msg: string) => void;
@@ -78,45 +79,38 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
         sessionRef.current = session;
         setIsPreparing(true);
         setIsStopping(false);
-        let screenStream: MediaStream | undefined;
-        let micStreamLocal: MediaStream | undefined;
-        let camStream: MediaStream | undefined;
         try {
             const chosenPreset = getChosenRecordingPreset(recordingQuality, customFps, customBitrateMbps);
+            const handleScreenEnded = () => {
+                // An inactive recorder may still have its final stop event queued.
+                if (session.recorder) {
+                    stopAction();
+                    return;
+                }
+                if (session.disposed) return;
+                session.release();
+                if (sessionRef.current !== session) return;
+                setIsPreparing(false);
+                setIsRecording(false);
+                setIsPaused(false);
+                setIsStopping(false);
+                setActiveStream(null);
+                setMicStream(null);
+                onError(t('recorder.errors.screenEnded'));
+            };
 
-            screenStream = session.ownStream(await navigator.mediaDevices.getDisplayMedia({
-                video: {
-                    width: { ideal: 2560, max: 3840 },
-                    height: { ideal: 1440, max: 2160 },
-                    frameRate: { ideal: chosenPreset.frameRate, max: chosenPreset.frameRate }
-                },
-                audio: true
-            }));
-
-            if (enableMic) {
-                micStreamLocal = session.ownStream(await navigator.mediaDevices.getUserMedia({ audio: true }));
-                setMicStream(micStreamLocal);
-            }
-
-            if (enableCam) {
-                camStream = session.ownStream(await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 180 } }));
-            }
-
-            const finalStream = session.ownComposition(await createFinalStream({
-                screenStream,
-                camStream,
-                micStream: micStreamLocal,
+            const { finalStream, screenTrack, micStream: micStreamLocal } = await prepareCapture({
+                session,
+                enableMic,
                 enableCam,
                 pipPosition,
                 frameRate: chosenPreset.frameRate,
-            }));
-
+                onScreenEnded: handleScreenEnded,
+            });
+            if (session.disposed || sessionRef.current !== session) return;
+            if (screenTrack.readyState === 'ended') return handleScreenEnded();
+            if (micStreamLocal) setMicStream(micStreamLocal);
             setActiveStream(finalStream);
-
-            const screenVideoTrack = screenStream.getVideoTracks()[0];
-            screenVideoTrack.onended = () => {
-                stopAction();
-            };
 
             const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9')
                 ? 'video/webm; codecs=vp9'
@@ -182,17 +176,23 @@ export const useRecorderController = ({ onRecordingComplete, onError }: UseRecor
             finalizeRef.current = finalizeRecording;
             mediaRecorder.onstop = finalizeRecording;
 
-            mediaRecorder.start(1000);
             startTimeRef.current = Date.now();
             pausedTimeRef.current = 0;
             pauseStartedRef.current = null;
+            mediaRecorder.start(1000);
+            if (session.disposed || sessionRef.current !== session) {
+                if (mediaRecorder.state !== 'inactive') {
+                    try { mediaRecorder.stop(); } catch { /* session cleanup owns the late recorder */ }
+                }
+                return;
+            }
             setIsRecording(true);
-
         } catch (err: unknown) {
             const wasDisposed = session.disposed;
+            const isCurrentSession = sessionRef.current === session;
             session.release();
+            if (!isCurrentSession || wasDisposed) return;
             finalizeRef.current = null;
-            if (wasDisposed) return;
             console.error(err);
             setActiveStream(null);
             setMicStream(null);

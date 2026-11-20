@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const fr: TranslationTable = {
     'editor.draft.invalid': "Impossible de lire le brouillon enregistré. Réinitialisez le découpage pour en créer un nouveau.",
     'editor.draft.reset': "Réinitialiser le découpage",
+    'editor.draft.savePending': "Les dernières modifications n’ont pas pu être enregistrées. Réessayez avant de recharger la page.",
+    'editor.draft.retry': "Réessayer",
+    'editor.trim.segmentLimit': "Le nombre maximal de clips est atteint.",
     'export.input.invalid': "Impossible de lire ce fichier comme une vidéo prise en charge.",
     'export.codec.unsupported': "Ce navigateur ne dispose pas d’un encodeur compatible avec la sortie et les pistes source.",
     'export.audio.encodeFailed': "L’encodage audio a échoué. L’exportation a été arrêtée pour préserver le son.",
@@ -104,6 +107,7 @@ const fr: TranslationTable = {
     'recorder.errors.empty': "Enregistrement vide. Laissez tourner un peu plus avant d\u2019arrêter.",
     'recorder.errors.permission': "Permission refusée. Autorisez le partage d\u2019écran.",
     'recorder.errors.startFailed': "Impossible de démarrer l\u2019enregistrement",
+    'recorder.errors.screenEnded': "Le partage d’écran a pris fin avant le début de l’enregistrement. Partagez à nouveau votre écran pour réessayer.",
     'recorder.errors.notFound': "Aucune caméra ou microphone trouvé. Veuillez connecter un appareil et réessayer.",
     'recorder.errors.notReadable': "La caméra ou le microphone est utilisé par une autre application.",
     'recorder.errors.overconstrained': "Les paramètres média demandés ne sont pas pris en charge par votre appareil.",

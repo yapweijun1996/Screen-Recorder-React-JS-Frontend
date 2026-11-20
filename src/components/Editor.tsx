@@ -14,6 +14,7 @@ import { useSegmentsEditor } from './editor/useSegmentsEditor';
 import { useEditorPlayback } from './editor/useEditorPlayback';
 import { ExportProgressModal } from './editor/ExportProgressModal';
 import { useEditorDraft } from './editor/EditorDraftContext';
+import { EditorDraftAlerts } from './editor/EditorDraftAlerts';
 import { TranscriptPanel } from './editor/TranscriptPanel';
 
 interface EditorProps {
@@ -32,7 +33,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
         currentTime, setCurrentTime, showAdvanced, setShowAdvanced,
         selectedQuality, setSelectedQuality, selectedResolution, setSelectedResolution,
         selectedFormat, setSelectedFormat, selectedFps, setSelectedFps,
-        draftBlocked, acknowledgeDraftRecovery,
+        draftBlocked, acknowledgeDraftRecovery, draftSavePending, retryDraftSave,
     } = useEditorDraft();
 
     const applyHighQualityPreset = () => {
@@ -170,7 +171,7 @@ export const Editor: React.FC<EditorProps> = ({ videoMetadata, onReset }) => {
 
     return (
         <div data-editor className="w-full flex-1 flex flex-col animate-fade-in min-h-0">
-            {draftBlocked && <div role="alert" className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-300 dark:border-amber-500/50 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3 flex-shrink-0"><span className="text-sm">{t('editor.draft.invalid')}</span><button type="button" className="text-sm font-semibold underline underline-offset-2" onClick={handleResetTrim}>{t('editor.draft.reset')}</button></div>}
+            <EditorDraftAlerts {...{ draftBlocked, draftSavePending, onReset: handleResetTrim, onRetry: retryDraftSave }} />
             {/* Export progress modal */}
             {isProcessing && (
                 <ExportProgressModal

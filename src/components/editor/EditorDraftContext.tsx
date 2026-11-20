@@ -25,6 +25,8 @@ function useDraft(duration: number, recordingId?: string) {
     const [selectedFpsState, setSelectedFpsState] = useState<ExportFrameRateOption>(() => restoredDraft?.selectedFps ?? 30);
     const [draftDirtyVersion, setDraftDirtyVersion] = useState(0);
     const [draftBlocked, setDraftBlocked] = useState(draftLoad.status === 'invalid');
+    const [draftSavePending, setDraftSavePending] = useState(false);
+    const [draftSaveAttempt, setDraftSaveAttempt] = useState(0);
     const persistedSignature = useRef<string | null>(null);
     const persistedDirtyVersion = useRef(0);
     const forcePersist = useRef(false);
@@ -54,6 +56,17 @@ function useDraft(duration: number, recordingId?: string) {
         forcePersist.current = true;
         setDraftBlocked(false);
     };
+    const retryDraftSave = () => setDraftSaveAttempt(attempt => attempt + 1);
+
+    useEffect(() => {
+        if (!draftSavePending) return;
+        const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = true;
+        };
+        window.addEventListener('beforeunload', warnBeforeLeaving);
+        return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+    }, [draftSavePending]);
 
     const durableSignature = JSON.stringify({
         segments: segmentState.segments,
@@ -77,7 +90,7 @@ function useDraft(duration: number, recordingId?: string) {
         if (!forcePersist.current
             && persistedDirtyVersion.current === draftDirtyVersion
             && persistedSignature.current === durableSignature) return;
-        saveEditorDraft({
+        const saved = saveEditorDraft({
             version: 1,
             recordingId,
             duration,
@@ -88,10 +101,12 @@ function useDraft(duration: number, recordingId?: string) {
             selectedFormat: selectedFormatState,
             selectedFps: selectedFpsState,
         });
+        setDraftSavePending(!saved);
+        if (!saved) return;
         persistedSignature.current = durableSignature;
         persistedDirtyVersion.current = draftDirtyVersion;
         forcePersist.current = false;
-    }, [recordingId, duration, draftBlocked, draftDirtyVersion, durableSignature, segmentState]);
+    }, [recordingId, duration, draftBlocked, draftDirtyVersion, draftSaveAttempt, durableSignature, segmentState]);
 
     return {
         segmentState, dispatchSegments: dispatchDraftAction,
@@ -100,7 +115,7 @@ function useDraft(duration: number, recordingId?: string) {
         selectedResolution: selectedResolutionState, setSelectedResolution,
         selectedFormat: selectedFormatState, setSelectedFormat,
         selectedFps: selectedFpsState, setSelectedFps,
-        draftBlocked, acknowledgeDraftRecovery,
+        draftBlocked, acknowledgeDraftRecovery, draftSavePending, retryDraftSave,
     };
 }
 

@@ -6,12 +6,12 @@ import type {
     VideoQualityPreset,
 } from '../../types';
 import { readPreference, writePreference } from '../../services/preferenceStorage';
+import { MAX_SEGMENTS } from './segmentsState';
 
 export const EDITOR_DRAFT_VERSION = 1 as const;
 const DRAFT_KEY_PREFIX = 'screenclip.editor-draft.v1:';
 const TIME_EPSILON = 0.001;
 const DURATION_TOLERANCE = 0.05;
-const MAX_SEGMENTS = 1000;
 
 export interface EditorDraftSnapshot {
     version: typeof EDITOR_DRAFT_VERSION;
@@ -137,8 +137,7 @@ export function loadEditorDraft(recordingId: string | undefined, duration: numbe
 export function saveEditorDraft(snapshot: EditorDraftSnapshot): boolean {
     const valid = validateEditorDraft(snapshot, snapshot.recordingId, snapshot.duration);
     if (!valid) return false;
-    writePreference(draftStorageKey(valid.recordingId), JSON.stringify(valid));
-    return true;
+    return writePreference(draftStorageKey(valid.recordingId), JSON.stringify(valid));
 }
 
 export function clearEditorDraft(recordingId: string | undefined): void {

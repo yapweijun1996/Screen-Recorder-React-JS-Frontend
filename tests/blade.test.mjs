@@ -23,6 +23,7 @@ function render(tool = 'blade') {
     let state = initial(), selections = 0;
     const { ProTimeline } = load('ProTimeline.tsx', {
         './TimelineClip': { TimelineClip },
+        './segmentsState': { MAX_SEGMENTS: 1000 },
         './useTimelineInteraction': { useTimelineInteraction: () => ({ containerRef: { current: null }, activeTool: tool, displayDuration: 15, zoomLevel: 1, ticks: [], collapsedSegments: [{ displayStart: 0, displayEnd: 3 }, { displayStart: 3, displayEnd: 13 }, { displayStart: 13, displayEnd: 15 }], toPct: time => time / 15 * 100, sourceToSequence: () => 0 }) },
     });
     const tree = ProTimeline({ maxDuration: 20, segments: state.segments, selectedIndex: 0, currentTime: 1, totalSelectedDuration: 15, canUndo: false, canDelete: true,

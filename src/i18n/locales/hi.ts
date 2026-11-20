@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const hi: TranslationTable = {
     'editor.draft.invalid': "सहेजा गया संपादन ड्राफ़्ट नहीं पढ़ा जा सका। नया ड्राफ़्ट शुरू करने के लिए ट्रिम रीसेट करें।",
     'editor.draft.reset': "ट्रिम रीसेट करें",
+    'editor.draft.savePending': "नवीनतम बदलाव सहेजे नहीं जा सके। पेज फिर से लोड करने से पहले दोबारा कोशिश करें।",
+    'editor.draft.retry': "दोबारा कोशिश करें",
+    'editor.trim.segmentLimit': "क्लिप की अधिकतम संख्या हो गई है।",
     'export.input.invalid': "इस फ़ाइल को समर्थित वीडियो के रूप में नहीं पढ़ा जा सका।",
     'export.codec.unsupported': "इस ब्राउज़र में चुने गए आउटपुट और स्रोत ट्रैक के लिए संगत एन्कोडर नहीं है।",
     'export.audio.encodeFailed': "ऑडियो एन्कोडिंग विफल रही। आवाज़ सुरक्षित रखने के लिए निर्यात रोक दिया गया।",
@@ -104,6 +107,7 @@ const hi: TranslationTable = {
     'recorder.errors.empty': 'रिकॉर्डिंग खाली है। रोकने से पहले थोड़ा और रिकॉर्ड करें।',
     'recorder.errors.permission': 'अनुमति अस्वीकृत। स्क्रीन शेयर की अनुमति दें।',
     'recorder.errors.startFailed': 'रिकॉर्डिंग शुरू नहीं हो सकी',
+    'recorder.errors.screenEnded': 'रिकॉर्डिंग शुरू होने से पहले स्क्रीन शेयरिंग बंद हो गई। दोबारा कोशिश करने के लिए स्क्रीन फिर से शेयर करें।',
     'recorder.errors.notFound': 'कोई कैमरा या माइक्रोफ़ोन नहीं मिला। कृपया एक डिवाइस कनेक्ट करें और पुनः प्रयास करें।',
     'recorder.errors.notReadable': 'कैमरा या माइक्रोफ़ोन किसी अन्य एप्लिकेशन द्वारा उपयोग में है।',
     'recorder.errors.overconstrained': 'अनुरोधित मीडिया सेटिंग्स आपके डिवाइस द्वारा समर्थित नहीं हैं।',

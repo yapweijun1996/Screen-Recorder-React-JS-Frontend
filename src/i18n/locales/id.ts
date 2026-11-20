@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const id: TranslationTable = {
     'editor.draft.invalid': "Draf suntingan tersimpan tidak dapat dibaca. Reset pemangkasan untuk membuat draf baru.",
     'editor.draft.reset': "Reset pemangkasan",
+    'editor.draft.savePending': "Perubahan terakhir tidak dapat disimpan. Coba lagi sebelum memuat ulang halaman.",
+    'editor.draft.retry': "Coba lagi",
+    'editor.trim.segmentLimit': "Jumlah klip maksimum telah tercapai.",
     'export.input.invalid': "Berkas ini tidak dapat dibaca sebagai video yang didukung.",
     'export.codec.unsupported': "Browser ini tidak memiliki enkoder yang kompatibel dengan keluaran dan trek sumber.",
     'export.audio.encodeFailed': "Pengodean audio gagal. Ekspor dihentikan agar suara tidak hilang.",
@@ -104,6 +107,7 @@ const id: TranslationTable = {
     'recorder.errors.empty': 'Rekaman kosong. Rekam sedikit lebih lama sebelum berhenti.',
     'recorder.errors.permission': 'Izin ditolak. Izinkan berbagi layar.',
     'recorder.errors.startFailed': 'Gagal memulai rekaman',
+    'recorder.errors.screenEnded': 'Berbagi layar berhenti sebelum perekaman dimulai. Bagikan layar lagi untuk mencoba ulang.',
     'recorder.errors.notFound': 'Kamera atau mikrofon tidak ditemukan. Hubungkan perangkat dan coba lagi.',
     'recorder.errors.notReadable': 'Kamera atau mikrofon sedang digunakan oleh aplikasi lain.',
     'recorder.errors.overconstrained': 'Pengaturan media yang diminta tidak didukung oleh perangkat Anda.',

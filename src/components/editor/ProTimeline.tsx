@@ -7,6 +7,7 @@ import { TimelineClip } from './TimelineClip';
 import { TimelineActions } from './TimelineActions';
 import { useTimelineInteraction } from './useTimelineInteraction';
 import { useI18n } from '../../i18n';
+import { MAX_SEGMENTS } from './segmentsState';
 
 interface ProTimelineProps {
     maxDuration: number;
@@ -54,6 +55,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     skimmingEnabled = true,
     className = '',
 }) => {
+    const canCreateSegment = segments.length < MAX_SEGMENTS;
     const {
         scrollableRef,
         zoomLevel,
@@ -77,7 +79,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
         handleMouseLeave,
         handleTimelineClick,
         ticks,
-    } = useTimelineInteraction({ segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt });
+    } = useTimelineInteraction({ segments, totalSelectedDuration, skimmingEnabled, onSeek, onSplitAt: canCreateSegment ? onSplitAt : undefined });
 
     // 光标样式
     const cursorClass = activeTool === 'blade'
@@ -88,8 +90,12 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
     const { t } = useI18n();
 
     // 判断是否可以分割
-    const canSplit = currentTime > (segments[selectedIndex]?.start || 0) + 0.5
+    const canSplit = canCreateSegment
+        && currentTime > (segments[selectedIndex]?.start || 0) + 0.5
         && currentTime < (segments[selectedIndex]?.end || maxDuration) - 0.5;
+    const splitDisabledReason = segments.length >= MAX_SEGMENTS
+        ? t('editor.trim.segmentLimit')
+        : undefined;
 
     return (
         <div className={`bg-th-deep h-full flex flex-col overflow-hidden ${className}`}>
@@ -114,7 +120,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                         </span>
                     </div>
 
-                    <TimelineActions {...{ currentTime, canSplit, canDelete, canUndo, onPreviewEdited, onSplitAt, onDeleteSelected, onUndo, onResetTrim }} />
+                    <TimelineActions {...{ currentTime, canSplit, canDelete, canUndo, splitDisabledReason, onPreviewEdited, onSplitAt, onDeleteSelected, onUndo, onResetTrim }} />
                 </div>
             </div>
 
@@ -201,7 +207,7 @@ export const ProTimeline: React.FC<ProTimelineProps> = ({
                                         // The clip rectangle already includes zoom and scroll offsets.
                                         const fraction = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
                                         const segment = segments[idx];
-                                        onSplitAt?.(segment.start + fraction * (segment.end - segment.start), idx);
+                                        if (canCreateSegment) onSplitAt?.(segment.start + fraction * (segment.end - segment.start), idx);
                                     }}
                                 />
                             );

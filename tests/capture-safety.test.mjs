@@ -61,7 +61,6 @@ class FakeSession {
     audioMix = null;
     releaseCount = 0;
     constructor() { FakeSession.instances.push(this); }
-    ownStream(stream) { return stream; }
     ownComposition(composition) {
         this.compositor = composition.compositor;
         this.audioMix = composition.audioMix;
@@ -109,8 +108,14 @@ function loadControllerHook() {
             if (name === 'react') return react;
             if (name === './RecordingSession') return { RecordingSession: FakeSession };
             if (name === '../../i18n') return { useI18n: () => ({ t: key => key }) };
+            if (name === './capturePreparation') return {
+                prepareCapture: async ({ session }) => {
+                    const screenTrack = new FakeTrack('video');
+                    const finalStream = session.ownComposition({ finalStream: new FakeStream([screenTrack]), compositor: null, audioMix: null });
+                    return { finalStream, screenTrack };
+                },
+            };
             if (name === './recorderControllerUtils') return {
-                createFinalStream: async () => ({ finalStream: new FakeStream([new FakeTrack('video')]), compositor: null, audioMix: null }),
                 formatRecordingTimeLabel: seconds => `${seconds}`,
                 getChosenRecordingPreset: () => ({ frameRate: 30, videoBitsPerSecond: 1_000_000 }),
             };

@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const ko: TranslationTable = {
     'editor.draft.invalid': "저장된 편집 초안을 읽을 수 없습니다. 트리밍을 재설정하여 새 초안을 시작하세요.",
     'editor.draft.reset': "트리밍 재설정",
+    'editor.draft.savePending': "최근 편집 내용을 저장하지 못했습니다. 새로고침하기 전에 다시 시도하세요.",
+    'editor.draft.retry': "다시 시도",
+    'editor.trim.segmentLimit': "클립 수가 최대 한도에 도달했습니다.",
     'export.input.invalid': "이 파일을 지원되는 동영상으로 읽을 수 없습니다.",
     'export.codec.unsupported': "이 브라우저에는 선택한 출력 및 원본 트랙과 호환되는 인코더가 없습니다.",
     'export.audio.encodeFailed': "오디오 인코딩에 실패했습니다. 소리 손실을 방지하기 위해 내보내기를 중단했습니다.",
@@ -104,6 +107,7 @@ const ko: TranslationTable = {
     'recorder.errors.empty': '녹화가 비어 있습니다. 잠시 더 녹화한 뒤 정지하세요.',
     'recorder.errors.permission': '권한 거부됨. 화면 공유를 허용하세요.',
     'recorder.errors.startFailed': '녹화를 시작하지 못했습니다',
+    'recorder.errors.screenEnded': '녹화가 시작되기 전에 화면 공유가 종료되었습니다. 다시 시도하려면 화면을 다시 공유하세요.',
     'recorder.errors.notFound': '카메라 또는 마이크를 찾을 수 없습니다. 장치를 연결하고 다시 시도해 주세요.',
     'recorder.errors.notReadable': '카메라 또는 마이크가 다른 애플리케이션에서 사용 중입니다.',
     'recorder.errors.overconstrained': '요청한 미디어 설정이 장치에서 지원되지 않습니다.',

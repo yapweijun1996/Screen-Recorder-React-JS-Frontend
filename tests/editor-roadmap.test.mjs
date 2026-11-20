@@ -14,10 +14,14 @@ const { applyManualSeek } = await server.ssrLoadModule('/src/components/editor/u
 
 const previousWindow = globalThis.window;
 const values = new Map();
+let failWrites = false;
 globalThis.window = {
     localStorage: {
         getItem: key => values.get(key) ?? null,
-        setItem: (key, value) => values.set(key, value),
+        setItem: (key, value) => {
+            if (failWrites) throw new DOMException('Injected quota exhaustion', 'QuotaExceededError');
+            values.set(key, value);
+        },
         removeItem: key => values.delete(key),
     },
 };
@@ -66,4 +70,12 @@ test('malformed drafts are rejected before they can widen the retained export', 
     values.set(key, JSON.stringify({ ...draft, version: 0 }));
     assert.deepEqual(draftModule.loadEditorDraft('recording-a', 10), { status: 'invalid', draft: null });
     assert.equal(draftModule.saveEditorDraft({ ...draft, segments: [{ start: -1, end: 3 }] }), false);
+});
+
+test('draft save reports quota failures and preserves the last durable snapshot', () => {
+    assert.equal(draftModule.saveEditorDraft(draft), true);
+    failWrites = true;
+    assert.equal(draftModule.saveEditorDraft({ ...draft, segments: [{ start: 1, end: 3 }, { start: 5, end: 8 }], selectedIndex: 0 }), false);
+    failWrites = false;
+    assert.deepEqual(draftModule.loadEditorDraft('recording-a', 10).draft, draft);
 });

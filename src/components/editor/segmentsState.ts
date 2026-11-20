@@ -5,6 +5,7 @@ const MIN_KEEP_SEGMENT_SECONDS = 0.1;
 const MIN_REMOVE_RANGE_SECONDS = 0.1;
 const MAX_HISTORY = 20;
 const MERGE_EPSILON = 0.001;
+export const MAX_SEGMENTS = 1000;
 
 export interface SegmentsState {
     segments: TrimRange[];
@@ -47,7 +48,7 @@ export function segmentsReducer(state: SegmentsState, action: SegmentAction): Se
             return previous ? { segments: previous, selectedIndex: clampIndex(index, previous), history: state.history.slice(0, -1) } : state;
         }
         case 'split': {
-            if (!selected || !Number.isFinite(action.time)) return state;
+            if (!selected || segments.length >= MAX_SEGMENTS || !Number.isFinite(action.time)) return state;
             const time = Math.max(selected.start, Math.min(action.time, selected.end));
             if (time - selected.start < MIN_HANDLE_GAP_SECONDS || selected.end - time < MIN_HANDLE_GAP_SECONDS) return state;
             return commit(state, [...segments.slice(0, index), { start: selected.start, end: time }, { start: time, end: selected.end }, ...segments.slice(index + 1)], index + 1);
@@ -94,7 +95,7 @@ export function segmentsReducer(state: SegmentsState, action: SegmentAction): Se
                 if (last && segment.start <= last.end + MERGE_EPSILON) last.end = Math.max(last.end, segment.end);
                 else merged.push(segment);
             }
-            return merged.length ? commit(state, merged) : state;
+            return merged.length && merged.length <= MAX_SEGMENTS ? commit(state, merged) : state;
         }
     }
 }

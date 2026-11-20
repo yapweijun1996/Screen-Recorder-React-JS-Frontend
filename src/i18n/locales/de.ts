@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const de: TranslationTable = {
     'editor.draft.invalid': "Der gespeicherte Entwurf konnte nicht gelesen werden. Setze den Schnitt zurück, um einen neuen Entwurf zu erstellen.",
     'editor.draft.reset': "Schnitt zurücksetzen",
+    'editor.draft.savePending': "Die letzten Änderungen konnten nicht gespeichert werden. Versuche es vor dem Neuladen erneut.",
+    'editor.draft.retry': "Erneut versuchen",
+    'editor.trim.segmentLimit': "Die maximale Anzahl an Clips ist erreicht.",
     'export.input.invalid': "Diese Datei konnte nicht als unterstütztes Video gelesen werden.",
     'export.codec.unsupported': "Dieser Browser hat keinen passenden Encoder für die Ausgabe und die Quellspuren.",
     'export.audio.encodeFailed': "Die Audiokodierung ist fehlgeschlagen. Der Export wurde beendet, um den Ton zu erhalten.",
@@ -104,6 +107,7 @@ const de: TranslationTable = {
     'recorder.errors.empty': 'Aufnahme ist leer. Nimm etwas länger auf, bevor du stoppst.',
     'recorder.errors.permission': 'Erlaubnis verweigert. Bildschirmfreigabe erlauben.',
     'recorder.errors.startFailed': 'Aufnahme konnte nicht gestartet werden',
+    'recorder.errors.screenEnded': 'Die Bildschirmfreigabe wurde vor Beginn der Aufnahme beendet. Teile den Bildschirm erneut, um es noch einmal zu versuchen.',
     'recorder.errors.notFound': 'Keine Kamera oder Mikrofon gefunden. Bitte schließen Sie ein Gerät an und versuchen Sie es erneut.',
     'recorder.errors.notReadable': 'Kamera oder Mikrofon wird von einer anderen Anwendung verwendet.',
     'recorder.errors.overconstrained': 'Die angeforderten Medieneinstellungen werden von Ihrem Gerät nicht unterstützt.',

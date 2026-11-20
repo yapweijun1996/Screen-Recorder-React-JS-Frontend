@@ -7,10 +7,12 @@ export function readPreference(key: string): string | null {
     }
 }
 
-export function writePreference(key: string, value: string): void {
+export function writePreference(key: string, value: string): boolean {
     try {
         window.localStorage.setItem(key, value);
+        return true;
     } catch {
         // The provider still owns the preference for the current session.
+        return false;
     }
 }

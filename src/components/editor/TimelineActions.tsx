@@ -7,13 +7,14 @@ interface Props {
     canSplit: boolean;
     canDelete: boolean;
     canUndo: boolean;
+    splitDisabledReason?: string;
     onPreviewEdited?: () => void;
     onSplitAt?: (time: number) => void;
     onDeleteSelected?: () => void;
     onUndo?: () => void;
     onResetTrim?: () => void;
 }
-export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, onPreviewEdited, onSplitAt, onDeleteSelected, onUndo, onResetTrim }: Props) {
+export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, splitDisabledReason, onPreviewEdited, onSplitAt, onDeleteSelected, onUndo, onResetTrim }: Props) {
     const { t } = useI18n();
     return (
     <div className="flex items-center gap-0.5 sm:gap-1">
@@ -48,7 +49,7 @@ export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, onP
                     transition-all border border-amber-300 dark:border-amber-600/30
                     disabled:opacity-40 disabled:cursor-not-allowed
                 "
-                title={`${t('editor.trim.splitAtPlayhead')} (B)`}
+                title={splitDisabledReason ?? `${t('editor.trim.splitAtPlayhead')} (B)`}
             >
                 <Scissors size={12} />
                 <span className="hidden md:inline">{t('editor.trim.splitAtPlayhead')}</span>
@@ -65,7 +66,7 @@ export function TimelineActions({ currentTime, canSplit, canDelete, canUndo, onP
                     whitespace-nowrap
                     shadow-lg
                 ">
-                    需要距离片段两端至少 0.5s
+                    {splitDisabledReason ?? '需要距离片段两端至少 0.5s'}
                 </div>
             )}
         </div>

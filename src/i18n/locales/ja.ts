@@ -6,6 +6,9 @@ import type { TranslationTable } from '../types';
 const ja: TranslationTable = {
     'editor.draft.invalid': "保存した編集下書きを読み込めませんでした。トリミングをリセットして新しい下書きを作成してください。",
     'editor.draft.reset': "トリミングをリセット",
+    'editor.draft.savePending': "最新の編集を保存できませんでした。再読み込みする前にもう一度お試しください。",
+    'editor.draft.retry': "再試行",
+    'editor.trim.segmentLimit': "クリップ数が上限に達しました。",
     'export.input.invalid': "このファイルを対応する動画として読み込めません。",
     'export.codec.unsupported': "このブラウザーには出力とソーストラックに対応するエンコーダーがありません。",
     'export.audio.encodeFailed': "音声のエンコードに失敗しました。音声を失わないように書き出しを停止しました。",
@@ -104,6 +107,7 @@ const ja: TranslationTable = {
     'recorder.errors.empty': '録画が空です。少し長めに録画してから停止してください。',
     'recorder.errors.permission': '許可が必要です。画面共有を許可してください。',
     'recorder.errors.startFailed': '録画の開始に失敗しました',
+    'recorder.errors.screenEnded': '録画が始まる前に画面共有が終了しました。もう一度画面を共有して再試行してください。',
     'recorder.errors.notFound': 'カメラまたはマイクが見つかりません。デバイスを接続して再試行してください。',
     'recorder.errors.notReadable': 'カメラまたはマイクが他のアプリケーションで使用中です。',
     'recorder.errors.overconstrained': 'リクエストされたメディア設定はお使いのデバイスでサポートされていません。',
