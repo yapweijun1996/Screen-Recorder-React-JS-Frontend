@@ -233,6 +233,17 @@ Also:
 
 ## Pending / Backlog
 
+The ordered items below are planning backlog only. Existing transcript TXT and SRT downloads remain available; these items do not implement new behavior.
+
+1. **High — Responsive editor.** Keep the player, timeline and export reachable across the viewport matrix before adding workflow screens. [Chrome DevTools follow-up](improvement.md#chrome-devtools-mcp-follow-up) · [UI/UX audit](improvement.md#uiux-audit-and-parallel-backlog)
+2. **High — Recorder and app shell responsiveness.** Run this alongside the editor layout with separate ownership for the shared header. Keep capture controls aligned with active recording state and verify the combined layout in both themes and at least two locales. [Chrome DevTools follow-up](improvement.md#chrome-devtools-mcp-follow-up)
+3. **Medium — Common converter and transcript UI.** Consolidate shared file selection, progress, result, error, discard and transcript actions across the converter and standalone transcript tab. Preserve the current local transcription lifecycle and keep existing TXT/SRT downloads intact.
+4. **Medium — Direct recorded MP3 export.** Add a direct audio-only MP3 export from a completed recording, reusing the existing audio-track validation and MP3 encoder path. Define result lifetime, download protection and failure feedback alongside the [meeting workflow](docs/MEETING_WORKFLOW.md).
+5. **Medium — Markdown transcript export.** Export edited text as Markdown (`.md`) or plain text (`.txt`). Offer SRT where valid timestamps are available. [Transcript formats](docs/MEETING_WORKFLOW.md#transcript-outputs)
+6. **Optional — OpenAI or OpenRouter BYOK.** Evaluate an opt-in provider path using user-supplied keys, with explicit provider selection, local-first behavior and documented key handling. Keep this separate from the offline transcription path and record the decision in the [meeting workflow](docs/MEETING_WORKFLOW.md).
+7. **Optional — OpenAI summary and meeting memo.** Design a transcript-to-summary flow with reusable meeting-memo sections, review and editing before download, and clear network/provider status. Define the output contract in the [meeting workflow](docs/MEETING_WORKFLOW.md).
+8. **Optional — Save a reviewed memo to KB-MCP.** Use a scoped connection, preview the memo and destination, and confirm before saving. Verify deduplication and recovery on retry. [KB-MCP integration](docs/MEETING_WORKFLOW.md#kb-mcp-integration)
+
 | Priority | Task | Notes |
 | --- | --- | --- |
 | 🟢 P2 | `beforeinstallprompt` install button | Big install-rate lever |
